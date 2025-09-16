@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+      "target": "ES2020",                     // Versão do JS de saída
+      "module": "ESNext",                     // Módulo para import/export
+      "lib": ["ESNext", "DOM"],               // Bibliotecas JS/DOM
+      "jsx": "react-jsx",                     // JSX moderno (React 18+)
+      "strict": true,                         // Todas as checagens de tipo
+      "moduleResolution": "node",             // Resolução de módulos
+      "esModuleInterop": true,                // Compatibilidade CommonJS
+      "forceConsistentCasingInFileNames": true,
+      "skipLibCheck": true,                   // Ignora checagem de libs externas
+      "resolveJsonModule": true,              // Permite importar JSON
+      "noEmit": true                          // Não gera JS, só checagem
+    },
+    "exclude": ["node_modules", "dist"]
+  }
+  
