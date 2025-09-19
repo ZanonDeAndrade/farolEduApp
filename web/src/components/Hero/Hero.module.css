@@ -1,0 +1,108 @@
+.hero {
+    background: linear-gradient(135deg, var(--light-blue) 0%, var(--white) 100%);
+    padding: var(--spacing-20) 0;
+    min-height: 600px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .heroContent {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-16);
+    align-items: center;
+  }
+  
+  .heroText {
+    max-width: 500px;
+  }
+  
+  .heroTitle {
+    font-size: var(--font-size-5xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--gray-900);
+    margin-bottom: var(--spacing-6);
+    line-height: 1.2;
+  }
+  
+  .heroSubtitle {
+    font-size: var(--font-size-lg);
+    color: var(--gray-600);
+    margin-bottom: var(--spacing-8);
+    line-height: 1.6;
+  }
+  
+  .searchForm {
+    display: flex;
+    gap: var(--spacing-4);
+    flex-wrap: wrap;
+  }
+  
+  .searchInput {
+    flex: 1;
+    min-width: 250px;
+    padding: var(--spacing-4);
+    border: 1px solid var(--gray-300);
+    border-radius: var(--border-radius-lg);
+    font-size: var(--font-size-base);
+    box-shadow: var(--shadow-sm);
+  }
+  
+  .searchInput:focus {
+    outline: none;
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+  }
+  
+  .searchButton {
+    padding: var(--spacing-4) var(--spacing-8);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    white-space: nowrap;
+  }
+  
+  .heroImage {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .lighthouse {
+    width: 300px;
+    height: 400px;
+    filter: drop-shadow(0 10px 20px rgb(0 0 0 / 0.1));
+  }
+  
+  @media (max-width: 768px) {
+    .hero {
+      padding: var(--spacing-12) 0;
+      min-height: auto;
+    }
+    
+    .heroContent {
+      grid-template-columns: 1fr;
+      gap: var(--spacing-8);
+      text-align: center;
+    }
+    
+    .heroTitle {
+      font-size: var(--font-size-3xl);
+    }
+    
+    .heroSubtitle {
+      font-size: var(--font-size-base);
+    }
+    
+    .searchForm {
+      flex-direction: column;
+    }
+    
+    .searchInput {
+      min-width: 100%;
+    }
+    
+    .lighthouse {
+      width: 200px;
+      height: 250px;
+    }
+  }
