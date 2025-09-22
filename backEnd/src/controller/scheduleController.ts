@@ -1,20 +1,23 @@
-// src/controllers/scheduleController.ts
 import { Request, Response } from "express";
-import { prisma } from "../config/db";
+import { createSchedule, getSchedulesByUser } from "../modules/scheduleModel";
 
-export const createSchedule = async (req: Request, res: Response) => {
-  const { studentId, teacherId, date } = req.body;
-  const schedule = await prisma.schedule.create({
-    data: {
-      studentId,
-      teacherId,
-      date: new Date(date)
-    }
+export const createScheduleHandler = async (req: Request, res: Response) => {
+  const { teacherId, date } = req.body;
+  const studentId = (req as any).user.id;
+
+  if (!teacherId || !date) return res.status(400).json({ message: "Dados incompletos" });
+
+  const schedule = await createSchedule({
+    studentId,
+    teacherId,
+    date: new Date(date),
   });
+
   res.status(201).json(schedule);
 };
 
-export const getSchedules = async (_req: Request, res: Response) => {
-  const schedules = await prisma.schedule.findMany({ include: { student: true, teacher: true } });
+export const getSchedulesHandler = async (req: Request, res: Response) => {
+  const user = (req as any).user;
+  const schedules = await getSchedulesByUser(user.id, user.role);
   res.json(schedules);
 };

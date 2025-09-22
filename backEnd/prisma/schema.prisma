@@ -12,7 +12,7 @@ model User {
   name      String
   email     String   @unique
   password  String
-  role      String // "student" ou "teacher"
+  role      String   // "student" ou "teacher"
   createdAt DateTime @default(now())
 
   // Relações

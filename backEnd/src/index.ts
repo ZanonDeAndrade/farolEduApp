@@ -1,8 +1,8 @@
-// src/index.ts
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import userRoutes from "./routes/userRoutes";
+import professorRoutes from "./routes/professorRoutes";
 import scheduleRoutes from "./routes/scheduleRoutes";
 
 dotenv.config();
@@ -12,6 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api/users", userRoutes);
+app.use("/api/professors", professorRoutes);
 app.use("/api/schedules", scheduleRoutes);
 
 const PORT = process.env.PORT || 5000;

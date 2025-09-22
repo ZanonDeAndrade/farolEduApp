@@ -12,6 +12,9 @@ export const findUserById = (id: number) => {
   return prisma.user.findUnique({ where: { id } });
 };
 
+// Retorna todos os estudantes SEM incluir relações
 export const getAllUsers = () => {
-  return prisma.user.findMany();
+  return prisma.user.findMany({
+    where: { role: "student" },
+  });
 };
