@@ -1,11 +1,10 @@
-import React from "react";
-import "./App.css";
-import Header from "./components/Header/Header";
-import Hero from "./components/Hero/Hero";
-import TeacherSection from "./components/TeacherSection/TeacherSection";
-import AvailableClasses from "./components/AvailableClasses/AvailableClasses";
-import Footer from "./components/Footer/Footer";
-
+import React from 'react';
+import Header from './components/Header/Header';
+import Hero from './components/Hero/Hero';
+import TeacherSection from './components/TeacherSection/TeacherSection';
+import AvailableClasses from './components/AvailableClass/AvailableClass';
+import Footer from './components/Footer/Footer';
+import './App.css';
 
 function App() {
   return (

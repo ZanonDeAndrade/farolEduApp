@@ -1,4 +1,4 @@
-.card {
+.teacher-card {
     background: var(--white);
     border-radius: var(--border-radius-lg);
     box-shadow: var(--shadow-md);
@@ -6,27 +6,33 @@
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
   }
   
-  .card:hover {
+  .teacher-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
   }
   
-  .cardHeader {
+  .card-header {
     display: flex;
     align-items: center;
     gap: var(--spacing-4);
     margin-bottom: var(--spacing-4);
   }
   
-  .teacherImage {
+  .teacher-avatar {
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    object-fit: cover;
+    background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
     border: 3px solid var(--light-blue);
   }
   
-  .subjectInfo {
+  .subject-info {
     flex: 1;
   }
   
@@ -50,7 +56,7 @@
     margin-top: var(--spacing-1);
   }
   
-  .cardBody {
+  .card-body {
     border-top: 1px solid var(--gray-200);
     padding-top: var(--spacing-4);
     display: flex;
@@ -58,36 +64,37 @@
     align-items: center;
   }
   
-  .teacherName {
+  .teacher-name {
     font-size: var(--font-size-lg);
     font-weight: var(--font-weight-semibold);
     color: var(--gray-900);
   }
   
   @media (max-width: 768px) {
-    .card {
+    .teacher-card {
       padding: var(--spacing-4);
     }
     
-    .cardHeader {
+    .card-header {
       gap: var(--spacing-3);
       margin-bottom: var(--spacing-3);
     }
     
-    .teacherImage {
+    .teacher-avatar {
       width: 50px;
       height: 50px;
+      font-size: var(--font-size-lg);
     }
     
     .subject {
       font-size: var(--font-size-base);
     }
     
-    .teacherName {
+    .teacher-name {
       font-size: var(--font-size-base);
     }
     
-    .cardBody {
+    .card-body {
       flex-direction: column;
       gap: var(--spacing-3);
       align-items: stretch;

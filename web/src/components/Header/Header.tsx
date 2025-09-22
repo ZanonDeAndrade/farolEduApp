@@ -1,26 +1,26 @@
 import React from 'react';
-import styles from './Header.module.css';
+import './Header.css';
 
 const Header: React.FC = () => {
   return (
-    <header className={styles.header}>
+    <header className="header">
       <div className="container">
-        <nav className={styles.nav}>
-          <div className={styles.logo}>
-            <img src="/images/lighthouse.svg" alt="FarolEdu" className={styles.logoIcon} />
-            <span className={styles.logoText}>FarolEdu</span>
+        <nav className="nav">
+          <div className="logo">
+            <div className="logo-icon">🏠</div>
+            <span className="logo-text">FarolEdu</span>
           </div>
           
-          <ul className={styles.navLinks}>
-            <li><a href="#inicio" className={styles.navLink}>Início</a></li>
-            <li><a href="#oferecer-aula" className={styles.navLink}>Oferecer Aula</a></li>
-            <li><a href="#sobre" className={styles.navLink}>Sobre</a></li>
-            <li><a href="#contato" className={styles.navLink}>Contato</a></li>
+          <ul className="nav-links">
+            <li><a href="#inicio" className="nav-link">Início</a></li>
+            <li><a href="#oferecer-aula" className="nav-link">Oferecer Aula</a></li>
+            <li><a href="#sobre" className="nav-link">Sobre</a></li>
+            <li><a href="#contato" className="nav-link">Contato</a></li>
           </ul>
           
-          <a href="#login" className="btn btn-yellow">
+          <button className="btn btn-yellow">
             Entrar / Cadastrar
-          </a>
+          </button>
         </nav>
       </div>
     </header>
