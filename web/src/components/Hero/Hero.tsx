@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import styles from './Hero.module.css';
+import './Hero.css';
 
 const Hero: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -7,38 +7,40 @@ const Hero: React.FC = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Procurando por:', searchQuery);
-    // Implementar lógica de busca
   };
 
   return (
-    <section className={styles.hero}>
+    <section className="hero">
       <div className="container">
-        <div className={styles.heroContent}>
-          <div className={styles.heroText}>
-            <h1 className={styles.heroTitle}>
+        <div className="hero-content">
+          <div className="hero-text">
+            <h1 className="hero-title">
               Encontre a aula certa para você.
             </h1>
-            <p className={styles.heroSubtitle}>
+            <p className="hero-subtitle">
               Conectamos alunos e professores<br />
               em qualquer lugar do Brasil.
             </p>
             
-            <form onSubmit={handleSearch} className={styles.searchForm}>
+            <form onSubmit={handleSearch} className="search-form">
               <input
                 type="text"
                 placeholder="O que você quer aprender?"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className={styles.searchInput}
+                className="search-input"
               />
-              <button type="submit" className={`btn btn-yellow ${styles.searchButton}`}>
+              <button type="submit" className="btn btn-yellow">
                 Procurar
               </button>
             </form>
           </div>
           
-          <div className={styles.heroImage}>
-            <img src="/images/lighthouse.svg" alt="Farol" className={styles.lighthouse} />
+          <div className="hero-image">
+            <div className="lighthouse">
+              <div className="lighthouse-icon">🏠</div>
+              <p className="lighthouse-text">Seu guia educacional</p>
+            </div>
           </div>
         </div>
       </div>

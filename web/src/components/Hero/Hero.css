@@ -6,18 +6,18 @@
     align-items: center;
   }
   
-  .heroContent {
+  .hero-content {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--spacing-16);
     align-items: center;
   }
   
-  .heroText {
+  .hero-text {
     max-width: 500px;
   }
   
-  .heroTitle {
+  .hero-title {
     font-size: var(--font-size-5xl);
     font-weight: var(--font-weight-bold);
     color: var(--gray-900);
@@ -25,20 +25,20 @@
     line-height: 1.2;
   }
   
-  .heroSubtitle {
+  .hero-subtitle {
     font-size: var(--font-size-lg);
     color: var(--gray-600);
     margin-bottom: var(--spacing-8);
     line-height: 1.6;
   }
   
-  .searchForm {
+  .search-form {
     display: flex;
     gap: var(--spacing-4);
     flex-wrap: wrap;
   }
   
-  .searchInput {
+  .search-input {
     flex: 1;
     min-width: 250px;
     padding: var(--spacing-4);
@@ -48,29 +48,41 @@
     box-shadow: var(--shadow-sm);
   }
   
-  .searchInput:focus {
+  .search-input:focus {
     outline: none;
     border-color: var(--primary-blue);
     box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
   }
   
-  .searchButton {
-    padding: var(--spacing-4) var(--spacing-8);
-    font-size: var(--font-size-base);
-    font-weight: var(--font-weight-semibold);
-    white-space: nowrap;
-  }
-  
-  .heroImage {
+  .hero-image {
     display: flex;
     justify-content: center;
     align-items: center;
   }
   
   .lighthouse {
-    width: 300px;
-    height: 400px;
-    filter: drop-shadow(0 10px 20px rgb(0 0 0 / 0.1));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-16);
+    background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+    border-radius: var(--border-radius-xl);
+    color: white;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .lighthouse-icon {
+    font-size: 120px;
+    margin-bottom: var(--spacing-4);
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+  }
+  
+  .lighthouse-text {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-medium);
+    margin: 0;
   }
   
   @media (max-width: 768px) {
@@ -79,30 +91,37 @@
       min-height: auto;
     }
     
-    .heroContent {
+    .hero-content {
       grid-template-columns: 1fr;
       gap: var(--spacing-8);
       text-align: center;
     }
     
-    .heroTitle {
+    .hero-title {
       font-size: var(--font-size-3xl);
     }
     
-    .heroSubtitle {
+    .hero-subtitle {
       font-size: var(--font-size-base);
     }
     
-    .searchForm {
+    .search-form {
       flex-direction: column;
     }
     
-    .searchInput {
+    .search-input {
       min-width: 100%;
     }
     
     .lighthouse {
-      width: 200px;
-      height: 250px;
+      padding: var(--spacing-8);
+    }
+    
+    .lighthouse-icon {
+      font-size: 80px;
+    }
+    
+    .lighthouse-text {
+      font-size: var(--font-size-base);
     }
   }

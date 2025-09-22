@@ -1,79 +1,88 @@
-// services/apiService.ts
-import type { ApiConfig, HttpMethod } from '../utils/api';
-import { ApiError, getDefaultHeaders, handleApiResponse, createRequestWithTimeout, buildQueryString } from '../utils/api';
+// API service functions
+import type { Teacher } from '../types/teacher';
+import type { ContactForm } from '../types/contact';
+
+// Base API configuration
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 /**
- * Base API service
+ * Generic fetch wrapper with error handling
  */
-export class ApiService {
-  private baseURL: string;
-  private defaultTimeout: number;
+const apiRequest = async <T>(
+  endpoint: string,
+  options?: RequestInit
+): Promise<T> => {
+  const url = `${API_BASE_URL}${endpoint}`;
+  
+  const defaultOptions: RequestInit = {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  };
 
-  constructor(baseURL?: string, timeout: number = 10000) {
-    this.baseURL = baseURL || process.env.REACT_APP_API_URL || 'http://localhost:3001';
-    this.defaultTimeout = timeout;
-  }
-
-  private async request<T>(endpoint: string, config: ApiConfig = {}): Promise<T> {
-    const url = `${this.baseURL}${endpoint}`;
-    const timeout = config.timeout ?? this.defaultTimeout;
-
-    const requestInit: RequestInit = {
-      method: config.method ? String(config.method) : 'GET',
-      headers: { ...getDefaultHeaders(), ...config.headers },
-      body: config.body instanceof FormData
-        ? config.body
-        : config.body
-        ? JSON.stringify(config.body)
-        : undefined
-    };
-
-    try {
-      const response = await createRequestWithTimeout(url, requestInit, timeout);
-      return await handleApiResponse(response);
-    } catch (error) {
-      if (error instanceof ApiError) throw error;
-      throw new ApiError(error instanceof Error ? error.message : 'Network error', 0);
+  try {
+    const response = await fetch(url, { ...defaultOptions, ...options });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error(`API request failed for ${endpoint}:`, error);
+    throw error;
   }
+};
 
-  async get<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
-    const queryString = params ? buildQueryString(params) : '';
-    return this.request<T>(`${endpoint}${queryString}`, { method: 'GET' });
+/**
+ * Teacher-related API calls
+ */
+export const teacherService = {
+  /**
+   * Get all teachers
+   */
+  getAllTeachers: async (): Promise<Teacher[]> => {
+    // Simulate API call - replace with actual API
+    return new Promise(resolve => {
+      setTimeout(() => {
+        resolve([
+          {
+            id: '1',
+            name: 'Ana Souza',
+            subject: 'Matemática',
+            level: 'Ensino Médio',
+            image: '/placeholder.jpg',
+            profileUrl: '/professor/ana-souza'
+          }
+        ]);
+      }, 1000);
+    });
+  },
+
+  /**
+   * Search teachers by subject or name
+   */
+  searchTeachers: async (query: string): Promise<Teacher[]> => {
+    console.log('Searching for:', query);
+    return teacherService.getAllTeachers();
   }
+};
 
-  async post<T>(endpoint: string, data?: any): Promise<T> {
-    return this.request<T>(endpoint, { method: 'POST', body: data });
-  }
-
-  async put<T>(endpoint: string, data?: any): Promise<T> {
-    return this.request<T>(endpoint, { method: 'PUT', body: data });
-  }
-
-  async patch<T>(endpoint: string, data?: any): Promise<T> {
-    return this.request<T>(endpoint, { method: 'PATCH', body: data });
-  }
-
-  async delete<T>(endpoint: string): Promise<T> {
-    return this.request<T>(endpoint, { method: 'DELETE' });
-  }
-
-  async upload<T>(endpoint: string, file: File, additionalData?: Record<string, any>): Promise<T> {
-    const formData = new FormData();
-    formData.append('file', file);
-    if (additionalData) {
-      Object.entries(additionalData).forEach(([key, value]) =>
-        formData.append(key, String(value))
-      );
-    }
-
-    return this.request<T>(endpoint, {
-      method: 'POST',
-      body: formData,
-      headers: { ...getDefaultHeaders(), 'Content-Type': undefined as any }
+/**
+ * Contact-related API calls
+ */
+export const contactService = {
+  /**
+   * Submit contact form
+   */
+  submitContactForm: async (contactData: ContactForm): Promise<{ success: boolean; message: string }> => {
+    // Simulate API call
+    return new Promise(resolve => {
+      setTimeout(() => {
+        console.log('Contact form submitted:', contactData);
+        resolve({ success: true, message: 'Mensagem enviada com sucesso!' });
+      }, 1000);
     });
   }
-}
-
-// Singleton instance
-export const apiService = new ApiService();
+};
