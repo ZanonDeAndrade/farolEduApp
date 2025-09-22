@@ -1,11 +1,10 @@
-// src/routes/scheduleRoutes.ts
 import { Router } from "express";
-import { createSchedule, getSchedules } from "../controller/scheduleController";
+import { createScheduleHandler, getSchedulesHandler } from "../controller/scheduleController";
 import { authenticate } from "../middlewares/authMiddleware";
 
 const router = Router();
 
-router.post("/", authenticate, createSchedule);
-router.get("/", authenticate, getSchedules);
+router.post("/", authenticate, createScheduleHandler);
+router.get("/", authenticate, getSchedulesHandler);
 
 export default router;

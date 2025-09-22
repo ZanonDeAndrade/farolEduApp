@@ -1,4 +1,3 @@
-
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -8,7 +7,8 @@ const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 
 export const registerUser = async (req: Request, res: Response) => {
   const { name, email, password, role } = req.body;
-  if (!name || !email || !password || !role) return res.status(400).json({ message: "Dados incompletos" });
+  if (!name || !email || !password || !role)
+    return res.status(400).json({ message: "Dados incompletos" });
 
   const existingUser = await findUserByEmail(email);
   if (existingUser) return res.status(400).json({ message: "Email já cadastrado" });
@@ -28,7 +28,7 @@ export const loginUser = async (req: Request, res: Response) => {
   if (!isValid) return res.status(401).json({ message: "Senha incorreta" });
 
   const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: "1d" });
-  res.json({ token });
+  res.json({ token, role: user.role });
 };
 
 export const listUsers = async (_req: Request, res: Response) => {
