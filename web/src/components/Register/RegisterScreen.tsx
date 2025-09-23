@@ -13,7 +13,6 @@ interface RegisterData {
   userType: 'student' | 'teacher' | null;
   subjects?: string[];
   experience?: string;
-  hourlyRate?: number;
 }
 
 const RegisterScreen = () => {
@@ -38,7 +37,6 @@ const RegisterScreen = () => {
 
   const handleUserTypeSelect = (type: 'student' | 'teacher') => {
     setRegisterData(prev => ({ ...prev, userType: type }));
-    setCurrentStep(2);
   };
 
   const handleUserTypeChange = (type: 'student' | 'teacher' | null) => {
@@ -76,12 +74,13 @@ const RegisterScreen = () => {
   };
 
   const goNext = () => {
-    if (currentStep < 3) setCurrentStep(currentStep + 1);
+    if (currentStep < 4) setCurrentStep(currentStep + 1);
   };
 
-  const isStep1Valid = registerData.name && registerData.email && registerData.phone && registerData.city;
-  const isStep2Valid = registerData.password && registerData.confirmPassword && registerData.password === registerData.confirmPassword;
-  const isStep3Valid = registerData.userType === 'student' || (registerData.userType === 'teacher' && registerData.subjects && registerData.subjects.length > 0 && registerData.hourlyRate && registerData.hourlyRate > 0);
+  const isStep1Valid = registerData.userType !== null;
+  const isStep2Valid = registerData.name && registerData.email && registerData.phone && registerData.city;
+  const isStep3Valid = registerData.password && registerData.confirmPassword && registerData.password === registerData.confirmPassword;
+  const isStep4Valid = registerData.userType === 'student' || (registerData.userType === 'teacher' && registerData.subjects && registerData.subjects.length > 0);
 
   const subjectOptions = [
     'Matemática', 'Português', 'Inglês', 'Física', 'Química', 'Biologia',
@@ -113,24 +112,89 @@ const RegisterScreen = () => {
           {/* Progress Bar */}
           <div className="register-progress-bar">
             <div className="register-progress-steps">
-              {[1, 2, 3].map(step => (
+              {[1, 2, 3, 4].map(step => (
                 <div key={step} className={`register-progress-step ${currentStep >= step ? 'active' : ''}`}>
                   {step}
                 </div>
               ))}
             </div>
             <div className="register-progress-labels">
-              <span className={currentStep >= 1 ? 'register-active-label' : ''}>Dados</span>
-              <span className={currentStep >= 2 ? 'register-active-label' : ''}>Senha</span>
-              <span className={currentStep >= 3 ? 'register-active-label' : ''}>Perfil</span>
+              <span className={currentStep >= 1 ? 'register-active-label' : ''}>Tipo</span>
+              <span className={currentStep >= 2 ? 'register-active-label' : ''}>Dados</span>
+              <span className={currentStep >= 3 ? 'register-active-label' : ''}>Senha</span>
+              <span className={currentStep >= 4 ? 'register-active-label' : ''}>Perfil</span>
             </div>
           </div>
         </div>
 
         <div className="register-form-container">
           <div className="register-form">
-            {/* Step 1 - Dados Pessoais */}
+            {/* Step 1 - Tipo de Conta */}
             {currentStep === 1 && (
+              <div className="register-form-step">
+                <h2 className="register-step-title">Tipo de Conta</h2>
+
+                {!registerData.userType ? (
+                  <div className="register-user-type-selection">
+                    <button onClick={() => handleUserTypeSelect('student')} className="register-user-type-card register-student-card">
+                      <div className="register-card-content">
+                        <div className="register-icon-wrapper">
+                          <div className="register-student-icon-bg">
+                            <User className="register-card-icon" />
+                          </div>
+                        </div>
+                        <div className="register-card-text">
+                          <h3 className="register-card-title">Sou Estudante</h3>
+                          <p className="register-card-description">Quero encontrar professores</p>
+                        </div>
+                      </div>
+                    </button>
+                    <button onClick={() => handleUserTypeSelect('teacher')} className="register-user-type-card register-teacher-card">
+                      <div className="register-card-content">
+                        <div className="register-icon-wrapper">
+                          <div className="register-teacher-icon-bg">
+                            <GraduationCap className="register-card-icon" />
+                          </div>
+                        </div>
+                        <div className="register-card-text">
+                          <h3 className="register-card-title">Sou Professor</h3>
+                          <p className="register-card-description">Quero ensinar estudantes</p>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="register-profile-step">
+                    <div className="register-selected-type">
+                      <div className="register-type-display">
+                        <span className="register-type-label">
+                          Conta: {registerData.userType === 'student' ? 'Estudante' : 'Professor'}
+                        </span>
+                      </div>
+                      <button 
+                        className="register-change-type-btn"
+                        onClick={() => handleUserTypeChange(null)}
+                      >
+                        Alterar
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {registerData.userType && (
+                  <button
+                    onClick={goNext}
+                    disabled={!isStep1Valid}
+                    className={`register-next-btn ${isStep1Valid ? 'register-btn-enabled' : 'register-btn-disabled'}`}
+                  >
+                    Continuar
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Step 2 - Dados Pessoais */}
+            {currentStep === 2 && (
               <div className="register-form-step">
                 <h2 className="register-step-title">Dados Pessoais</h2>
 
@@ -192,16 +256,16 @@ const RegisterScreen = () => {
 
                 <button
                   onClick={goNext}
-                  disabled={!isStep1Valid}
-                  className={`register-next-btn ${isStep1Valid ? 'register-btn-enabled' : 'register-btn-disabled'}`}
+                  disabled={!isStep2Valid}
+                  className={`register-next-btn ${isStep2Valid ? 'register-btn-enabled' : 'register-btn-disabled'}`}
                 >
                   Continuar
                 </button>
               </div>
             )}
 
-            {/* Step 2 - Senha */}
-            {currentStep === 2 && (
+            {/* Step 3 - Senha */}
+            {currentStep === 3 && (
               <div className="register-form-step">
                 <h2 className="register-step-title">Criar Senha</h2>
 
@@ -255,119 +319,57 @@ const RegisterScreen = () => {
 
                 <button
                   onClick={goNext}
-                  disabled={!isStep2Valid}
-                  className={`register-next-btn ${isStep2Valid ? 'register-btn-enabled' : 'register-btn-disabled'}`}
+                  disabled={!isStep3Valid}
+                  className={`register-next-btn ${isStep3Valid ? 'register-btn-enabled' : 'register-btn-disabled'}`}
                 >
                   Continuar
                 </button>
               </div>
             )}
 
-            {/* Step 3 - Tipo de Conta */}
-            {currentStep === 3 && (
+            {/* Step 4 - Perfil */}
+            {currentStep === 4 && (
               <div className="register-form-step">
-                <h2 className="register-step-title">Tipo de Conta</h2>
+                <h2 className="register-step-title">Perfil</h2>
 
-                {!registerData.userType ? (
-                  <div className="register-user-type-selection">
-                    <button onClick={() => handleUserTypeSelect('student')} className="register-user-type-card register-student-card">
-                      <div className="register-card-content">
-                        <div className="register-icon-wrapper">
-                          <div className="register-student-icon-bg">
-                            <User className="register-card-icon" />
-                          </div>
-                        </div>
-                        <div className="register-card-text">
-                          <h3 className="register-card-title">Sou Estudante</h3>
-                          <p className="register-card-description">Quero encontrar professores</p>
-                        </div>
+                {registerData.userType === 'teacher' && (
+                  <>
+                    <div className="register-form-group">
+                      <label className="register-form-label">Matérias que ensina</label>
+                      <div className="register-subjects-grid">
+                        {subjectOptions.map(subj => (
+                          <label key={subj} className="register-subject-checkbox">
+                            <input
+                              type="checkbox"
+                              checked={registerData.subjects?.includes(subj)}
+                              onChange={e => handleSubjectChange(subj, e.target.checked)}
+                            />
+                            <span className="register-checkmark"></span>
+                            {subj}
+                          </label>
+                        ))}
                       </div>
-                    </button>
-                    <button onClick={() => handleUserTypeSelect('teacher')} className="register-user-type-card register-teacher-card">
-                      <div className="register-card-content">
-                        <div className="register-icon-wrapper">
-                          <div className="register-teacher-icon-bg">
-                            <GraduationCap className="register-card-icon" />
-                          </div>
-                        </div>
-                        <div className="register-card-text">
-                          <h3 className="register-card-title">Sou Professor</h3>
-                          <p className="register-card-description">Quero ensinar estudantes</p>
-                        </div>
-                      </div>
-                    </button>
-                  </div>
-                ) : (
-                  <div className="register-profile-step">
-                    <div className="register-selected-type">
-                      <div className="register-type-display">
-                        <span className="register-type-label">
-                          Conta: {registerData.userType === 'student' ? 'Estudante' : 'Professor'}
-                        </span>
-                      </div>
-                      <button 
-                        className="register-change-type-btn"
-                        onClick={() => handleUserTypeChange(null)}
-                      >
-                        Alterar
-                      </button>
                     </div>
 
-                    {registerData.userType === 'teacher' && (
-                      <div className="register-teacher-extra-fields">
-                        <div className="register-form-group">
-                          <label className="register-form-label">Matérias que ensina</label>
-                          <div className="register-subjects-grid">
-                            {subjectOptions.map(subj => (
-                              <label key={subj} className="register-subject-checkbox">
-                                <input
-                                  type="checkbox"
-                                  checked={registerData.subjects?.includes(subj)}
-                                  onChange={e => handleSubjectChange(subj, e.target.checked)}
-                                />
-                                <span className="register-checkmark"></span>
-                                {subj}
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="register-form-group">
-                          <label className="register-form-label">Experiência</label>
-                          <textarea
-                            className="register-form-textarea"
-                            value={registerData.experience}
-                            onChange={e => handleInputChange('experience', e.target.value)}
-                            placeholder="Descreva sua experiência como professor"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                    <div className="register-form-group">
+                      <label className="register-form-label">Experiência</label>
+                      <textarea
+                        className="register-form-textarea"
+                        value={registerData.experience}
+                        onChange={e => handleInputChange('experience', e.target.value)}
+                        placeholder="Descreva sua experiência como professor"
+                      />
+                    </div>
+                  </>
                 )}
 
-                {registerData.userType && (
-                  <button
-                    onClick={handleSubmit}
-                    disabled={!isStep3Valid || isLoading}
-                    className={`register-submit-btn ${
-                      isStep3Valid && !isLoading 
-                        ? registerData.userType === 'student' 
-                          ? 'register-btn-student' 
-                          : 'register-btn-teacher'
-                        : 'register-btn-disabled'
-                    }`}
-                  >
-                    {isLoading ? (
-                      <div className="register-loading-content">
-                        <div className="register-spinner"></div>
-                        Criando conta...
-                      </div>
-                    ) : (
-                      'Criar Conta'
-                    )}
-                  </button>
-                )}
+                <button
+                  onClick={handleSubmit}
+                  disabled={!isStep4Valid || isLoading}
+                  className={`register-submit-btn ${isStep4Valid && !isLoading ? 'register-btn-enabled' : 'register-btn-disabled'}`}
+                >
+                  {isLoading ? "Criando conta..." : "Criar Conta"}
+                </button>
               </div>
             )}
           </div>
@@ -384,7 +386,7 @@ const RegisterScreen = () => {
         </div>
 
         <div className="register-footer">
-          <p className="register-footer-text">© 2025 EduConnect. Todos os direitos reservados.</p>
+          <p className="register-footer-text">© 2025 FarolEdu. Todos os direitos reservados.</p>
         </div>
       </div>
     </div>

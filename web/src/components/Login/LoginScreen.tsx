@@ -54,7 +54,7 @@ const LoginScreen: React.FC = () => {
           <div className="login-logo-container">
             <GraduationCap className="login-logo-icon" />
           </div>
-          <h1 className="login-app-title">EduConnect</h1>
+          <h1 className="login-app-title">FarolEdu</h1>
           <p className="login-app-subtitle">Conectando estudantes e professores</p>
         </div>
 
