@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './Hero.css';
+import ImagemFarol from '../../assets/ImagemFarol.png'
 
 const Hero: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -35,12 +36,8 @@ const Hero: React.FC = () => {
               </button>
             </form>
           </div>
-          
           <div className="hero-image">
-            <div className="lighthouse">
-              <div className="lighthouse-icon">🏠</div>
-              <p className="lighthouse-text">Seu guia educacional</p>
-            </div>
+            <img src={ImagemFarol} alt="LogoFarol" />
           </div>
         </div>
       </div>

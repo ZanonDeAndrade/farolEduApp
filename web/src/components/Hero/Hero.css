@@ -11,6 +11,15 @@
     grid-template-columns: 1fr 1fr;
     gap: var(--spacing-16);
     align-items: center;
+    margin-bottom: -80px;
+  }
+
+  .hero-image{
+    margin-left: 40%;
+  }
+
+  .hero-image img{
+    width: 400px;
   }
   
   .hero-text {

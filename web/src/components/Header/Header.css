@@ -11,6 +11,7 @@
     align-items: center;
     justify-content: space-between;
     padding: var(--spacing-4) 0;
+    height: 100px;
   }
   
   .logo {
