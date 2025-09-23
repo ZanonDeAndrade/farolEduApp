@@ -1,0 +1,786 @@
+/* RegisterScreen.css */
+
+/* ===== CSS VARIABLES ===== */
+:root {
+    --primary-blue: #1e40af;
+    --secondary-blue: #3b82f6;
+    --light-blue: #eff6ff;
+    --yellow: #f59e0b;
+    --yellow-hover: #d97706;
+    --white: #ffffff;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-600: #6b7280;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    --spacing-1: 0.25rem;
+    --spacing-2: 0.5rem;
+    --spacing-3: 0.75rem;
+    --spacing-4: 1rem;
+    --spacing-5: 1.25rem;
+    --spacing-6: 1.5rem;
+    --spacing-8: 2rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 1.875rem;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --border-radius: 0.375rem;
+    --border-radius-lg: 0.5rem;
+    --border-radius-xl: 0.75rem;
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05);
+    --transition: all 0.2s ease-in-out;
+  }
+  
+  /* ===== MAIN CONTAINER ===== */
+  .register-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--light-blue) 0%, var(--white) 50%, #fef3c7 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-4);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  
+  .register-card {
+    width: 100%;
+    max-width: 32rem;
+  }
+  
+  /* ===== HEADER SECTION ===== */
+  .register-header {
+    margin-bottom: var(--spacing-6);
+  }
+  
+  .register-back-button {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    background: none;
+    border: none;
+    color: var(--gray-600);
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--spacing-4);
+    transition: var(--transition);
+    padding: var(--spacing-2);
+    border-radius: var(--border-radius);
+    font-family: inherit;
+  }
+  
+  .register-back-button:hover {
+    color: var(--gray-800);
+    background: var(--gray-100);
+  }
+  
+  .register-back-icon {
+    width: 1rem;
+    height: 1rem;
+  }
+  
+  .register-logo-section {
+    text-align: center;
+    margin-bottom: var(--spacing-6);
+  }
+  
+  .register-logo-container {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 4rem;
+    height: 4rem;
+    background: linear-gradient(135deg, var(--secondary-blue), var(--primary-blue));
+    border-radius: var(--border-radius-xl);
+    margin-bottom: var(--spacing-4);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .register-logo-icon {
+    width: 2rem;
+    height: 2rem;
+    color: var(--white);
+  }
+  
+  .register-app-title {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--gray-900);
+    margin: 0 0 var(--spacing-2) 0;
+  }
+  
+  .register-app-subtitle {
+    color: var(--gray-600);
+    font-size: var(--font-size-base);
+    margin: 0;
+  }
+  
+  /* ===== PROGRESS BAR ===== */
+  .register-progress-bar {
+    margin-bottom: var(--spacing-6);
+  }
+  
+  .register-progress-steps {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-3);
+    position: relative;
+  }
+  
+  .register-progress-steps::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--gray-200);
+    z-index: 0;
+  }
+  
+  .register-progress-step {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: var(--gray-200);
+    color: var(--gray-600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-sm);
+    z-index: 1;
+    position: relative;
+    transition: all 0.3s ease-in-out;
+  }
+  
+  .register-progress-step.active {
+    background: var(--secondary-blue);
+    color: var(--white);
+  }
+  
+  .register-progress-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
+  }
+  
+  .register-active-label {
+    color: var(--secondary-blue);
+    font-weight: var(--font-weight-medium);
+  }
+  
+  /* ===== FORM CONTAINER ===== */
+  .register-form-container {
+    background: var(--white);
+    border-radius: var(--border-radius-xl);
+    box-shadow: var(--shadow-lg);
+    padding: var(--spacing-8);
+  }
+  
+  .register-form {
+    margin-bottom: var(--spacing-6);
+  }
+  
+  /* ===== FORM STEPS ===== */
+  .register-form-step {
+    animation: slideIn 0.3s ease-in-out;
+  }
+  
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  .register-step-title {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--gray-800);
+    margin: 0 0 var(--spacing-6) 0;
+    text-align: center;
+  }
+  
+  /* ===== FORM GROUPS ===== */
+  .register-form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: var(--spacing-5);
+  }
+  
+  .register-form-label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--gray-700);
+    margin-bottom: var(--spacing-2);
+    display: block;
+  }
+  
+  /* ===== INPUT STYLES ===== */
+  .register-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  
+  .register-input-icon {
+    position: absolute;
+    left: var(--spacing-3);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.25rem;
+    height: 1.25rem;
+    color: var(--gray-600);
+    pointer-events: none;
+    z-index: 2;
+  }
+  
+  .register-currency-symbol {
+    position: absolute;
+    left: var(--spacing-3);
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray-600);
+    font-weight: var(--font-weight-medium);
+    z-index: 2;
+    font-size: var(--font-size-sm);
+  }
+  
+  .register-form-input {
+    width: 100%;
+    padding: var(--spacing-3) var(--spacing-4) var(--spacing-3) 3rem;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--border-radius-lg);
+    font-size: var(--font-size-base);
+    line-height: 1.5;
+    transition: var(--transition);
+    outline: none;
+    font-family: inherit;
+    background: var(--white);
+    box-sizing: border-box;
+  }
+  
+  .register-currency-input {
+    padding-left: 2.5rem;
+  }
+  
+  .register-form-input:focus {
+    border-color: var(--secondary-blue);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  .register-form-input::placeholder {
+    color: var(--gray-400);
+  }
+  
+  .register-form-textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: var(--spacing-3);
+    border: 1px solid var(--gray-300);
+    border-radius: var(--border-radius-lg);
+    font-size: var(--font-size-base);
+    font-family: inherit;
+    resize: vertical;
+    transition: var(--transition);
+    outline: none;
+    box-sizing: border-box;
+    line-height: 1.5;
+  }
+  
+  .register-form-textarea:focus {
+    border-color: var(--secondary-blue);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  /* ===== PASSWORD TOGGLE ===== */
+  .register-password-toggle {
+    position: absolute;
+    right: var(--spacing-3);
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: var(--transition);
+    padding: 0.25rem;
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+  }
+  
+  .register-password-toggle:hover {
+    color: var(--gray-800);
+    background: var(--gray-100);
+  }
+  
+  .register-toggle-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+  
+  /* ===== ERROR MESSAGE ===== */
+  .register-error-message {
+    font-size: var(--font-size-sm);
+    color: #ef4444;
+    margin-top: var(--spacing-1);
+    display: block;
+  }
+  
+  /* ===== USER TYPE SELECTION ===== */
+  .register-user-type-selection {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-6);
+  }
+  
+  .register-user-type-card {
+    width: 100%;
+    padding: var(--spacing-5);
+    border: 2px solid var(--gray-200);
+    border-radius: var(--border-radius-xl);
+    background: var(--white);
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: left;
+    font-family: inherit;
+  }
+  
+  .register-user-type-card:hover {
+    transform: translateY(-2px);
+  }
+  
+  .register-student-card:hover {
+    border-color: var(--secondary-blue);
+    background: var(--light-blue);
+  }
+  
+  .register-teacher-card:hover {
+    border-color: var(--yellow);
+    background: #fef3c7;
+  }
+  
+  .register-card-content {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+  }
+  
+  .register-icon-wrapper {
+    flex-shrink: 0;
+  }
+  
+  .register-student-icon-bg, 
+  .register-teacher-icon-bg {
+    width: 3rem;
+    height: 3rem;
+    border-radius: var(--border-radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+  }
+  
+  .register-student-icon-bg {
+    background: var(--light-blue);
+  }
+  
+  .register-teacher-icon-bg {
+    background: #fef3c7;
+  }
+  
+  .register-card-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  
+  .register-student-icon-bg .register-card-icon {
+    color: var(--secondary-blue);
+  }
+  
+  .register-teacher-icon-bg .register-card-icon {
+    color: var(--yellow);
+  }
+  
+  .register-card-text {
+    text-align: left;
+  }
+  
+  .register-card-title {
+    font-weight: var(--font-weight-semibold);
+    color: var(--gray-900);
+    margin: 0 0 var(--spacing-1) 0;
+    font-size: var(--font-size-base);
+  }
+  
+  .register-card-description {
+    color: var(--gray-600);
+    font-size: var(--font-size-sm);
+    margin: 0;
+  }
+  
+  /* ===== SELECTED TYPE DISPLAY ===== */
+  .register-selected-type {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-6);
+    padding: var(--spacing-4);
+    background: var(--gray-100);
+    border-radius: var(--border-radius-lg);
+  }
+  
+  .register-type-display {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+  }
+  
+  .register-type-label {
+    font-weight: var(--font-weight-medium);
+    color: var(--gray-700);
+  }
+  
+  .register-change-type-btn {
+    font-size: var(--font-size-sm);
+    color: var(--secondary-blue);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: var(--transition);
+    padding: var(--spacing-2);
+    border-radius: var(--border-radius);
+    font-family: inherit;
+  }
+  
+  .register-change-type-btn:hover {
+    color: var(--primary-blue);
+    background: var(--light-blue);
+  }
+  
+  /* ===== TEACHER EXTRA FIELDS ===== */
+  .register-teacher-extra-fields {
+    animation: slideIn 0.3s ease-in-out;
+  }
+  
+  .register-subjects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--spacing-2);
+    margin-top: var(--spacing-2);
+  }
+  
+  .register-subject-checkbox {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-3);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: var(--font-size-sm);
+    background: var(--white);
+    user-select: none;
+  }
+  
+  .register-subject-checkbox:hover {
+    background: var(--gray-100);
+  }
+  
+  .register-subject-checkbox input[type="checkbox"] {
+    display: none;
+  }
+  
+  .register-checkmark {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid var(--gray-300);
+    border-radius: 3px;
+    position: relative;
+    transition: var(--transition);
+    flex-shrink: 0;
+  }
+  
+  .register-subject-checkbox input[type="checkbox"]:checked + .register-checkmark {
+    background: var(--yellow);
+    border-color: var(--yellow);
+  }
+  
+  .register-subject-checkbox input[type="checkbox"]:checked + .register-checkmark::after {
+    content: '✓';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--gray-900);
+    font-size: 0.75rem;
+    font-weight: var(--font-weight-bold);
+  }
+  
+  /* ===== BUTTONS ===== */
+  .register-next-btn, 
+  .register-submit-btn {
+    width: 100%;
+    padding: var(--spacing-3) var(--spacing-4);
+    border: none;
+    border-radius: var(--border-radius-lg);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-base);
+    cursor: pointer;
+    transition: var(--transition);
+    margin-top: var(--spacing-4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+  }
+  
+  .register-btn-enabled {
+    background: var(--secondary-blue);
+    color: var(--white);
+    box-shadow: var(--shadow-md);
+  }
+  
+  .register-btn-enabled:hover {
+    background: var(--primary-blue);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .register-btn-student {
+    background: var(--secondary-blue);
+    color: var(--white);
+    box-shadow: var(--shadow-md);
+  }
+  
+  .register-btn-student:hover {
+    background: var(--primary-blue);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .register-btn-teacher {
+    background: var(--yellow);
+    color: var(--gray-900);
+    box-shadow: var(--shadow-md);
+  }
+  
+  .register-btn-teacher:hover {
+    background: var(--yellow-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .register-btn-disabled {
+    background: var(--gray-300);
+    color: var(--gray-600);
+    cursor: not-allowed;
+  }
+  
+  .register-btn-disabled:hover {
+    transform: none;
+  }
+  
+  /* ===== LOADING STATE ===== */
+  .register-loading-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-2);
+  }
+  
+  .register-spinner {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  /* ===== LOGIN SECTION ===== */
+  .register-login-section {
+    text-align: center;
+    margin-top: var(--spacing-6);
+    padding-top: var(--spacing-6);
+    border-top: 1px solid var(--gray-200);
+  }
+  
+  .register-login-text {
+    color: var(--gray-600);
+    margin: 0;
+  }
+  
+  .register-login-btn {
+    font-weight: var(--font-weight-medium);
+    color: var(--secondary-blue);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: underline;
+    font-family: inherit;
+  }
+  
+  .register-login-btn:hover {
+    color: var(--primary-blue);
+  }
+  
+  /* ===== FOOTER ===== */
+  .register-footer {
+    text-align: center;
+    margin-top: var(--spacing-8);
+  }
+  
+  .register-footer-text {
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
+    margin: 0;
+  }
+  
+  /* ===== RESPONSIVE DESIGN ===== */
+  @media (max-width: 768px) {
+    .register-container {
+      padding: var(--spacing-2);
+    }
+    
+    .register-card {
+      max-width: 100%;
+    }
+    
+    .register-form-container {
+      padding: var(--spacing-6);
+    }
+    
+    .register-user-type-card {
+      padding: var(--spacing-4);
+    }
+    
+    .register-card-content {
+      gap: var(--spacing-3);
+    }
+    
+    .register-app-title {
+      font-size: var(--font-size-2xl);
+    }
+    
+    .register-step-title {
+      font-size: var(--font-size-lg);
+    }
+    
+    .register-subjects-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .register-progress-steps {
+      margin-bottom: var(--spacing-2);
+    }
+    
+    .register-progress-step {
+      width: 1.75rem;
+      height: 1.75rem;
+      font-size: 0.75rem;
+    }
+    
+    .register-progress-labels {
+      font-size: 0.75rem;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .register-form-container {
+      padding: var(--spacing-4);
+    }
+    
+    .register-form-group {
+      margin-bottom: var(--spacing-4);
+    }
+    
+    .register-user-type-card {
+      padding: var(--spacing-3);
+    }
+    
+    .register-card-content {
+      flex-direction: column;
+      text-align: center;
+      gap: var(--spacing-2);
+    }
+    
+    .register-card-text {
+      text-align: center;
+    }
+    
+    .register-selected-type {
+      flex-direction: column;
+      gap: var(--spacing-2);
+      text-align: center;
+    }
+    
+    .register-form-input {
+      font-size: 16px; /* Previne zoom no iOS */
+    }
+  }
+  
+  /* ===== ACCESSIBILITY ===== */
+  .register-form-input:focus,
+  .register-form-textarea:focus,
+  .register-password-toggle:focus,
+  .register-back-button:focus,
+  .register-change-type-btn:focus,
+  .register-login-btn:focus,
+  .register-next-btn:focus,
+  .register-submit-btn:focus {
+    outline: 2px solid var(--secondary-blue);
+    outline-offset: 2px;
+  }
+  
+  .register-user-type-card:focus {
+    outline: 2px solid var(--secondary-blue);
+    outline-offset: 2px;
+  }
+  
+  .register-subject-checkbox:focus-within {
+    outline: 2px solid var(--secondary-blue);
+    outline-offset: 2px;
+  }
+  
+  /* ===== PRINT STYLES ===== */
+  @media print {
+    .register-container {
+      background: white;
+      padding: 0;
+    }
+    
+    .register-back-button,
+    .register-password-toggle,
+    .register-next-btn,
+    .register-submit-btn,
+    .register-login-btn {
+      display: none;
+    }
+  }

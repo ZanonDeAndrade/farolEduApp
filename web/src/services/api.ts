@@ -1,19 +1,19 @@
-// API service functions
+// src/services/api.ts
 import type { Teacher } from '../types/teacher';
 import type { ContactForm } from '../types/contact';
 
-// Base API configuration
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+// URL base do backend
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 /**
- * Generic fetch wrapper with error handling
+ * Função genérica para requisições à API com tratamento de erros
  */
 const apiRequest = async <T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> => {
   const url = `${API_BASE_URL}${endpoint}`;
-  
+
   const defaultOptions: RequestInit = {
     headers: {
       'Content-Type': 'application/json',
@@ -22,67 +22,50 @@ const apiRequest = async <T>(
 
   try {
     const response = await fetch(url, { ...defaultOptions, ...options });
-    
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`Erro HTTP ${response.status}: ${errorText}`);
     }
-    
-    const data = await response.json();
-    return data;
+
+    return response.json() as Promise<T>;
   } catch (error) {
-    console.error(`API request failed for ${endpoint}:`, error);
+    console.error(`Falha na requisição API: ${endpoint}`, error);
     throw error;
   }
 };
 
 /**
- * Teacher-related API calls
+ * Serviços relacionados a professores
  */
 export const teacherService = {
   /**
-   * Get all teachers
+   * Buscar todos os professores
    */
   getAllTeachers: async (): Promise<Teacher[]> => {
-    // Simulate API call - replace with actual API
-    return new Promise(resolve => {
-      setTimeout(() => {
-        resolve([
-          {
-            id: '1',
-            name: 'Ana Souza',
-            subject: 'Matemática',
-            level: 'Ensino Médio',
-            image: '/placeholder.jpg',
-            profileUrl: '/professor/ana-souza'
-          }
-        ]);
-      }, 1000);
-    });
+    return apiRequest<Teacher[]>('/teachers', { method: 'GET' });
   },
 
   /**
-   * Search teachers by subject or name
+   * Buscar professores por nome ou matéria
    */
   searchTeachers: async (query: string): Promise<Teacher[]> => {
-    console.log('Searching for:', query);
-    return teacherService.getAllTeachers();
+    const encodedQuery = encodeURIComponent(query);
+    return apiRequest<Teacher[]>(`/teachers?search=${encodedQuery}`, { method: 'GET' });
   }
 };
 
 /**
- * Contact-related API calls
+ * Serviços relacionados a contato
  */
 export const contactService = {
   /**
-   * Submit contact form
+   * Enviar formulário de contato
    */
   submitContactForm: async (contactData: ContactForm): Promise<{ success: boolean; message: string }> => {
-    // Simulate API call
-    return new Promise(resolve => {
-      setTimeout(() => {
-        console.log('Contact form submitted:', contactData);
-        resolve({ success: true, message: 'Mensagem enviada com sucesso!' });
-      }, 1000);
+    return apiRequest<{ success: boolean; message: string }>('/contact', {
+      method: 'POST',
+      body: JSON.stringify(contactData),
     });
   }
 };
