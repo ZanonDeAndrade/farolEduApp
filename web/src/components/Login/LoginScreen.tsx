@@ -29,36 +29,48 @@ const LoginScreen: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!isFormValid) return;
-    setIsLoading(true);
+    if (!loginData.userType) return;
 
+    const email = loginData.email.trim().toLowerCase();
+    const password = loginData.password;
+
+    const isFormValid =
+      email.length > 0 &&
+      password.length > 0 &&
+      (loginData.userType === 'student' || loginData.userType === 'teacher');
+
+    if (!isFormValid) return;
+
+    setIsLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/users/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: loginData.email,
-          password: loginData.password,
-          userType: loginData.userType, // se o back usar isso
-        }),
+      const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+      const path =
+        loginData.userType === 'teacher'
+          ? '/api/professors/login'
+          : '/api/users/login';
+
+      const resp = await fetch(`${baseURL}${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }), // não enviar userType no body
       });
 
-      if (!response.ok) {
-        throw new Error("Email ou senha inválidos");
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err?.message || 'Email ou senha inválidos');
       }
 
-      const data = await response.json();
+      const data = await resp.json();
 
-      // Salvar token no localStorage
-      localStorage.setItem("token", data.token);
+      // Guarda token e perfil
+      localStorage.setItem('token', data.token);
+      const profile = data.teacher || data.user || data.student || {};
+      localStorage.setItem('profile', JSON.stringify(profile));
 
-      alert("Login realizado com sucesso!");
-      navigate("/dashboard");
+      navigate('/dashboard'); // ajuste o destino se quiser
     } catch (err: any) {
-      console.error("Erro no login:", err);
-      alert(err.message || "Erro ao fazer login");
+      console.error('Erro no login:', err);
+      alert(err?.message || 'Erro ao fazer login');
     } finally {
       setIsLoading(false);
     }
@@ -68,7 +80,10 @@ const LoginScreen: React.FC = () => {
     navigate('/register');
   };
 
-  const isFormValid = loginData.email && loginData.password && loginData.userType;
+  const isFormValid =
+    loginData.email.trim().length > 0 &&
+    loginData.password.length > 0 &&
+    !!loginData.userType;
 
   return (
     <div className="login-screen-container">
@@ -128,11 +143,16 @@ const LoginScreen: React.FC = () => {
                 {/* Tipo de usuário selecionado */}
                 <div className="login-selected-type-indicator">
                   <div className="login-type-display">
-                    <div className={`login-type-icon ${loginData.userType === 'student' ? 'login-student-bg' : 'login-teacher-bg'}`}>
-                      {loginData.userType === 'student'
-                        ? <User className="login-small-icon" />
-                        : <GraduationCap className="login-small-icon" />
-                      }
+                    <div
+                      className={`login-type-icon ${
+                        loginData.userType === 'student' ? 'login-student-bg' : 'login-teacher-bg'
+                      }`}
+                    >
+                      {loginData.userType === 'student' ? (
+                        <User className="login-small-icon" />
+                      ) : (
+                        <GraduationCap className="login-small-icon" />
+                      )}
                     </div>
                     <span className="login-type-label">
                       {loginData.userType === 'student' ? 'Estudante' : 'Professor'}
