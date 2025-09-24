@@ -1,12 +1,20 @@
 import { Router } from "express";
-import { registerUser, loginUser, listUsers, getUser } from "../controller/userController";
 import { authenticate } from "../middlewares/authMiddleware";
+import {
+  registerStudent,
+  loginStudent,
+  listStudents,
+  getStudent,
+} from "../controller/userController";
 
 const router = Router();
 
-router.post("/register", registerUser);
-router.post("/login", loginUser);
-router.get("/", authenticate, listUsers);
-router.get("/:id", authenticate, getUser);
+// Público
+router.post("/register", registerStudent);
+router.post("/login", loginStudent);
+
+// Protegidas
+router.get("/", authenticate, listStudents);
+router.get("/:id", authenticate, getStudent);
 
 export default router;
