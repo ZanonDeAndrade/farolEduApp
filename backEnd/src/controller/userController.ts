@@ -1,44 +1,115 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { createUser, findUserByEmail, getAllUsers, findUserById } from "../modules/userModel";
+import { prisma } from "../config/db";
+import { JWT_SECRET } from "../config/env";
 
-const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
+// Cadastro de estudante
+export const registerStudent = async (req: Request, res: Response) => {
+  try {
+    const { name, email, password } = req.body ?? {};
 
-export const registerUser = async (req: Request, res: Response) => {
-  const { name, email, password, role } = req.body;
-  if (!name || !email || !password || !role)
-    return res.status(400).json({ message: "Dados incompletos" });
+    // ⚠️ Apenas o que o backend precisa!
+    if (!name?.trim() || !email?.trim() || !password?.trim()) {
+      return res.status(400).json({ message: "Dados incompletos" });
+    }
 
-  const existingUser = await findUserByEmail(email);
-  if (existingUser) return res.status(400).json({ message: "Email já cadastrado" });
+    const hashed = await bcrypt.hash(password, 10);
 
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const user = await createUser({ name, email, password: hashedPassword, role });
+    const user = await prisma.user.create({
+      data: {
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        password: hashed,
+        role: "student",
+      },
+      select: { id: true, name: true, email: true, role: true },
+    });
 
-  res.status(201).json({ id: user.id, name: user.name, email: user.email, role: user.role });
+    return res.status(201).json(user);
+  } catch (err: any) {
+    // P2002 = email duplicado
+    if (err?.code === "P2002") {
+      return res.status(409).json({ message: "E-mail já cadastrado" });
+    }
+    console.error("Erro ao cadastrar estudante:", err);
+    return res.status(500).json({ message: "Erro interno no servidor" });
+  }
 };
 
-export const loginUser = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
-  const user = await findUserByEmail(email);
-  if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
+// Login de estudante
+export const loginStudent = async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body ?? {};
 
-  const isValid = await bcrypt.compare(password, user.password);
-  if (!isValid) return res.status(401).json({ message: "Senha incorreta" });
+    if (!email?.trim() || !password?.trim()) {
+      return res.status(400).json({ message: "Email e senha obrigatórios" });
+    }
 
-  const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: "1d" });
-  res.json({ token, role: user.role });
+    const student = await prisma.user.findFirst({
+      where: {
+        email: { equals: email.trim().toLowerCase(), mode: "insensitive" },
+        role: { equals: "student", mode: "insensitive" },
+      },
+      select: { id: true, name: true, email: true, role: true, password: true },
+    });
+
+    if (!student) {
+      return res.status(401).json({ message: "Estudante não encontrado" });
+    }
+
+    const ok = await bcrypt.compare(password, student.password);
+    if (!ok) return res.status(401).json({ message: "Senha inválida" });
+
+    const token = jwt.sign({ id: student.id, role: student.role }, JWT_SECRET, { expiresIn: "1h" });
+
+    return res.json({
+      message: "Login realizado com sucesso",
+      token,
+      user: { id: student.id, name: student.name, email: student.email, role: student.role },
+    });
+  } catch (err) {
+    console.error("Erro no login de estudante:", err);
+    return res.status(500).json({ message: "Erro interno no servidor" });
+  }
 };
 
-export const listUsers = async (_req: Request, res: Response) => {
-  const users = await getAllUsers();
-  res.json(users);
+// Listar estudantes
+export const listStudents = async (_req: Request, res: Response) => {
+  try {
+    const students = await prisma.user.findMany({
+      where: { role: { equals: "student", mode: "insensitive" } },
+      select: { id: true, name: true, email: true, role: true },
+      orderBy: { id: "asc" },
+    });
+
+    if (!students.length) {
+      return res.status(404).json({ message: "Nenhum estudante encontrado" });
+    }
+
+    return res.json(students);
+  } catch (err) {
+    console.error("Erro ao listar estudantes:", err);
+    return res.status(500).json({ message: "Erro interno no servidor" });
+  }
 };
 
-export const getUser = async (req: Request, res: Response) => {
-  const id = Number(req.params.id);
-  const user = await findUserById(id);
-  if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
-  res.json(user);
+// Buscar estudante por ID
+export const getStudent = async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "ID inválido" });
+
+    const student = await prisma.user.findFirst({
+      where: { id, role: { equals: "student", mode: "insensitive" } },
+      select: { id: true, name: true, email: true, role: true },
+    });
+
+    if (!student) return res.status(404).json({ message: "Estudante não encontrado" });
+
+    return res.json(student);
+  } catch (err) {
+    console.error("Erro ao buscar estudante:", err);
+    return res.status(500).json({ message: "Erro interno no servidor" });
+  }
 };
