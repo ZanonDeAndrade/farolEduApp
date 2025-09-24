@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { User, GraduationCap, Mail, Lock, Eye, EyeOff, ArrowLeft, Phone, MapPin } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { User, GraduationCap, Mail, Lock, Eye, EyeOff, ArrowLeft, Phone, MapPin, CheckCircle, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './RegisterScreen.css';
 import { registerTeacher, loginTeacher, registerStudent, loginStudent } from "../../services/auth";
@@ -36,6 +36,16 @@ const RegisterScreen = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [popup, setPopup] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const redirectTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current) {
+        window.clearTimeout(redirectTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleUserTypeSelect = (type: 'student' | 'teacher') => {
     setRegisterData(prev => ({ ...prev, userType: type }));
@@ -63,6 +73,11 @@ const RegisterScreen = () => {
     if (registerData.password !== registerData.confirmPassword) return;
   
     setIsLoading(true);
+    setPopup(null);
+    if (redirectTimeoutRef.current) {
+      window.clearTimeout(redirectTimeoutRef.current);
+      redirectTimeoutRef.current = null;
+    }
     try {
       const payload = {
         name: registerData.name.trim(),
@@ -82,21 +97,33 @@ const RegisterScreen = () => {
         await loginStudent({ email: payload.email, password: payload.password });
       }
   
-      // sucesso → redireciona
-      navigate("/login"); // ou direto pro dashboard: navigate("/dashboard")
+      setPopup({ type: 'success', message: 'Conta criada com sucesso! Redirecionando para o login...' });
+
+      redirectTimeoutRef.current = window.setTimeout(() => {
+        navigate("/login"); // ou direto pro dashboard: navigate("/dashboard")
+        redirectTimeoutRef.current = null;
+      }, 1400);
     } catch (err: any) {
       const status = err?.response?.status;
       const message = err?.response?.data?.message || "Erro ao criar conta";
       if (status === 409) {
-        alert("E-mail já cadastrado");
+        setPopup({ type: 'error', message: 'Usuário já cadastrado. Tente fazer login ou recuperar a senha.' });
       } else {
-        alert(message);
+        setPopup({ type: 'error', message });
       }
     } finally {
       setIsLoading(false);
     }
   };
-  
+
+  const handleClosePopup = () => {
+    if (redirectTimeoutRef.current) {
+      window.clearTimeout(redirectTimeoutRef.current);
+      redirectTimeoutRef.current = null;
+    }
+    setPopup(null);
+  };
+
 
   const goBack = () => {
     if (currentStep === 1) {
@@ -126,6 +153,30 @@ const RegisterScreen = () => {
 
   return (
     <div className="register-container">
+      {popup && (
+        <div className="register-popup-overlay" role="alert">
+          <div
+            className={`register-popup-card ${
+              popup.type === 'success' ? 'register-popup-success' : 'register-popup-error'
+            }`}
+          >
+            <div className="register-popup-header">
+              {popup.type === 'success' ? (
+                <CheckCircle className="register-popup-icon" />
+              ) : (
+                <XCircle className="register-popup-icon" />
+              )}
+              <strong className="register-popup-title">
+                {popup.type === 'success' ? 'Conta criada' : 'Não foi possível criar a conta'}
+              </strong>
+            </div>
+            <p className="register-popup-message">{popup.message}</p>
+            <button type="button" className="register-popup-close" onClick={handleClosePopup}>
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
       <div className="register-card">
         {/* Header */}
         <div className="register-header">
