@@ -1,23 +1,15 @@
-generator client {
-  provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
 model User {
   id        Int      @id @default(autoincrement())
   name      String
   email     String   @unique
   password  String
-  role      String   // "student" ou "teacher"
+  role      String   // "student" | "teacher"
   createdAt DateTime @default(now())
 
-  // Relações
   studentSchedules Schedule[] @relation("StudentSchedules")
   teacherSchedules Schedule[] @relation("TeacherSchedules")
+
+  @@map("users") // <-- tabela física "users"
 }
 
 model Schedule {
@@ -29,4 +21,6 @@ model Schedule {
 
   student User @relation("StudentSchedules", fields: [studentId], references: [id])
   teacher User @relation("TeacherSchedules", fields: [teacherId], references: [id])
+
+  @@map("schedules")
 }

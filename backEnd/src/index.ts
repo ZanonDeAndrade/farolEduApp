@@ -1,11 +1,10 @@
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import userRoutes from "./routes/userRoutes";
 import professorRoutes from "./routes/professorRoutes";
 import scheduleRoutes from "./routes/scheduleRoutes";
+import { PORT } from "./config/env";
 
-dotenv.config();
 const app = express();
 
 app.use(cors());
@@ -15,5 +14,4 @@ app.use("/api/users", userRoutes);
 app.use("/api/professors", professorRoutes);
 app.use("/api/schedules", scheduleRoutes);
 
-const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
