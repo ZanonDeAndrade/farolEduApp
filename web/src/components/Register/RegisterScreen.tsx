@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { User, GraduationCap, Mail, Lock, Eye, EyeOff, ArrowLeft, Phone, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './RegisterScreen.css';
+import { registerTeacher, loginTeacher, registerStudent, loginStudent } from "../../services/auth";
+
 
 interface RegisterData {
   name: string;
@@ -57,13 +59,44 @@ const RegisterScreen = () => {
   };
 
   const handleSubmit = async () => {
+    if (!registerData.userType) return;
+    if (registerData.password !== registerData.confirmPassword) return;
+  
     setIsLoading(true);
-    setTimeout(() => {
-      console.log('Register data:', registerData);
+    try {
+      const payload = {
+        name: registerData.name.trim(),
+        email: registerData.email.trim().toLowerCase(),
+        password: registerData.password,
+      };
+  
+      if (registerData.userType === "teacher") {
+        // cria professor no backend
+        await registerTeacher(payload);
+        // login professor
+        await loginTeacher({ email: payload.email, password: payload.password });
+      } else {
+        // cria aluno no backend
+        await registerStudent(payload);
+        // login aluno
+        await loginStudent({ email: payload.email, password: payload.password });
+      }
+  
+      // sucesso → redireciona
+      navigate("/login"); // ou direto pro dashboard: navigate("/dashboard")
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const message = err?.response?.data?.message || "Erro ao criar conta";
+      if (status === 409) {
+        alert("E-mail já cadastrado");
+      } else {
+        alert(message);
+      }
+    } finally {
       setIsLoading(false);
-      navigate('/login');
-    }, 2000);
+    }
   };
+  
 
   const goBack = () => {
     if (currentStep === 1) {
