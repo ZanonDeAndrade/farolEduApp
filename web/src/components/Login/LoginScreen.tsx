@@ -11,7 +11,7 @@ interface LoginData {
 
 const LoginScreen: React.FC = () => {
   const navigate = useNavigate();
-  
+
   const [loginData, setLoginData] = useState<LoginData>({
     email: '',
     password: '',
@@ -29,15 +29,39 @@ const LoginScreen: React.FC = () => {
   };
 
   const handleSubmit = async () => {
+    if (!isFormValid) return;
     setIsLoading(true);
 
-    // Simular chamada de API
-    setTimeout(() => {
-      console.log('Login data:', loginData);
+    try {
+      const response = await fetch("http://localhost:5000/api/users/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: loginData.email,
+          password: loginData.password,
+          userType: loginData.userType, // se o back usar isso
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Email ou senha inválidos");
+      }
+
+      const data = await response.json();
+
+      // Salvar token no localStorage
+      localStorage.setItem("token", data.token);
+
+      alert("Login realizado com sucesso!");
+      navigate("/dashboard");
+    } catch (err: any) {
+      console.error("Erro no login:", err);
+      alert(err.message || "Erro ao fazer login");
+    } finally {
       setIsLoading(false);
-      // Aqui você faria o redirect após login bem-sucedido
-      // navigate('/dashboard');
-    }, 2000);
+    }
   };
 
   const handleCreateAccount = () => {
@@ -105,9 +129,9 @@ const LoginScreen: React.FC = () => {
                 <div className="login-selected-type-indicator">
                   <div className="login-type-display">
                     <div className={`login-type-icon ${loginData.userType === 'student' ? 'login-student-bg' : 'login-teacher-bg'}`}>
-                      {loginData.userType === 'student' ? 
-                        <User className="login-small-icon" /> : 
-                        <GraduationCap className="login-small-icon" />
+                      {loginData.userType === 'student'
+                        ? <User className="login-small-icon" />
+                        : <GraduationCap className="login-small-icon" />
                       }
                     </div>
                     <span className="login-type-label">
@@ -170,9 +194,9 @@ const LoginScreen: React.FC = () => {
                   onClick={handleSubmit}
                   disabled={!isFormValid || isLoading}
                   className={`login-submit-btn ${
-                    isFormValid && !isLoading 
-                      ? loginData.userType === 'student' 
-                        ? 'login-btn-student' 
+                    isFormValid && !isLoading
+                      ? loginData.userType === 'student'
+                        ? 'login-btn-student'
                         : 'login-btn-teacher'
                       : 'login-btn-disabled'
                   }`}
@@ -203,7 +227,7 @@ const LoginScreen: React.FC = () => {
 
         {/* Footer */}
         <div className="login-footer">
-          <p className="login-footer-text">© 2025 EduConnect. Todos os direitos reservados.</p>
+          <p className="login-footer-text">© 2025 FarolEdu. Todos os direitos reservados.</p>
         </div>
       </div>
     </div>

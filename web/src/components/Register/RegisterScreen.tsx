@@ -105,7 +105,7 @@ const RegisterScreen = () => {
             <div className="register-logo-container">
               <GraduationCap className="register-logo-icon" />
             </div>
-            <h1 className="register-app-title">EduConnect</h1>
+            <h1 className="register-app-title">FarolEdu</h1>
             <p className="register-app-subtitle">Crie sua conta</p>
           </div>
 
