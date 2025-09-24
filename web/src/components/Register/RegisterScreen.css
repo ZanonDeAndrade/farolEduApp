@@ -662,7 +662,113 @@
     color: var(--gray-600);
     margin: 0;
   }
-  
+
+  /* ===== POPUP ===== */
+  .register-popup-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-4);
+    background: rgba(17, 24, 39, 0.45);
+    backdrop-filter: blur(2px);
+    z-index: 999;
+  }
+
+  .register-popup-card {
+    width: 100%;
+    max-width: 24rem;
+    background: var(--white);
+    border-radius: var(--border-radius-xl);
+    box-shadow: var(--shadow-lg);
+    padding: var(--spacing-6);
+    border: 2px solid transparent;
+    animation: register-popup-fade 0.25s ease-out;
+  }
+
+  .register-popup-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    margin-bottom: var(--spacing-3);
+  }
+
+  .register-popup-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
+  .register-popup-title {
+    font-size: var(--font-size-xl);
+    color: var(--gray-900);
+  }
+
+  .register-popup-message {
+    color: var(--gray-700);
+    margin-bottom: var(--spacing-4);
+    line-height: 1.4;
+  }
+
+  .register-popup-close {
+    width: 100%;
+    padding: var(--spacing-3);
+    border: none;
+    border-radius: var(--border-radius-lg);
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    transition: background 0.2s ease-in-out;
+  }
+
+  .register-popup-success {
+    border-color: rgba(59, 130, 246, 0.35);
+  }
+
+  .register-popup-success .register-popup-icon {
+    color: var(--secondary-blue);
+  }
+
+  .register-popup-success .register-popup-close {
+    background: linear-gradient(135deg, var(--secondary-blue), var(--primary-blue));
+    color: var(--white);
+  }
+
+  .register-popup-success .register-popup-close:hover {
+    opacity: 0.9;
+  }
+
+  .register-popup-error {
+    border-color: rgba(239, 68, 68, 0.35);
+  }
+
+  .register-popup-error .register-popup-icon {
+    color: #ef4444;
+  }
+
+  .register-popup-error .register-popup-title {
+    color: #b91c1c;
+  }
+
+  .register-popup-error .register-popup-close {
+    background: #fee2e2;
+    color: #b91c1c;
+  }
+
+  .register-popup-error .register-popup-close:hover {
+    background: #fecaca;
+  }
+
+  @keyframes register-popup-fade {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   /* ===== RESPONSIVE DESIGN ===== */
   @media (max-width: 768px) {
     .register-container {

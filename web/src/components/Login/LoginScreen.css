@@ -468,6 +468,112 @@
   margin: 0;
 }
 
+/* Popup */
+.login-popup-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-4);
+  background: rgba(17, 24, 39, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 999;
+}
+
+.login-popup-card {
+  width: 100%;
+  max-width: 24rem;
+  background: var(--white);
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-lg);
+  padding: var(--spacing-6);
+  border: 2px solid transparent;
+  animation: login-popup-fade 0.25s ease-out;
+}
+
+.login-popup-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-3);
+}
+
+.login-popup-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.login-popup-title {
+  font-size: var(--font-size-xl);
+  color: var(--gray-900);
+}
+
+.login-popup-message {
+  color: var(--gray-700);
+  margin-bottom: var(--spacing-4);
+  line-height: 1.4;
+}
+
+.login-popup-close {
+  width: 100%;
+  padding: var(--spacing-3);
+  border: none;
+  border-radius: var(--border-radius-lg);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: background 0.2s ease-in-out;
+}
+
+.login-popup-success {
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+.login-popup-success .login-popup-icon {
+  color: var(--secondary-blue);
+}
+
+.login-popup-success .login-popup-close {
+  background: linear-gradient(135deg, var(--secondary-blue), var(--primary-blue));
+  color: var(--white);
+}
+
+.login-popup-success .login-popup-close:hover {
+  opacity: 0.9;
+}
+
+.login-popup-error {
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.login-popup-error .login-popup-icon {
+  color: #ef4444;
+}
+
+.login-popup-error .login-popup-title {
+  color: #b91c1c;
+}
+
+.login-popup-error .login-popup-close {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.login-popup-error .login-popup-close:hover {
+  background: #fecaca;
+}
+
+@keyframes login-popup-fade {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .login-screen-container {

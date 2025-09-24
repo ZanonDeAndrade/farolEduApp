@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { User, GraduationCap, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { User, GraduationCap, Mail, Lock, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './LoginScreen.css';
 
@@ -19,6 +19,16 @@ const LoginScreen: React.FC = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [popup, setPopup] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const redirectTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current) {
+        window.clearTimeout(redirectTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleUserTypeSelect = (type: 'student' | 'teacher') => {
     setLoginData(prev => ({ ...prev, userType: type }));
@@ -42,6 +52,11 @@ const LoginScreen: React.FC = () => {
     if (!isFormValid) return;
 
     setIsLoading(true);
+    setPopup(null);
+    if (redirectTimeoutRef.current) {
+      window.clearTimeout(redirectTimeoutRef.current);
+      redirectTimeoutRef.current = null;
+    }
     try {
       const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
       const path =
@@ -66,11 +81,15 @@ const LoginScreen: React.FC = () => {
       localStorage.setItem('token', data.token);
       const profile = data.teacher || data.user || data.student || {};
       localStorage.setItem('profile', JSON.stringify(profile));
+      setPopup({ type: 'success', message: 'Login realizado com sucesso! Redirecionando...' });
 
-      navigate('/dashboard'); // ajuste o destino se quiser
+      redirectTimeoutRef.current = window.setTimeout(() => {
+        navigate('/dashboard'); // ajuste o destino se quiser
+        redirectTimeoutRef.current = null;
+      }, 1200);
     } catch (err: any) {
       console.error('Erro no login:', err);
-      alert(err?.message || 'Erro ao fazer login');
+      setPopup({ type: 'error', message: err?.message || 'Erro ao fazer login' });
     } finally {
       setIsLoading(false);
     }
@@ -85,8 +104,40 @@ const LoginScreen: React.FC = () => {
     loginData.password.length > 0 &&
     !!loginData.userType;
 
+  const handleClosePopup = () => {
+    if (redirectTimeoutRef.current) {
+      window.clearTimeout(redirectTimeoutRef.current);
+      redirectTimeoutRef.current = null;
+    }
+    setPopup(null);
+  };
+
   return (
     <div className="login-screen-container">
+      {popup && (
+        <div className="login-popup-overlay" role="alert">
+          <div
+            className={`login-popup-card ${
+              popup.type === 'success' ? 'login-popup-success' : 'login-popup-error'
+            }`}
+          >
+            <div className="login-popup-header">
+              {popup.type === 'success' ? (
+                <CheckCircle className="login-popup-icon" />
+              ) : (
+                <XCircle className="login-popup-icon" />
+              )}
+              <strong className="login-popup-title">
+                {popup.type === 'success' ? 'Sucesso' : 'Algo deu errado'}
+              </strong>
+            </div>
+            <p className="login-popup-message">{popup.message}</p>
+            <button type="button" className="login-popup-close" onClick={handleClosePopup}>
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
       <div className="login-screen-card">
         {/* Header */}
         <div className="login-screen-header">
