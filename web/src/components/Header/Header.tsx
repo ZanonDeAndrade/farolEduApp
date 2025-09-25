@@ -21,15 +21,23 @@ const Header: React.FC = () => {
     <header className="header">
       <div className="container">
         <nav className="nav" aria-label="Navegação principal">
-          <div className="nav-left">
-            <Link to="/" className="logo" aria-label="FarolEdu" onClick={closeMenu}>
-              <img src={LogoImage} alt="FarolEdu" className="logo-icon" />
-            </Link>
+          <Link to="/" className="logo" aria-label="FarolEdu" onClick={closeMenu}>
+            <img src={LogoImage} alt="FarolEdu" className="logo-icon" />
+          </Link>
 
-            <Link to="/login" className="nav-login" onClick={closeMenu}>
-              Entrar / Cadastrar
-            </Link>
-          </div>
+          <ul className={`nav-links ${isMenuOpen ? 'is-open' : ''}`} id="primary-navigation">
+            {NAV_ITEMS.map(item => (
+              <li key={item.href}>
+                <a href={item.href} className="nav-link" onClick={closeMenu}>
+                  {item.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+
+          <Link to="/login" className="nav-login" onClick={closeMenu}>
+            Entrar / Cadastrar
+          </Link>
 
           <button
             type="button"
@@ -41,16 +49,6 @@ const Header: React.FC = () => {
           >
             {isMenuOpen ? <X /> : <Menu />}
           </button>
-
-          <ul className={`nav-links ${isMenuOpen ? 'is-open' : ''}`} id="primary-navigation">
-            {NAV_ITEMS.map(item => (
-              <li key={item.href}>
-                <a href={item.href} className="nav-link" onClick={closeMenu}>
-                  {item.label}
-                </a>
-              </li>
-            ))}
-          </ul>
         </nav>
       </div>
     </header>
