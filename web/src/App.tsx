@@ -5,7 +5,6 @@ import Hero from './components/Hero/Hero';
 import AboutSection from './components/AboutSection/AboutSection';
 import TeacherSection from './components/TeacherSection/TeacherSection';
 import AvailableClasses from './components/AvailableClass/AvailableClass';
-import ContactSection from './components/ContactSection/ContactSection';
 import Footer from './components/Footer/Footer';
 import LoginScreen from './components/Login/LoginScreen';
 import './App.css';
@@ -14,10 +13,9 @@ import RegisterScreen from './components/Register/RegisterScreen';
 const HomePage: React.FC = () => (
   <>
     <Hero />
+    <AvailableClasses />
     <AboutSection />
     <TeacherSection />
-    <AvailableClasses />
-    <ContactSection />
   </>
 );
 

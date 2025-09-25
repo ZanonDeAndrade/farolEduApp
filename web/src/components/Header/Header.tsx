@@ -6,9 +6,9 @@ import './Header.css';
 
 const NAV_ITEMS = [
   { label: 'Início', href: '#inicio' },
-  { label: 'Oferecer Aula', href: '#oferecer-aula' },
   { label: 'Sobre', href: '#sobre' },
-  { label: 'Contato', href: '#contato' },
+  { label: 'Oferecer Aula', href: '#oferecer-aula' }
+  
 ];
 
 const Header: React.FC = () => {
