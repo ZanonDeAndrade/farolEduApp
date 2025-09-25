@@ -1,16 +1,7 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Search, MapPin, Sparkles, GraduationCap, Users, Wifi } from 'lucide-react';
 import './Hero.css';
 import FarolImage from '../../assets/ImagemFarol.png';
-
-const NAV_ITEMS = [
-  { label: 'Início', href: '#inicio' },
-  { label: 'Oferecer Aula', href: '#oferecer-aula' },
-  { label: 'Sobre', href: '#sobre' },
-  { label: 'Contato', href: '#contato' },
-];
-
 
 const Hero: React.FC = () => {
   const [formData, setFormData] = useState({ subject: '', location: '' });
@@ -32,22 +23,6 @@ const Hero: React.FC = () => {
   return (
     <section className="hero" id="inicio">
       <div className="container">
-        <nav className="hero-navigation" aria-label="Navegação principal">
-          <ul className="hero-nav-links">
-            {NAV_ITEMS.map(item => (
-              <li key={item.href}>
-                <a className="hero-nav-link" href={item.href}>
-                  {item.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-
-          <Link to="/login" className="hero-nav-login">
-            <button type="button">Entrar / Cadastrar</button>
-          </Link>
-        </nav>
-
         <div className="hero-shell">
           <div className="hero-info">
             <span className="hero-eyebrow">
