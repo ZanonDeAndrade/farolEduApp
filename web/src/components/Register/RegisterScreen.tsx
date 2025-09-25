@@ -3,6 +3,7 @@ import { User, GraduationCap, Mail, Lock, Eye, EyeOff, ArrowLeft, Phone, MapPin,
 import { useNavigate } from 'react-router-dom';
 import './RegisterScreen.css';
 import { registerTeacher, loginTeacher, registerStudent, loginStudent } from "../../services/auth";
+import LogoImage from '../../assets/Logo.png';
 
 
 interface RegisterData {
@@ -187,7 +188,7 @@ const RegisterScreen = () => {
 
           <div className="register-logo-section">
             <div className="register-logo-container">
-              <GraduationCap className="register-logo-icon" />
+              <img src={LogoImage} alt="FarolEdu" className="register-logo-icon" />
             </div>
             <h1 className="register-app-title">FarolEdu</h1>
             <p className="register-app-subtitle">Crie sua conta</p>

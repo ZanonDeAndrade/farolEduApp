@@ -1,102 +1,118 @@
 .teacher-card {
-    background: var(--white);
-    border-radius: var(--border-radius-lg);
-    box-shadow: var(--shadow-md);
-    padding: var(--spacing-6);
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  position: relative;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.92), rgba(243, 232, 255, 0.9));
+  border-radius: 24px;
+  padding: 2rem 2.1rem;
+  box-shadow: 0 26px 48px rgba(148, 163, 184, 0.2);
+  border: 1px solid rgba(124, 58, 237, 0.08);
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.teacher-card::before {
+  content: '';
+  position: absolute;
+  inset: -40% auto auto -35%;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.22) 0%, rgba(249, 115, 22, 0) 70%);
+  z-index: 0;
+}
+
+.teacher-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 32px 60px rgba(124, 58, 237, 0.26);
+}
+
+.card-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 1.4rem;
+  z-index: 1;
+}
+
+.teacher-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: linear-gradient(140deg, var(--primary-blue), #a855f7);
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  font-weight: 700;
+  box-shadow: 0 16px 32px rgba(124, 58, 237, 0.35);
+}
+
+.subject-info {
+  flex: 1;
+}
+
+.subject {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 0.2rem;
+}
+
+.level {
+  font-size: 0.95rem;
+  color: #475569;
+}
+
+.description {
+  margin-top: 0.4rem;
+  font-size: 0.92rem;
+  color: #64748b;
+}
+
+.card-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.28);
+  padding-top: 1.25rem;
+}
+
+.teacher-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.teacher-card .btn {
+  border-radius: 999px;
+  padding: 0.6rem 1.4rem;
+  font-size: 0.98rem;
+}
+
+@media (max-width: 768px) {
+  .teacher-card {
+    padding: 1.6rem 1.75rem;
   }
-  
-  .teacher-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-  }
-  
+
   .card-header {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-4);
-    margin-bottom: var(--spacing-4);
+    gap: 1rem;
   }
-  
+
   .teacher-avatar {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: var(--font-size-xl);
-    font-weight: var(--font-weight-bold);
-    border: 3px solid var(--light-blue);
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
   }
-  
-  .subject-info {
-    flex: 1;
-  }
-  
-  .subject {
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-semibold);
-    color: var(--gray-900);
-    margin-bottom: var(--spacing-1);
-  }
-  
-  .level {
-    font-size: var(--font-size-sm);
-    color: var(--gray-600);
-    display: block;
-  }
-  
-  .description {
-    font-size: var(--font-size-sm);
-    color: var(--gray-600);
-    display: block;
-    margin-top: var(--spacing-1);
-  }
-  
+
   .card-body {
-    border-top: 1px solid var(--gray-200);
-    padding-top: var(--spacing-4);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
   }
-  
-  .teacher-name {
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-semibold);
-    color: var(--gray-900);
+
+  .teacher-card .btn {
+    width: 100%;
   }
-  
-  @media (max-width: 768px) {
-    .teacher-card {
-      padding: var(--spacing-4);
-    }
-    
-    .card-header {
-      gap: var(--spacing-3);
-      margin-bottom: var(--spacing-3);
-    }
-    
-    .teacher-avatar {
-      width: 50px;
-      height: 50px;
-      font-size: var(--font-size-lg);
-    }
-    
-    .subject {
-      font-size: var(--font-size-base);
-    }
-    
-    .teacher-name {
-      font-size: var(--font-size-base);
-    }
-    
-    .card-body {
-      flex-direction: column;
-      gap: var(--spacing-3);
-      align-items: stretch;
-    }
-  }
+}
