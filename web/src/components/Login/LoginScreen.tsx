@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { User, GraduationCap, Mail, Lock, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './LoginScreen.css';
+import LogoImage from '../../assets/Logo.png';
 
 interface LoginData {
   email: string;
@@ -142,7 +143,7 @@ const LoginScreen: React.FC = () => {
         {/* Header */}
         <div className="login-screen-header">
           <div className="login-logo-container">
-            <GraduationCap className="login-logo-icon" />
+            <img src={LogoImage} alt="FarolEdu" className="login-logo-icon" />
           </div>
           <h1 className="login-app-title">FarolEdu</h1>
           <p className="login-app-subtitle">Conectando estudantes e professores</p>
