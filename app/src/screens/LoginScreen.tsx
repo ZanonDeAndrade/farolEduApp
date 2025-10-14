@@ -27,25 +27,13 @@ import {
   XCircle,
 } from 'lucide-react-native';
 import type { RootStackParamList } from '../navigation/types';
+import { persistValue } from '../utils/storage';
 
 type UserType = 'student' | 'teacher' | null;
 
 type PopupState = {
   type: 'success' | 'error';
   message: string;
-};
-
-const memoryStorage: Record<string, string> = {};
-
-const persistValue = async (key: string, value: string) => {
-  try {
-    memoryStorage[key] = value;
-    if (typeof globalThis !== 'undefined') {
-      (globalThis as Record<string, unknown>)[`__farol_${key}`] = value;
-    }
-  } catch (storageError) {
-    console.warn(`Não foi possível armazenar ${key}:`, storageError);
-  }
 };
 
 const LoginScreen: React.FC = () => {
