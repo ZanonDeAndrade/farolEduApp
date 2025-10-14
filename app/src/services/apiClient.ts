@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
 import Constants from 'expo-constants';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -24,10 +24,19 @@ const sanitizeURL = (url: string) => url.replace(/\/+$/, '');
 
 const toHost = (value?: string | null) => {
   if (!value) return undefined;
-  const [host] = value.split(':');
+
+  const cleaned = value
+    .trim()
+    .replace(/^(exp|http|https|ws|wss):\/\//i, '')
+    .replace(/\?.*$/, '')
+    .replace(/\/$/, '');
+
+  const [host] = cleaned.split(':');
+
   if (!host || host === 'localhost' || host === '127.0.0.1') {
     return undefined;
   }
+
   return host;
 };
 
@@ -60,6 +69,28 @@ const getExpoHost = () => {
   return expoConfigHost;
 };
 
+const getScriptHost = () => {
+  const sourceCode = (NativeModules as Record<string, { scriptURL?: string }>).SourceCode;
+  const scriptURL = sourceCode?.scriptURL;
+
+  if (typeof scriptURL !== 'string' || !scriptURL.length) {
+    return undefined;
+  }
+
+  try {
+    const url = new URL(scriptURL);
+    const host = url.hostname;
+
+    if (!host || host === 'localhost' || host === '127.0.0.1') {
+      return undefined;
+    }
+
+    return host;
+  } catch {
+    return undefined;
+  }
+};
+
 const getExtraBaseURL = () => {
   const constantsAny = Constants as Record<string, unknown>;
   const candidates = [
@@ -82,6 +113,11 @@ const getExtraBaseURL = () => {
 };
 
 const getDefaultBaseURL = () => {
+  const scriptHost = getScriptHost();
+  if (scriptHost) {
+    return `http://${scriptHost}:5000`;
+  }
+
   const expoHost = getExpoHost();
   if (expoHost) {
     return `http://${expoHost}:5000`;
@@ -94,18 +130,36 @@ const getDefaultBaseURL = () => {
   return 'http://localhost:5000';
 };
 
+let cachedBaseURL: string | null = null;
+
 const getBaseURL = () => {
+  if (cachedBaseURL) {
+    return cachedBaseURL;
+  }
+
   const envURL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
   if (envURL) {
-    return sanitizeURL(envURL);
+    cachedBaseURL = sanitizeURL(envURL);
+    if (__DEV__) {
+      console.info('[apiClient] usando EXPO_PUBLIC_API_BASE_URL=', cachedBaseURL);
+    }
+    return cachedBaseURL;
   }
 
   const extraURL = getExtraBaseURL();
   if (extraURL) {
-    return extraURL;
+    cachedBaseURL = extraURL;
+    if (__DEV__) {
+      console.info('[apiClient] usando extra.apiBaseUrl=', cachedBaseURL);
+    }
+    return cachedBaseURL;
   }
 
-  return sanitizeURL(getDefaultBaseURL());
+  cachedBaseURL = sanitizeURL(getDefaultBaseURL());
+  if (__DEV__) {
+    console.info('[apiClient] usando fallback baseURL=', cachedBaseURL);
+  }
+  return cachedBaseURL;
 };
 
 const buildURL = (path: string) => {
