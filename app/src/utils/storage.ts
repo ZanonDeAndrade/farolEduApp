@@ -26,3 +26,14 @@ export const getPersistedValue = (key: string): string | undefined => {
 
   return undefined;
 };
+
+export const removePersistedValue = async (key: string) => {
+  try {
+    delete memoryStorage[key];
+    if (typeof globalThis !== 'undefined') {
+      delete (globalThis as Record<string, unknown>)[`__farol_${key}`];
+    }
+  } catch (error) {
+    console.warn(`Não foi possível remover ${key}:`, error);
+  }
+};
