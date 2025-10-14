@@ -30,9 +30,10 @@ import {
   XCircle,
 } from 'lucide-react-native';
 import type { RootStackParamList } from '../navigation/types';
-import { persistValue } from '../utils/storage';
+import { useAuth, type UserType as AuthUserType } from '../context/AuthContext';
+import { ApiError } from '../services/apiClient';
 
-type UserType = 'student' | 'teacher' | null;
+type NullableUserType = AuthUserType | null;
 
 type PopupState = {
   type: 'success' | 'error';
@@ -46,7 +47,7 @@ type RegisterData = {
   city: string;
   password: string;
   confirmPassword: string;
-  userType: UserType;
+  userType: NullableUserType;
   subjects: string[];
   experience: string;
 };
@@ -71,6 +72,7 @@ const SUBJECT_OPTIONS = [
 
 const RegisterScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { signUp, signIn } = useAuth();
   const [registerData, setRegisterData] = useState<RegisterData>({
     name: '',
     email: '',
@@ -97,7 +99,7 @@ const RegisterScreen: React.FC = () => {
     };
   }, []);
 
-  const handleUserTypeSelect = useCallback((type: Exclude<UserType, null>) => {
+  const handleUserTypeSelect = useCallback((type: AuthUserType) => {
     setRegisterData(prev => ({
       ...prev,
       userType: type,
@@ -106,7 +108,7 @@ const RegisterScreen: React.FC = () => {
     }));
   }, []);
 
-  const handleUserTypeChange = useCallback((type: UserType) => {
+  const handleUserTypeChange = useCallback((type: NullableUserType) => {
     setRegisterData(prev => ({
       ...prev,
       userType: type,
@@ -172,25 +174,6 @@ const RegisterScreen: React.FC = () => {
     return false;
   }, [registerData.subjects, registerData.userType]);
 
-  const postJson = useCallback(async (path: string, payload: unknown) => {
-    const baseURL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://localhost:5000';
-    const response = await fetch(`${baseURL}${path}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      const message = errorData?.message ?? 'Não foi possível processar a requisição.';
-      const error = new Error(message);
-      (error as Error & { status?: number }).status = response.status;
-      throw error;
-    }
-
-    return response.json().catch(() => ({}));
-  }, []);
-
   const handleSubmit = useCallback(async () => {
     if (!isStep4Valid || !registerData.userType) {
       return;
@@ -209,47 +192,45 @@ const RegisterScreen: React.FC = () => {
     const password = registerData.password;
 
     try {
-      await postJson(
-        registerData.userType === 'teacher' ? '/api/professors/register' : '/api/users/register',
-        {
-          name: trimmedName,
-          email: trimmedEmail,
-          password,
-        },
-      );
+      const createdProfile = await signUp({
+        name: trimmedName,
+        email: trimmedEmail,
+        password,
+        userType: registerData.userType,
+      });
 
-      const loginResponse = await postJson(
-        registerData.userType === 'teacher' ? '/api/professors/login' : '/api/users/login',
-        {
-          email: trimmedEmail,
-          password,
-        },
-      );
+      const session = await signIn({
+        email: trimmedEmail,
+        password,
+        userType: registerData.userType,
+      });
 
-      if (loginResponse?.token) {
-        await persistValue('token', loginResponse.token);
-      }
+      const displayName =
+        createdProfile?.name ?? session.profile?.name ?? registerData.name;
 
-      const profile =
-        loginResponse?.teacher ?? loginResponse?.user ?? loginResponse?.student ?? loginResponse?.profile ?? {};
-      await persistValue('profile', JSON.stringify(profile));
-
-      setPopup({ type: 'success', message: 'Conta criada com sucesso! Redirecionando para o login...' });
+      setPopup({
+        type: 'success',
+        message: `Conta criada com sucesso, ${displayName.split(' ')[0]}! Redirecionando...`,
+      });
 
       redirectTimeoutRef.current = setTimeout(() => {
         setPopup(null);
-        navigation.navigate('Login');
+        navigation.navigate('Home');
         redirectTimeoutRef.current = null;
       }, 1400);
     } catch (error) {
       console.error('Erro ao registrar:', error);
-      const fallback =
-        error instanceof Error ? error.message : 'Erro ao criar conta. Verifique as informações e tente novamente.';
+      let fallback = 'Erro ao criar conta. Verifique as informações e tente novamente.';
+      if (error instanceof ApiError) {
+        fallback = error.message;
+      } else if (error instanceof Error) {
+        fallback = error.message;
+      }
       setPopup({ type: 'error', message: fallback });
     } finally {
       setIsLoading(false);
     }
-  }, [isStep4Valid, navigation, postJson, registerData]);
+  }, [isStep4Valid, navigation, registerData, signIn, signUp]);
 
   const handleClosePopup = useCallback(() => {
     if (redirectTimeoutRef.current) {

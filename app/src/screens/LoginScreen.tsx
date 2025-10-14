@@ -27,9 +27,10 @@ import {
   XCircle,
 } from 'lucide-react-native';
 import type { RootStackParamList } from '../navigation/types';
-import { persistValue } from '../utils/storage';
+import { useAuth, type UserType as AuthUserType } from '../context/AuthContext';
+import { ApiError } from '../services/apiClient';
 
-type UserType = 'student' | 'teacher' | null;
+type NullableUserType = AuthUserType | null;
 
 type PopupState = {
   type: 'success' | 'error';
@@ -38,7 +39,12 @@ type PopupState = {
 
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [loginData, setLoginData] = useState<{ email: string; password: string; userType: UserType }>({
+  const { signIn } = useAuth();
+  const [loginData, setLoginData] = useState<{
+    email: string;
+    password: string;
+    userType: NullableUserType;
+  }>({
     email: '',
     password: '',
     userType: null,
@@ -56,7 +62,7 @@ const LoginScreen: React.FC = () => {
     };
   }, []);
 
-  const handleUserTypeSelect = useCallback((type: Exclude<UserType, null>) => {
+  const handleUserTypeSelect = useCallback((type: AuthUserType) => {
     setLoginData(prev => ({ ...prev, userType: type }));
   }, []);
 
@@ -89,30 +95,19 @@ const LoginScreen: React.FC = () => {
     }
 
     try {
-      const baseURL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://localhost:5000';
-      const path = loginData.userType === 'teacher' ? '/api/professors/login' : '/api/users/login';
-
-      const response = await fetch(`${baseURL}${path}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+      const session = await signIn({
+        email,
+        password,
+        userType: loginData.userType,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message ?? 'Email ou senha inválidos');
-      }
+      const userName =
+        session.profile?.name ? `, ${session.profile.name.split(' ')[0]}` : '';
 
-      const data = await response.json();
-
-      if (data?.token) {
-        await persistValue('token', data.token);
-      }
-
-      const profile = data?.teacher ?? data?.user ?? data?.student ?? {};
-      await persistValue('profile', JSON.stringify(profile));
-
-      setPopup({ type: 'success', message: 'Login realizado com sucesso! Redirecionando...' });
+      setPopup({
+        type: 'success',
+        message: `Login realizado com sucesso${userName}! Redirecionando...`,
+      });
 
       redirectTimeoutRef.current = setTimeout(() => {
         setPopup(null);
@@ -121,13 +116,17 @@ const LoginScreen: React.FC = () => {
       }, 1200);
     } catch (error) {
       console.error('Erro no login:', error);
-      const message =
-        error instanceof Error ? error.message : 'Erro ao fazer login. Tente novamente.';
+      let message = 'Erro ao fazer login. Tente novamente.';
+      if (error instanceof ApiError) {
+        message = error.message;
+      } else if (error instanceof Error) {
+        message = error.message;
+      }
       setPopup({ type: 'error', message });
     } finally {
       setIsLoading(false);
     }
-  }, [isFormValid, loginData, navigation]);
+  }, [isFormValid, loginData, navigation, signIn]);
 
   const handleCreateAccount = useCallback(() => {
     navigation.navigate('Register');
