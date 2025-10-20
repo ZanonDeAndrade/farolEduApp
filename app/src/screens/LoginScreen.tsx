@@ -29,6 +29,7 @@ import {
 import type { RootStackParamList } from '../navigation/types';
 import { useAuth, type UserType as AuthUserType } from '../context/AuthContext';
 import { ApiError } from '../services/apiClient';
+import Navbar, { type NavbarLink } from '../components/Navbar';
 
 type NullableUserType = AuthUserType | null;
 
@@ -61,6 +62,16 @@ const LoginScreen: React.FC = () => {
       }
     };
   }, []);
+
+  const navbarLinks = useMemo<NavbarLink[]>(
+    () => [
+      {
+        label: 'Início',
+        onPress: () => navigation.navigate('Home'),
+      },
+    ],
+    [navigation],
+  );
 
   const handleUserTypeSelect = useCallback((type: AuthUserType) => {
     setLoginData(prev => ({ ...prev, userType: type }));
@@ -143,6 +154,11 @@ const LoginScreen: React.FC = () => {
   return (
     <LinearGradient colors={['#FFF6F1', '#FDF3FF', '#EEF2FF']} style={styles.gradient}>
       <SafeAreaView style={styles.safeArea}>
+        <Navbar
+          links={navbarLinks}
+          onLoginPress={() => navigation.navigate('Login')}
+          onRegisterPress={() => navigation.navigate('Register')}
+        />
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.flex}
