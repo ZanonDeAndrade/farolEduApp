@@ -1,10 +1,9 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { ScrollView, LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { layoutStyles } from './styles/layoutStyles';
-import HeaderSection from './components/HeaderSection';
 import HeroSection from './components/HeroSection';
 import AvailableClassesSection from './components/AvailableClassesSection';
 import AboutSection from './components/AboutSection';
@@ -12,6 +11,7 @@ import TeacherSection from './components/TeacherSection';
 import FooterSection from './components/FooterSection';
 import type { SectionKey } from './types';
 import type { RootStackParamList } from '../../navigation/types';
+import Navbar, { type NavbarLink } from '../../components/Navbar';
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -40,10 +40,20 @@ const HomeScreen: React.FC = () => {
     [],
   );
 
+  const homeNavLinks = useMemo<NavbarLink[]>(
+    () => [
+      { label: 'Início', onPress: () => scrollToSection('inicio'), isActive: true },
+      { label: 'Sobre', onPress: () => scrollToSection('sobre') },
+      { label: 'Oferecer aula', onPress: () => scrollToSection('oferecer-aula') },
+    ],
+    [scrollToSection],
+  );
+
   return (
     <SafeAreaView style={layoutStyles.safeArea}>
-      <HeaderSection
-        onNavigate={scrollToSection}
+      <Navbar
+        links={homeNavLinks}
+        onNavigateSection={scrollToSection}
         onLoginPress={() => navigation.navigate('Login')}
         onRegisterPress={() => navigation.navigate('Register')}
       />
