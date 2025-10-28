@@ -41,7 +41,7 @@ const LoginScreen: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!loginData.userType) return;
-    
+
     const email = loginData.email.trim().toLowerCase();
     const password = loginData.password;
 
@@ -85,7 +85,7 @@ const LoginScreen: React.FC = () => {
       setPopup({ type: 'success', message: 'Login realizado com sucesso! Redirecionando...' });
 
       redirectTimeoutRef.current = window.setTimeout(() => {
-        navigate('/dashboard'); // ajuste o destino se quiser
+        navigate('/dashboard'); // ajuste o destino se quiserr
         redirectTimeoutRef.current = null;
       }, 1200);
     } catch (err: any) {
