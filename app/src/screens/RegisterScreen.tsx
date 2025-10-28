@@ -11,6 +11,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -74,6 +75,9 @@ const SUBJECT_OPTIONS = [
 const RegisterScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { signUp, signIn } = useAuth();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 420;
+  const isUltraCompact = width < 360;
   const [registerData, setRegisterData] = useState<RegisterData>({
     name: '',
     email: '',
@@ -283,26 +287,36 @@ const RegisterScreen: React.FC = () => {
           keyboardVerticalOffset={24}
         >
           <ScrollView
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[
+              styles.scrollContent,
+              isCompact && styles.scrollContentCompact,
+            ]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            <View style={styles.card}>
-              <View style={styles.header}>
+            <View style={[styles.card, isCompact && styles.cardCompact]}>
+              <View style={[styles.header, isCompact && styles.headerCompact]}>
                 <TouchableOpacity onPress={goBack} style={styles.backButton} activeOpacity={0.7}>
                   <ArrowLeft size={22} color="#4338CA" />
                   <Text style={styles.backButtonText}>Voltar</Text>
                 </TouchableOpacity>
 
-                <View style={styles.logoSection}>
+                <View style={[styles.logoSection, isCompact && styles.logoSectionCompact]}>
                   <View style={styles.logoContainer}>
-                    <Image source={require('../../assets/Logo.png')} style={styles.logo} />
+                    <Image
+                      source={require('../../assets/Logo.png')}
+                      style={[
+                        styles.logo,
+                        isCompact && styles.logoCompact,
+                        isUltraCompact && styles.logoSmall,
+                      ]}
+                    />
                   </View>
                   <Text style={styles.title}>FarolEdu</Text>
                   <Text style={styles.subtitle}>Crie sua conta</Text>
                 </View>
 
-                <View style={styles.progressBar}>
+                <View style={[styles.progressBar, isCompact && styles.progressBarCompact]}>
                   <View style={styles.progressSteps}>
                     {renderProgressSteps.map(step => (
                       <View
@@ -337,13 +351,19 @@ const RegisterScreen: React.FC = () => {
                 </View>
               </View>
 
-              <View style={styles.formContainer}>
+              <View
+                style={[
+                  styles.formContainer,
+                  isCompact && styles.formContainerCompact,
+                  isUltraCompact && styles.formContainerUltraCompact,
+                ]}
+              >
                 {currentStep === 1 && (
-                  <View style={styles.formStep}>
-                    <Text style={styles.stepTitle}>Tipo de Conta</Text>
+                  <View style={[styles.formStep, isCompact && styles.formStepCompact]}>
+                    <Text style={[styles.stepTitle, isCompact && styles.stepTitleCompact]}>Tipo de Conta</Text>
 
                     {!registerData.userType ? (
-                      <View style={styles.userTypeSelection}>
+                      <View style={[styles.userTypeSelection, isCompact && styles.userTypeSelectionCompact]}>
                         <TouchableOpacity
                           activeOpacity={0.85}
                           onPress={() => handleUserTypeSelect('student')}
@@ -351,6 +371,7 @@ const RegisterScreen: React.FC = () => {
                             styles.userTypeCard,
                             styles.studentCard,
                             registerData.userType === 'student' && styles.userTypeCardSelected,
+                            isCompact && styles.userTypeCardCompact,
                           ]}
                         >
                           <View style={styles.cardContent}>
@@ -373,6 +394,7 @@ const RegisterScreen: React.FC = () => {
                             styles.userTypeCard,
                             styles.teacherCard,
                             registerData.userType === 'teacher' && styles.userTypeCardSelected,
+                            isCompact && styles.userTypeCardCompact,
                           ]}
                         >
                           <View style={styles.cardContent}>
@@ -410,7 +432,11 @@ const RegisterScreen: React.FC = () => {
                         activeOpacity={0.9}
                         onPress={goNext}
                         disabled={!isStep1Valid}
-                        style={[styles.nextButton, isStep1Valid ? styles.buttonEnabled : styles.buttonDisabled]}
+                        style={[
+                          styles.nextButton,
+                          isStep1Valid ? styles.buttonEnabled : styles.buttonDisabled,
+                          isCompact && styles.nextButtonCompact,
+                        ]}
                       >
                         <Text style={styles.nextButtonText}>Continuar</Text>
                       </TouchableOpacity>
@@ -419,8 +445,8 @@ const RegisterScreen: React.FC = () => {
                 )}
 
                 {currentStep === 2 && (
-                  <View style={styles.formStep}>
-                    <Text style={styles.stepTitle}>Dados Pessoais</Text>
+                  <View style={[styles.formStep, isCompact && styles.formStepCompact]}>
+                    <Text style={[styles.stepTitle, isCompact && styles.stepTitleCompact]}>Dados Pessoais</Text>
 
                     <View style={styles.formGroup}>
                       <Text style={styles.inputLabel}>Nome Completo</Text>
@@ -485,7 +511,11 @@ const RegisterScreen: React.FC = () => {
                       activeOpacity={0.9}
                       onPress={goNext}
                       disabled={!isStep2Valid}
-                      style={[styles.nextButton, isStep2Valid ? styles.buttonEnabled : styles.buttonDisabled]}
+                      style={[
+                        styles.nextButton,
+                        isStep2Valid ? styles.buttonEnabled : styles.buttonDisabled,
+                        isCompact && styles.nextButtonCompact,
+                      ]}
                     >
                       <Text style={styles.nextButtonText}>Continuar</Text>
                     </TouchableOpacity>
@@ -493,8 +523,8 @@ const RegisterScreen: React.FC = () => {
                 )}
 
                 {currentStep === 3 && (
-                  <View style={styles.formStep}>
-                    <Text style={styles.stepTitle}>Criar Senha</Text>
+                  <View style={[styles.formStep, isCompact && styles.formStepCompact]}>
+                    <Text style={[styles.stepTitle, isCompact && styles.stepTitleCompact]}>Criar Senha</Text>
 
                     <View style={styles.formGroup}>
                       <Text style={styles.inputLabel}>Senha</Text>
@@ -554,7 +584,11 @@ const RegisterScreen: React.FC = () => {
                       activeOpacity={0.9}
                       onPress={goNext}
                       disabled={!isStep3Valid}
-                      style={[styles.nextButton, isStep3Valid ? styles.buttonEnabled : styles.buttonDisabled]}
+                      style={[
+                        styles.nextButton,
+                        isStep3Valid ? styles.buttonEnabled : styles.buttonDisabled,
+                        isCompact && styles.nextButtonCompact,
+                      ]}
                     >
                       <Text style={styles.nextButtonText}>Continuar</Text>
                     </TouchableOpacity>
@@ -562,8 +596,8 @@ const RegisterScreen: React.FC = () => {
                 )}
 
                 {currentStep === 4 && (
-                  <View style={styles.formStep}>
-                    <Text style={styles.stepTitle}>Perfil</Text>
+                  <View style={[styles.formStep, isCompact && styles.formStepCompact]}>
+                    <Text style={[styles.stepTitle, isCompact && styles.stepTitleCompact]}>Perfil</Text>
 
                     {registerData.userType === 'teacher' && (
                       <>
@@ -624,6 +658,7 @@ const RegisterScreen: React.FC = () => {
                       style={[
                         styles.submitButton,
                         isStep4Valid && !isLoading ? styles.buttonEnabled : styles.buttonDisabled,
+                        isCompact && styles.submitButtonCompact,
                       ]}
                     >
                       {isLoading ? (
@@ -638,7 +673,7 @@ const RegisterScreen: React.FC = () => {
                   </View>
                 )}
 
-                <View style={styles.loginReminder}>
+                <View style={[styles.loginReminder, isCompact && styles.loginReminderCompact]}>
                   <Text style={styles.loginText}>Já tem uma conta?</Text>
                   <TouchableOpacity onPress={() => navigation.navigate('Login')} activeOpacity={0.7}>
                     <Text style={styles.loginButtonText}>Fazer Login</Text>
@@ -646,7 +681,7 @@ const RegisterScreen: React.FC = () => {
                 </View>
               </View>
 
-              <View style={styles.footer}>
+              <View style={[styles.footer, isCompact && styles.footerCompact]}>
                 <Text style={styles.footerText}>© 2025 FarolEdu. Todos os direitos reservados.</Text>
               </View>
             </View>
@@ -698,13 +733,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     alignItems: 'center',
   },
+  scrollContentCompact: {
+    paddingHorizontal: 18,
+    paddingVertical: 24,
+  },
   card: {
     width: '100%',
     maxWidth: 460,
     gap: 24,
   },
+  cardCompact: {
+    gap: 20,
+  },
   header: {
     gap: 18,
+  },
+  headerCompact: {
+    gap: 16,
   },
   backButton: {
     flexDirection: 'row',
@@ -721,6 +766,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  logoSectionCompact: {
+    gap: 6,
+  },
   logoContainer: {
     padding: 0,
   },
@@ -728,6 +776,14 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     resizeMode: 'contain',
+  },
+  logoCompact: {
+    width: 108,
+    height: 108,
+  },
+  logoSmall: {
+    width: 96,
+    height: 96,
   },
   title: {
     fontSize: 28,
@@ -750,6 +806,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 18,
     elevation: 4,
+  },
+  progressBarCompact: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
   progressSteps: {
     flexDirection: 'row',
@@ -803,8 +863,19 @@ const styles = StyleSheet.create({
     elevation: 6,
     gap: 24,
   },
+  formContainerCompact: {
+    padding: 20,
+    gap: 20,
+  },
+  formContainerUltraCompact: {
+    padding: 18,
+    borderRadius: 24,
+  },
   formStep: {
     gap: 20,
+  },
+  formStepCompact: {
+    gap: 18,
   },
   stepTitle: {
     fontSize: 20,
@@ -812,8 +883,14 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     textAlign: 'center',
   },
+  stepTitleCompact: {
+    fontSize: 18,
+  },
   userTypeSelection: {
     gap: 14,
+  },
+  userTypeSelectionCompact: {
+    gap: 12,
   },
   userTypeCard: {
     borderWidth: 1,
@@ -826,6 +903,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.16,
     shadowRadius: 20,
     elevation: 3,
+  },
+  userTypeCardCompact: {
+    padding: 18,
   },
   studentCard: {},
   teacherCard: {},
@@ -901,10 +981,16 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
   },
+  nextButtonCompact: {
+    paddingVertical: 14,
+  },
   submitButton: {
     borderRadius: 18,
     paddingVertical: 16,
     alignItems: 'center',
+  },
+  submitButtonCompact: {
+    paddingVertical: 14,
   },
   buttonEnabled: {
     backgroundColor: '#4338CA',
@@ -1015,6 +1101,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
   },
+  loginReminderCompact: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 8,
+  },
   loginText: {
     fontSize: 14,
     color: '#475569',
@@ -1027,6 +1118,9 @@ const styles = StyleSheet.create({
   footer: {
     alignItems: 'center',
     paddingBottom: 16,
+  },
+  footerCompact: {
+    paddingBottom: 12,
   },
   footerText: {
     fontSize: 12,

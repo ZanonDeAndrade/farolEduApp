@@ -3,9 +3,9 @@ import { COLORS } from '../../../theme/colors';
 
 export const footerStyles = StyleSheet.create({
   container: {
-    marginTop: 32,
     paddingHorizontal: 24,
-    paddingVertical: 32,
+    paddingTop: 48,
+    paddingBottom: 32,
     gap: 24,
   },
   content: {

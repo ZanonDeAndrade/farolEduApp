@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { ScrollView, LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -9,7 +9,8 @@ import AvailableClassesSection from './components/AvailableClassesSection';
 import AboutSection from './components/AboutSection';
 import TeacherSection from './components/TeacherSection';
 import FooterSection from './components/FooterSection';
-import type { SectionKey } from './types';
+import { DEFAULT_SEARCH_FILTERS } from './constants';
+import type { SearchFilters, SectionKey } from './types';
 import type { RootStackParamList } from '../../navigation/types';
 import Navbar, { type NavbarLink } from '../../components/Navbar';
 
@@ -18,10 +19,12 @@ const HomeScreen: React.FC = () => {
   const scrollRef = useRef<ScrollView>(null);
   const sectionPositions = useRef<Record<SectionKey, number>>({
     inicio: 0,
+    aulas: 0,
     sobre: 0,
     'oferecer-aula': 0,
     rodape: 0,
   });
+  const [searchFilters, setSearchFilters] = useState<SearchFilters>(DEFAULT_SEARCH_FILTERS);
 
   const handleSectionLayout = useCallback(
     (key: SectionKey) => (event: LayoutChangeEvent) => {
@@ -38,6 +41,14 @@ const HomeScreen: React.FC = () => {
       }
     },
     [],
+  );
+
+  const handleSearch = useCallback(
+    (filters: SearchFilters) => {
+      setSearchFilters(filters);
+      scrollToSection('aulas');
+    },
+    [scrollToSection],
   );
 
   const homeNavLinks = useMemo<NavbarLink[]>(
@@ -63,8 +74,8 @@ const HomeScreen: React.FC = () => {
         contentContainerStyle={layoutStyles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        <HeroSection onLayout={handleSectionLayout('inicio')} />
-        <AvailableClassesSection />
+        <HeroSection onLayout={handleSectionLayout('inicio')} onSearch={handleSearch} initialSearch={searchFilters} />
+        <AvailableClassesSection onLayout={handleSectionLayout('aulas')} search={searchFilters} />
         <AboutSection onLayout={handleSectionLayout('sobre')} />
         <TeacherSection
           onLayout={handleSectionLayout('oferecer-aula')}

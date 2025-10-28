@@ -1,4 +1,4 @@
-import type { Teacher } from './types';
+import type { SearchFilters, Teacher } from './types';
 
 export const HERO_COPY = {
   eyebrow: 'Aprendizado iluminado por bons encontros',
@@ -22,6 +22,13 @@ export const HERO_COPY = {
   cta: 'Pesquisar',
 };
 
+export const DEFAULT_SEARCH_FILTERS: SearchFilters = {
+  subject: '',
+  location: '',
+  nearby: true,
+  online: false,
+};
+
 export const ABOUT_STATS = [
   { value: '35 mil+', label: 'alunos impactados' },
   { value: '2.800', label: 'professores cadastrados' },
@@ -34,17 +41,42 @@ export const TEACHERS: Teacher[] = [
     name: 'Ana Souza',
     subject: 'Matemática',
     level: 'Ensino Médio',
+    city: 'São Paulo · SP',
+    modalities: ['presencial', 'online'],
+    distanceKm: 4,
   },
   {
     id: '2',
     name: 'Carlos Lima',
     subject: 'Inglês',
     description: 'Conversação e exames',
+    city: 'Recife · PE',
+    modalities: ['online'],
   },
   {
     id: '3',
     name: 'Joana Pereira',
     subject: 'Música',
     description: 'Violão e teoria musical',
+    city: 'Curitiba · PR',
+    modalities: ['presencial'],
+    distanceKm: 8,
+  },
+  {
+    id: '4',
+    name: 'Luiz Fernando',
+    subject: 'Física',
+    level: 'Pré-vestibular',
+    city: 'Campinas · SP',
+    modalities: ['presencial', 'online'],
+    distanceKm: 20,
+  },
+  {
+    id: '5',
+    name: 'Marina Costa',
+    subject: 'Programação',
+    description: 'JavaScript, React e lógica',
+    city: 'Online',
+    modalities: ['online'],
   },
 ];

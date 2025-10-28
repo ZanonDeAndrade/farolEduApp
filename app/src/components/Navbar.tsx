@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -52,6 +53,8 @@ const Navbar: React.FC<NavbarProps> = ({
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, AppRouteName>>();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { width } = useWindowDimensions();
+  const isCompact = width < 640;
 
   const derivedLinks = useMemo<NavbarLink[]>(() => {
     if (links && links.length > 0) {
@@ -105,9 +108,13 @@ const Navbar: React.FC<NavbarProps> = ({
     closeMenu();
   }, [closeMenu, route.name]);
 
+  const renderInlineActions = showAuthButtons && !isCompact;
+  const renderMenuAuthActions = showAuthButtons && isCompact;
+  const shouldRenderMenuButton = derivedLinks.length > 0 || renderMenuAuthActions;
+
   return (
     <LinearGradient {...GRADIENTS.header} style={styles.container}>
-      <View style={styles.content}>
+      <View style={[styles.content, isCompact && styles.contentCompact]}>
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={handleLogoPress}
@@ -116,7 +123,7 @@ const Navbar: React.FC<NavbarProps> = ({
           <Image source={LOGO_IMAGE} style={styles.logo} resizeMode="contain" />
         </TouchableOpacity>
 
-        {showAuthButtons && (
+        {renderInlineActions && (
           <View style={styles.actions}>
             <TouchableOpacity
               activeOpacity={0.85}
@@ -148,11 +155,11 @@ const Navbar: React.FC<NavbarProps> = ({
           </View>
         )}
 
-        {derivedLinks.length > 0 && (
+        {shouldRenderMenuButton && (
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={toggleMenu}
-            style={styles.menuButton}
+            style={[styles.menuButton, isCompact && styles.menuButtonCompact]}
             accessibilityRole="button"
             accessibilityLabel={isMenuOpen ? 'Fechar menu de navegação' : 'Abrir menu de navegação'}
             accessibilityState={{ expanded: isMenuOpen }}
@@ -183,6 +190,34 @@ const Navbar: React.FC<NavbarProps> = ({
                     </Text>
                   </TouchableOpacity>
                 ))}
+
+                {renderMenuAuthActions && (
+                  <View style={styles.menuActions}>
+                    <TouchableOpacity
+                      activeOpacity={0.85}
+                      onPress={() => {
+                        closeMenu();
+                        onLoginPress?.();
+                      }}
+                      style={styles.menuActionButton}
+                      disabled={!onLoginPress}
+                    >
+                      <Text style={styles.menuActionText}>Entrar</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      activeOpacity={0.85}
+                      onPress={() => {
+                        closeMenu();
+                        onRegisterPress?.();
+                      }}
+                      style={[styles.menuActionButton, styles.menuActionPrimary]}
+                      disabled={!onRegisterPress}
+                    >
+                      <Text style={[styles.menuActionText, styles.menuActionPrimaryText]}>Cadastrar</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </LinearGradient>
             </TouchableWithoutFeedback>
           </View>
@@ -198,6 +233,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(106, 64, 180, 0.18)',
+    backgroundColor: '#FFFFFF',
     shadowColor: 'rgba(88, 48, 156, 0.12)',
     shadowOpacity: 1,
     shadowRadius: 20,
@@ -210,6 +246,9 @@ const styles = StyleSheet.create({
     width: '100%',
     gap: 12,
     flexWrap: 'wrap',
+  },
+  contentCompact: {
+    gap: 10,
   },
   brandWrapper: {
     flexDirection: 'row',
@@ -230,6 +269,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 'auto',
+  },
+  menuButtonCompact: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
   },
   actions: {
     flexDirection: 'row',
@@ -281,12 +325,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   menuCard: {
-    width: 220,
+    width: 240,
     borderRadius: 18,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
     borderWidth: 1,
-    borderColor: 'rgba(106, 64, 180, 0.2)',
+    borderColor: 'rgba(106, 64, 180, 0.18)',
     shadowColor: 'rgba(88, 48, 156, 0.24)',
     shadowOpacity: 0.6,
     shadowRadius: 24,
@@ -310,6 +354,39 @@ const styles = StyleSheet.create({
   menuItemTextActive: {
     color: COLORS.accentPrimary,
     fontWeight: '600',
+  },
+  menuActions: {
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(106, 64, 180, 0.16)',
+    gap: 10,
+  },
+  menuActionButton: {
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(106, 64, 180, 0.18)',
+    backgroundColor: 'rgba(228, 236, 255, 0.75)',
+    alignItems: 'center',
+  },
+  menuActionPrimary: {
+    backgroundColor: '#6A40B4',
+    borderColor: 'transparent',
+    shadowColor: 'rgba(106, 64, 180, 0.22)',
+    shadowOpacity: 1,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 6,
+  },
+  menuActionText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  menuActionPrimaryText: {
+    color: COLORS.white,
   },
 });
 

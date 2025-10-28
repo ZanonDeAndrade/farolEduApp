@@ -11,6 +11,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -42,6 +43,9 @@ type PopupState = {
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { signIn } = useAuth();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 400;
+  const isUltraCompact = width < 340;
   const [loginData, setLoginData] = useState<{
     email: string;
     password: string;
@@ -168,23 +172,41 @@ const LoginScreen: React.FC = () => {
           style={styles.flex}
         >
           <ScrollView
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[
+              styles.scrollContent,
+              isCompact && styles.scrollContentCompact,
+            ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.card}>
+            <View style={[styles.card, isCompact && styles.cardCompact]}>
               <View style={styles.header}>
                 <View style={styles.logoContainer}>
-                  <Image source={require('../../assets/Logo.png')} style={styles.logo} />
+                  <Image
+                    source={require('../../assets/Logo.png')}
+                    style={[
+                      styles.logo,
+                      isCompact && styles.logoCompact,
+                      isUltraCompact && styles.logoSmall,
+                    ]}
+                  />
                 </View>
                 <Text style={styles.title}>FarolEdu</Text>
                 <Text style={styles.subtitle}>Conectando estudantes e professores</Text>
               </View>
 
-              <View style={styles.formContainer}>
+              <View
+                style={[
+                  styles.formContainer,
+                  isCompact && styles.formContainerCompact,
+                  isUltraCompact && styles.formContainerUltraCompact,
+                ]}
+              >
                 {!loginData.userType ? (
-                  <View style={styles.userTypeSelection}>
-                    <Text style={styles.selectionTitle}>Como você quer entrar?</Text>
+                  <View style={[styles.userTypeSelection, isCompact && styles.userTypeSelectionCompact]}>
+                    <Text style={[styles.selectionTitle, isCompact && styles.selectionTitleCompact]}>
+                      Como você quer entrar?
+                    </Text>
 
                     <TouchableOpacity
                       activeOpacity={0.85}
@@ -193,6 +215,7 @@ const LoginScreen: React.FC = () => {
                         styles.userTypeCard,
                         styles.studentCard,
                         loginData.userType === 'student' && styles.userTypeCardSelected,
+                        isCompact && styles.userTypeCardCompact,
                       ]}
                     >
                       <View style={styles.cardContent}>
@@ -217,6 +240,7 @@ const LoginScreen: React.FC = () => {
                         styles.userTypeCard,
                         styles.teacherCard,
                         loginData.userType === 'teacher' && styles.userTypeCardSelected,
+                        isCompact && styles.userTypeCardCompact,
                       ]}
                     >
                       <View style={styles.cardContent}>
@@ -236,8 +260,13 @@ const LoginScreen: React.FC = () => {
                   </View>
                 ) : (
                   <>
-                    <View style={styles.selectedTypeIndicator}>
-                      <View style={styles.typeDisplay}>
+                    <View
+                      style={[
+                        styles.selectedTypeIndicator,
+                        isCompact && styles.selectedTypeIndicatorCompact,
+                      ]}
+                    >
+                      <View style={[styles.typeDisplay, isCompact && styles.typeDisplayCompact]}>
                         <View
                           style={[
                             styles.selectedTypeIcon,
@@ -270,7 +299,7 @@ const LoginScreen: React.FC = () => {
                       </TouchableOpacity>
                     </View>
 
-                    <View>
+                    <View style={styles.formGroup}>
                       <Text style={styles.inputLabel}>Email</Text>
                       <View style={styles.inputWrapper}>
                         <Mail size={20} color={COLORS.textSubtle} style={styles.inputIcon} />
@@ -287,7 +316,7 @@ const LoginScreen: React.FC = () => {
                       </View>
                     </View>
 
-                    <View>
+                    <View style={styles.formGroup}>
                       <Text style={styles.inputLabel}>Senha</Text>
                       <View style={styles.inputWrapper}>
                         <Lock size={20} color={COLORS.textSubtle} style={styles.inputIcon} />
@@ -314,7 +343,7 @@ const LoginScreen: React.FC = () => {
                       </View>
                     </View>
 
-                    <View style={styles.forgotPasswordContainer}>
+                    <View style={[styles.forgotPasswordContainer, isCompact && styles.forgotPasswordCompact]}>
                       <TouchableOpacity activeOpacity={0.7} style={styles.forgotPasswordButton}>
                         <Text style={styles.forgotPasswordText}>Esqueceu a senha?</Text>
                       </TouchableOpacity>
@@ -330,6 +359,7 @@ const LoginScreen: React.FC = () => {
                           ? styles.studentSubmitButton
                           : styles.teacherSubmitButton,
                         (!isFormValid || isLoading) && styles.submitButtonDisabled,
+                        isCompact && styles.submitButtonCompact,
                       ]}
                     >
                       {isLoading ? (
@@ -365,7 +395,7 @@ const LoginScreen: React.FC = () => {
                   </>
                 )}
 
-                <View style={styles.signupContainer}>
+                <View style={[styles.signupContainer, isCompact && styles.signupContainerCompact]}>
                   <Text style={styles.signupText}>Não tem uma conta?</Text>
                   <TouchableOpacity onPress={handleCreateAccount} activeOpacity={0.7}>
                     <Text style={styles.signupButtonText}>Criar Conta</Text>
@@ -373,7 +403,7 @@ const LoginScreen: React.FC = () => {
                 </View>
               </View>
 
-              <View style={styles.footer}>
+              <View style={[styles.footer, isCompact && styles.footerCompact]}>
                 <Text style={styles.footerText}>
                   © 2025 FarolEdu. Todos os direitos reservados.
                 </Text>
@@ -436,10 +466,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  scrollContentCompact: {
+    paddingHorizontal: 18,
+    paddingVertical: 24,
+  },
   card: {
     width: '100%',
     maxWidth: 420,
     gap: 24,
+  },
+  cardCompact: {
+    gap: 20,
   },
   header: {
     alignItems: 'center',
@@ -453,6 +490,14 @@ const styles = StyleSheet.create({
     height: 140,
     resizeMode: 'contain',
     marginBottom: 12,
+  },
+  logoCompact: {
+    width: 120,
+    height: 120,
+  },
+  logoSmall: {
+    width: 108,
+    height: 108,
   },
   title: {
     fontSize: 28,
@@ -477,8 +522,19 @@ const styles = StyleSheet.create({
     elevation: 6,
     gap: 24,
   },
+  formContainerCompact: {
+    padding: 20,
+    gap: 20,
+  },
+  formContainerUltraCompact: {
+    padding: 18,
+    borderRadius: 24,
+  },
   userTypeSelection: {
     gap: 16,
+  },
+  userTypeSelectionCompact: {
+    gap: 14,
   },
   selectionTitle: {
     fontSize: 20,
@@ -486,6 +542,9 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     textAlign: 'center',
     marginBottom: 8,
+  },
+  selectionTitleCompact: {
+    fontSize: 18,
   },
   userTypeCard: {
     borderWidth: 1,
@@ -498,6 +557,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 20,
     elevation: 4,
+  },
+  userTypeCardCompact: {
+    padding: 18,
   },
   userTypeCardSelected: {
     borderColor: 'rgba(106, 64, 180, 0.4)',
@@ -548,10 +610,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     backgroundColor: 'rgba(183, 203, 245, 0.24)',
   },
+  selectedTypeIndicatorCompact: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 10,
+  },
   typeDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  typeDisplayCompact: {
+    justifyContent: 'center',
   },
   selectedTypeIcon: {
     width: 32,
@@ -582,6 +652,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: COLORS.accentPrimary,
   },
+  formGroup: {
+    gap: 8,
+  },
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
@@ -611,6 +684,9 @@ const styles = StyleSheet.create({
   },
   forgotPasswordContainer: {
     alignItems: 'flex-end',
+  },
+  forgotPasswordCompact: {
+    alignItems: 'center',
   },
   forgotPasswordButton: {
     paddingVertical: 4,
@@ -643,6 +719,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  submitButtonCompact: {
+    paddingVertical: 14,
+  },
   teacherSubmitButtonText: {
     color: COLORS.accentHighlight,
   },
@@ -661,6 +740,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
   },
+  signupContainerCompact: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 8,
+  },
   signupText: {
     fontSize: 14,
     color: COLORS.textMuted,
@@ -673,6 +757,9 @@ const styles = StyleSheet.create({
   footer: {
     alignItems: 'center',
     paddingBottom: 16,
+  },
+  footerCompact: {
+    paddingBottom: 12,
   },
   footerText: {
     fontSize: 12,
