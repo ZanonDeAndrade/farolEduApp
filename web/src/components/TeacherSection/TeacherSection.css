@@ -248,12 +248,31 @@
 }
 
 @media (max-width: 768px) {
+  .teacher-shell {
+    gap: clamp(1.75rem, 7vw, 2.5rem);
+  }
+
+  .teacher-copy {
+    align-items: center;
+    text-align: center;
+  }
+
+  .teacher-highlights {
+    width: 100%;
+  }
+
+  .teacher-highlights li {
+    width: 100%;
+    text-align: left;
+  }
+
   .teacher-visual {
     justify-content: center;
   }
 
   .teacher-card {
-    width: 100%;
+    width: min(100%, 420px);
+    margin: 0 auto;
   }
 
   .teacher-cta {

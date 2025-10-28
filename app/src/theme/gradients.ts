@@ -8,7 +8,7 @@ export type GradientConfig = {
 
 export const GRADIENTS = {
   header: {
-    colors: ['#F7F9FF', '#E9EFFF', '#D6DEFA'] as const,
+    colors: ['#FFFFFF', '#F9FBFF'] as const,
     start: { x: 0, y: 0 },
     end: { x: 1, y: 1 },
   },

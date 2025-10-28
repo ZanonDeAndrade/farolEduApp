@@ -166,6 +166,25 @@
   }
 }
 
+@media (max-width: 640px) {
+  .about-intro {
+    align-items: center;
+    text-align: center;
+  }
+
+  .about-intro p {
+    text-align: center;
+  }
+
+  .about-stats {
+    justify-items: center;
+  }
+
+  .about-card {
+    text-align: left;
+  }
+}
+
 @media (max-width: 520px) {
   .about-intro h2 {
     font-size: 2rem;

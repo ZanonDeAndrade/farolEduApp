@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutChangeEvent, Text, TouchableOpacity, View } from 'react-native';
+import { LayoutChangeEvent, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { Sparkles, NotebookPen, CalendarRange, MonitorPlay, ShieldCheck } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { teacherStyles } from '../styles/teacherStyles';
@@ -12,22 +12,32 @@ export type TeacherSectionProps = {
 };
 
 const TeacherSection: React.FC<TeacherSectionProps> = ({ onLayout, onRegisterPress }) => {
+  const { width } = useWindowDimensions();
+  const isCompact = width < 520;
+
   return (
-    <LinearGradient {...GRADIENTS.teacherBackground} style={teacherStyles.container} onLayout={onLayout}>
-      <View style={teacherStyles.copy}>
-        <LinearGradient {...GRADIENTS.teacherEyebrow} style={teacherStyles.eyebrow}>
+    <LinearGradient
+      {...GRADIENTS.teacherBackground}
+      style={[teacherStyles.container, isCompact && teacherStyles.containerCompact]}
+      onLayout={onLayout}
+    >
+      <View style={[teacherStyles.copy, isCompact && teacherStyles.copyCompact]}>
+        <LinearGradient
+          {...GRADIENTS.teacherEyebrow}
+          style={[teacherStyles.eyebrow, isCompact && teacherStyles.eyebrowCompact]}
+        >
           <Sparkles size={16} color={COLORS.accentSecondary} />
           <Text style={teacherStyles.eyebrowText}>Transforme conhecimento em impacto real</Text>
         </LinearGradient>
-        <Text style={teacherStyles.title}>
+        <Text style={[teacherStyles.title, isCompact && teacherStyles.titleCompact]}>
           É professor? <Text style={teacherStyles.titleHighlight}>Ofereça suas aulas no FarolEdu.</Text>
         </Text>
-        <Text style={teacherStyles.description}>
+        <Text style={[teacherStyles.description, isCompact && teacherStyles.descriptionCompact]}>
           Crie seu perfil, defina disponibilidade, modalidades (online ou presencial) e receba solicitações de alunos
           que combinam com a sua experiência.
         </Text>
 
-        <View style={teacherStyles.highlights}>
+        <View style={[teacherStyles.highlights, isCompact && teacherStyles.highlightsCompact]}>
           <HighlightItem
             icon={<NotebookPen size={18} color={COLORS.accentPrimary} />}
             text="Perfil completo com portfólio, disciplinas e valores personalizados."
@@ -42,14 +52,23 @@ const TeacherSection: React.FC<TeacherSectionProps> = ({ onLayout, onRegisterPre
           />
         </View>
 
-        <TouchableOpacity style={teacherStyles.ctaWrapper} onPress={onRegisterPress}>
-          <LinearGradient {...GRADIENTS.heroButton} style={teacherStyles.cta}>
+        <TouchableOpacity
+          style={[teacherStyles.ctaWrapper, isCompact && teacherStyles.ctaWrapperCompact]}
+          onPress={onRegisterPress}
+        >
+          <LinearGradient
+            {...GRADIENTS.heroButton}
+            style={[teacherStyles.cta, isCompact && teacherStyles.ctaCompact]}
+          >
             <Text style={teacherStyles.ctaText}>Cadastrar minha aula</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
 
-      <LinearGradient {...GRADIENTS.teacherCard} style={teacherStyles.card}>
+      <LinearGradient
+        {...GRADIENTS.teacherCard}
+        style={[teacherStyles.card, isCompact && teacherStyles.cardCompact]}
+      >
         <View style={teacherStyles.cardHeader}>
           <LinearGradient {...GRADIENTS.teacherAvatar} style={teacherStyles.cardAvatar}>
             <Text style={teacherStyles.cardAvatarText}>CM</Text>
@@ -89,7 +108,7 @@ const TeacherSection: React.FC<TeacherSectionProps> = ({ onLayout, onRegisterPre
 const HighlightItem: React.FC<{ icon: React.ReactNode; text: string }> = ({ icon, text }) => (
   <LinearGradient {...GRADIENTS.teacherHighlight} style={teacherStyles.highlightBadge}>
     <View style={teacherStyles.highlightRow}>
-      {icon}
+      <View style={teacherStyles.highlightIconWrapper}>{icon}</View>
       <Text style={teacherStyles.highlightText}>{text}</Text>
     </View>
   </LinearGradient>

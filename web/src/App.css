@@ -89,9 +89,9 @@ main {
 }
 
 .container {
-  max-width: 1200px;
+  width: min(100%, 1200px);
   margin: 0 auto;
-  padding: 0 var(--spacing-4);
+  padding-inline: clamp(1.25rem, 5vw, 3rem);
 }
 
 /* Button styles */
@@ -179,9 +179,9 @@ main {
 /* Responsive */
 @media (max-width: 768px) {
   .container {
-    padding: 0 var(--spacing-4);
+    padding-inline: clamp(1rem, 6vw, 2.25rem);
   }
-  
+
   .btn {
     font-size: var(--font-size-sm);
     padding: var(--spacing-2) var(--spacing-4);
@@ -190,7 +190,7 @@ main {
 
 @media (max-width: 480px) {
   .container {
-    padding: 0 var(--spacing-3);
+    padding-inline: clamp(0.75rem, 6vw, 1.5rem);
   }
 
   main {

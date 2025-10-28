@@ -264,11 +264,32 @@
     padding: clamp(3.5rem, 12vw, 5rem) 0;
   }
 
+  .hero-shell {
+    align-items: center;
+    gap: clamp(1.75rem, 8vw, 2.75rem);
+  }
+
+  .hero-info {
+    align-items: center;
+    text-align: center;
+  }
+
+  .hero-highlights {
+    width: 100%;
+  }
+
+  .hero-highlights li {
+    justify-content: center;
+  }
+
   .hero-search {
     flex-direction: column;
     align-items: stretch;
     border-radius: 24px;
     padding: 0.65rem;
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
   }
 
   .hero-field,
@@ -283,6 +304,8 @@
 
   .hero-filters {
     flex-wrap: wrap;
+    width: 100%;
+    justify-content: center;
   }
 
   .hero-filter {

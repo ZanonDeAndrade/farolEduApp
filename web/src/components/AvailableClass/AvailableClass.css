@@ -20,8 +20,14 @@
 
 .teacher-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
   gap: clamp(1.75rem, 4vw, 2.5rem);
+  justify-items: center;
+}
+
+.teacher-grid > * {
+  width: 100%;
+  max-width: 360px;
 }
 
 @media (max-width: 768px) {
