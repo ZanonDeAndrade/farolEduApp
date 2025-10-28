@@ -157,7 +157,11 @@ const Navbar: React.FC<NavbarProps> = ({
             accessibilityLabel={isMenuOpen ? 'Fechar menu de navegação' : 'Abrir menu de navegação'}
             accessibilityState={{ expanded: isMenuOpen }}
           >
-            {isMenuOpen ? <X color="#4338CA" size={22} /> : <Menu color="#4338CA" size={22} />}
+            {isMenuOpen ? (
+              <X color={COLORS.accentPrimary} size={22} />
+            ) : (
+              <Menu color={COLORS.accentPrimary} size={22} />
+            )}
           </TouchableOpacity>
         )}
       </View>
@@ -193,8 +197,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(120, 113, 198, 0.16)',
-    shadowColor: 'rgba(17, 24, 39, 0.08)',
+    borderBottomColor: 'rgba(106, 64, 180, 0.18)',
+    shadowColor: 'rgba(88, 48, 156, 0.12)',
     shadowOpacity: 1,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 12 },
@@ -221,8 +225,8 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(148, 163, 184, 0.3)',
-    backgroundColor: 'rgba(255, 255, 255, 0.82)',
+    borderColor: 'rgba(106, 64, 180, 0.22)',
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 'auto',
@@ -244,7 +248,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(148, 163, 184, 0.3)',
+    borderColor: 'rgba(106, 64, 180, 0.18)',
     alignItems: 'center',
   },
   loginButtonText: {
@@ -271,7 +275,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.32)',
+    backgroundColor: 'rgba(31, 37, 71, 0.4)',
     paddingHorizontal: 24,
     paddingTop: 96,
     alignItems: 'flex-end',
@@ -282,8 +286,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 8,
     borderWidth: 1,
-    borderColor: 'rgba(148, 163, 184, 0.25)',
-    shadowColor: 'rgba(15, 23, 42, 0.2)',
+    borderColor: 'rgba(106, 64, 180, 0.2)',
+    shadowColor: 'rgba(88, 48, 156, 0.24)',
     shadowOpacity: 0.6,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 18 },
@@ -296,7 +300,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   menuItemActive: {
-    backgroundColor: 'rgba(124, 58, 237, 0.12)',
+    backgroundColor: 'rgba(106, 64, 180, 0.16)',
   },
   menuItemText: {
     fontSize: 15,
@@ -304,7 +308,7 @@ const styles = StyleSheet.create({
     color: COLORS.heading,
   },
   menuItemTextActive: {
-    color: '#7C3AED',
+    color: COLORS.accentPrimary,
     fontWeight: '600',
   },
 });

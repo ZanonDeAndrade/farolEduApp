@@ -2,20 +2,20 @@
 
 /* ===== CSS VARIABLES ===== */
 :root {
-    --primary-blue: #1e40af;
-    --secondary-blue: #3b82f6;
-    --light-blue: #eff6ff;
-    --yellow: #f59e0b;
-    --yellow-hover: #d97706;
+    --primary-blue: #6a40b4;
+    --secondary-blue: #b7cbf5;
+    --light-blue: #e4ecff;
+    --yellow: #f7e8a3;
+    --yellow-hover: #f1d86f;
     --white: #ffffff;
-    --gray-100: #f3f4f6;
-    --gray-200: #e5e7eb;
-    --gray-300: #d1d5db;
-    --gray-400: #9ca3af;
-    --gray-600: #6b7280;
-    --gray-700: #374151;
-    --gray-800: #1f2937;
-    --gray-900: #111827;
+    --gray-100: #eef2ff;
+    --gray-200: #dde4fb;
+    --gray-300: #d0d9f5;
+    --gray-400: #9da6cf;
+    --gray-600: #59628b;
+    --gray-700: #37406a;
+    --gray-800: #262d53;
+    --gray-900: #1f2547;
     --spacing-1: 0.25rem;
     --spacing-2: 0.5rem;
     --spacing-3: 0.75rem;
@@ -43,7 +43,7 @@
   /* ===== MAIN CONTAINER ===== */
   .register-container {
     min-height: 100vh;
-    background: linear-gradient(135deg, #fff6f1 0%, #fdf3ff 50%, #eef2ff 100%);
+    background: linear-gradient(135deg, #f7f9ff 0%, #e9efff 52%, #d4ddfa 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -78,8 +78,8 @@
   }
   
   .register-back-button:hover {
-    color: var(--gray-800);
-    background: var(--gray-100);
+    color: var(--primary-blue);
+    background: rgba(106, 64, 180, 0.12);
   }
   
   .register-back-icon {
@@ -139,7 +139,7 @@
     left: 0;
     right: 0;
     height: 2px;
-    background: var(--gray-200);
+    background: rgba(106, 64, 180, 0.18);
     z-index: 0;
   }
   
@@ -160,7 +160,7 @@
   }
   
   .register-progress-step.active {
-    background: var(--secondary-blue);
+    background: var(--primary-blue);
     color: var(--white);
   }
   
@@ -172,17 +172,17 @@
   }
   
   .register-active-label {
-    color: var(--secondary-blue);
+    color: var(--primary-blue);
     font-weight: var(--font-weight-medium);
   }
   
   /* ===== FORM CONTAINER ===== */
   .register-form-container {
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.96);
     border-radius: 1.75rem;
-    box-shadow: 0 30px 50px rgba(148, 163, 184, 0.28);
+    box-shadow: 0 30px 50px rgba(106, 64, 180, 0.18);
     padding: var(--spacing-8);
-    border: 1px solid rgba(124, 58, 237, 0.08);
+    border: 1px solid rgba(106, 64, 180, 0.12);
     backdrop-filter: blur(6px);
   }
   
@@ -243,7 +243,7 @@
     transform: translateY(-50%);
     width: 1.25rem;
     height: 1.25rem;
-    color: var(--gray-600);
+    color: #7d8ab1;
     pointer-events: none;
     z-index: 2;
   }
@@ -262,14 +262,14 @@
   .register-form-input {
     width: 100%;
     padding: var(--spacing-3) var(--spacing-4) var(--spacing-3) 3rem;
-    border: 1px solid var(--gray-300);
+    border: 1px solid rgba(106, 64, 180, 0.2);
     border-radius: var(--border-radius-lg);
     font-size: var(--font-size-base);
     line-height: 1.5;
     transition: var(--transition);
     outline: none;
     font-family: inherit;
-    background: var(--white);
+    background: rgba(228, 236, 255, 0.4);
     box-sizing: border-box;
   }
   
@@ -278,8 +278,8 @@
   }
   
   .register-form-input:focus {
-    border-color: var(--secondary-blue);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(106, 64, 180, 0.14);
   }
   
   .register-form-input::placeholder {
@@ -290,7 +290,7 @@
     width: 100%;
     min-height: 100px;
     padding: var(--spacing-3);
-    border: 1px solid var(--gray-300);
+    border: 1px solid rgba(106, 64, 180, 0.2);
     border-radius: var(--border-radius-lg);
     font-size: var(--font-size-base);
     font-family: inherit;
@@ -302,8 +302,8 @@
   }
   
   .register-form-textarea:focus {
-    border-color: var(--secondary-blue);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(106, 64, 180, 0.14);
   }
   
   /* ===== PASSWORD TOGGLE ===== */
@@ -314,7 +314,7 @@
     transform: translateY(-50%);
     background: none;
     border: none;
-    color: var(--gray-600);
+    color: #7d8ab1;
     cursor: pointer;
     transition: var(--transition);
     padding: 0.25rem;
@@ -326,8 +326,8 @@
   }
   
   .register-password-toggle:hover {
-    color: var(--gray-800);
-    background: var(--gray-100);
+    color: var(--primary-blue);
+    background: rgba(106, 64, 180, 0.12);
   }
   
   .register-toggle-icon {
@@ -354,9 +354,9 @@
   .register-user-type-card {
     width: 100%;
     padding: var(--spacing-5);
-    border: 2px solid var(--gray-200);
+    border: 2px solid rgba(106, 64, 180, 0.16);
     border-radius: var(--border-radius-xl);
-    background: var(--white);
+    background: rgba(255, 255, 255, 0.92);
     cursor: pointer;
     transition: var(--transition);
     text-align: left;
@@ -368,13 +368,13 @@
   }
   
   .register-student-card:hover {
-    border-color: var(--secondary-blue);
-    background: var(--light-blue);
+    border-color: var(--primary-blue);
+    background: rgba(106, 64, 180, 0.1);
   }
   
   .register-teacher-card:hover {
-    border-color: var(--yellow);
-    background: #fef3c7;
+    border-color: rgba(247, 232, 163, 0.5);
+    background: rgba(247, 232, 163, 0.2);
   }
   
   .register-card-content {
@@ -399,11 +399,11 @@
   }
   
   .register-student-icon-bg {
-    background: var(--light-blue);
+    background: rgba(106, 64, 180, 0.18);
   }
   
   .register-teacher-icon-bg {
-    background: #fef3c7;
+    background: rgba(247, 232, 163, 0.28);
   }
   
   .register-card-icon {
@@ -412,11 +412,11 @@
   }
   
   .register-student-icon-bg .register-card-icon {
-    color: var(--secondary-blue);
+    color: var(--primary-blue);
   }
   
   .register-teacher-icon-bg .register-card-icon {
-    color: var(--yellow);
+    color: #5b309d;
   }
   
   .register-card-text {
@@ -443,7 +443,7 @@
     justify-content: space-between;
     margin-bottom: var(--spacing-6);
     padding: var(--spacing-4);
-    background: var(--gray-100);
+    background: rgba(228, 236, 255, 0.35);
     border-radius: var(--border-radius-lg);
   }
   
@@ -460,7 +460,7 @@
   
   .register-change-type-btn {
     font-size: var(--font-size-sm);
-    color: var(--secondary-blue);
+    color: var(--primary-blue);
     background: none;
     border: none;
     cursor: pointer;
@@ -471,8 +471,8 @@
   }
   
   .register-change-type-btn:hover {
-    color: var(--primary-blue);
-    background: var(--light-blue);
+    color: #8357d9;
+    background: rgba(106, 64, 180, 0.12);
   }
   
   /* ===== TEACHER EXTRA FIELDS ===== */
@@ -492,17 +492,17 @@
     align-items: center;
     gap: var(--spacing-2);
     padding: var(--spacing-2) var(--spacing-3);
-    border: 1px solid var(--gray-200);
+    border: 1px solid rgba(106, 64, 180, 0.18);
     border-radius: var(--border-radius);
     cursor: pointer;
     transition: var(--transition);
     font-size: var(--font-size-sm);
-    background: var(--white);
+    background: rgba(255, 255, 255, 0.92);
     user-select: none;
   }
   
   .register-subject-checkbox:hover {
-    background: var(--gray-100);
+    background: rgba(106, 64, 180, 0.1);
   }
   
   .register-subject-checkbox input[type="checkbox"] {
@@ -512,7 +512,7 @@
   .register-checkmark {
     width: 1rem;
     height: 1rem;
-    border: 2px solid var(--gray-300);
+    border: 2px solid rgba(106, 64, 180, 0.35);
     border-radius: 3px;
     position: relative;
     transition: var(--transition);
@@ -520,17 +520,17 @@
   }
   
   .register-subject-checkbox input[type="checkbox"]:checked + .register-checkmark {
-    background: var(--yellow);
-    border-color: var(--yellow);
+    background: var(--primary-blue);
+    border-color: var(--primary-blue);
   }
-  
+
   .register-subject-checkbox input[type="checkbox"]:checked + .register-checkmark::after {
     content: '✓';
     position: absolute;
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    color: var(--gray-900);
+    color: var(--white);
     font-size: 0.75rem;
     font-weight: var(--font-weight-bold);
   }
@@ -554,39 +554,39 @@
   }
   
   .register-btn-enabled {
-    background: var(--secondary-blue);
+    background: linear-gradient(135deg, var(--primary-blue), #8357d9);
     color: var(--white);
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 18px 32px rgba(106, 64, 180, 0.24);
   }
   
   .register-btn-enabled:hover {
-    background: var(--primary-blue);
+    background: linear-gradient(135deg, #58309c, var(--primary-blue));
     transform: translateY(-1px);
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 22px 40px rgba(88, 48, 156, 0.28);
   }
   
   .register-btn-student {
-    background: var(--secondary-blue);
+    background: linear-gradient(135deg, var(--primary-blue), #8357d9);
     color: var(--white);
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 18px 32px rgba(106, 64, 180, 0.24);
   }
   
   .register-btn-student:hover {
-    background: var(--primary-blue);
+    background: linear-gradient(135deg, #58309c, var(--primary-blue));
     transform: translateY(-1px);
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 22px 40px rgba(88, 48, 156, 0.28);
   }
   
   .register-btn-teacher {
-    background: var(--yellow);
-    color: var(--gray-900);
-    box-shadow: var(--shadow-md);
+    background: linear-gradient(135deg, var(--yellow), var(--yellow-hover));
+    color: #5b309d;
+    box-shadow: 0 18px 32px rgba(240, 205, 96, 0.26);
   }
   
   .register-btn-teacher:hover {
-    background: var(--yellow-hover);
+    background: linear-gradient(135deg, var(--yellow-hover), #f0cf5e);
     transform: translateY(-1px);
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 22px 40px rgba(240, 197, 82, 0.3);
   }
   
   .register-btn-disabled {
@@ -720,15 +720,15 @@
   }
 
   .register-popup-success {
-    border-color: rgba(59, 130, 246, 0.35);
+    border-color: rgba(106, 64, 180, 0.35);
   }
 
   .register-popup-success .register-popup-icon {
-    color: var(--secondary-blue);
+    color: var(--primary-blue);
   }
 
   .register-popup-success .register-popup-close {
-    background: linear-gradient(135deg, var(--secondary-blue), var(--primary-blue));
+    background: linear-gradient(135deg, var(--primary-blue), #8357d9);
     color: var(--white);
   }
 
@@ -840,7 +840,7 @@
       text-align: center;
     }
     
-    .register-selected-type {
+  .register-selected-type {
       flex-direction: column;
       gap: var(--spacing-2);
       text-align: center;
@@ -848,6 +848,23 @@
     
     .register-form-input {
       font-size: 16px; /* Previne zoom no iOS */
+    }
+  }
+
+  @media (max-width: 360px) {
+    .register-form-container {
+      padding: var(--spacing-3);
+      border-radius: 1.5rem;
+    }
+
+    .register-form-input,
+    .register-form-textarea {
+      font-size: 16px;
+    }
+
+    .register-next-btn,
+    .register-submit-btn {
+      font-size: var(--font-size-sm);
     }
   }
   
@@ -860,17 +877,17 @@
   .register-login-btn:focus,
   .register-next-btn:focus,
   .register-submit-btn:focus {
-    outline: 2px solid var(--secondary-blue);
+    outline: 2px solid rgba(106, 64, 180, 0.5);
     outline-offset: 2px;
   }
   
   .register-user-type-card:focus {
-    outline: 2px solid var(--secondary-blue);
+    outline: 2px solid rgba(106, 64, 180, 0.5);
     outline-offset: 2px;
   }
   
   .register-subject-checkbox:focus-within {
-    outline: 2px solid var(--secondary-blue);
+    outline: 2px solid rgba(106, 64, 180, 0.5);
     outline-offset: 2px;
   }
   

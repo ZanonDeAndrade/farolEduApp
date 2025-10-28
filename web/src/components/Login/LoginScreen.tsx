@@ -41,7 +41,7 @@ const LoginScreen: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!loginData.userType) return;
-
+    
     const email = loginData.email.trim().toLowerCase();
     const password = loginData.password;
 

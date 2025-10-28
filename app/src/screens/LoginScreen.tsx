@@ -30,6 +30,7 @@ import type { RootStackParamList } from '../navigation/types';
 import { useAuth, type UserType as AuthUserType } from '../context/AuthContext';
 import { ApiError } from '../services/apiClient';
 import Navbar, { type NavbarLink } from '../components/Navbar';
+import { COLORS } from '../theme/colors';
 
 type NullableUserType = AuthUserType | null;
 
@@ -152,7 +153,10 @@ const LoginScreen: React.FC = () => {
   }, []);
 
   return (
-    <LinearGradient colors={['#FFF6F1', '#FDF3FF', '#EEF2FF']} style={styles.gradient}>
+    <LinearGradient
+      colors={['#F7F9FF', '#E9EFFF', '#D6DEFA']}
+      style={styles.gradient}
+    >
       <SafeAreaView style={styles.safeArea}>
         <Navbar
           links={navbarLinks}
@@ -194,7 +198,7 @@ const LoginScreen: React.FC = () => {
                       <View style={styles.cardContent}>
                         <View style={styles.iconWrapper}>
                           <View style={[styles.iconBackground, styles.studentIconBackground]}>
-                            <User size={24} color="#2563EB" />
+                            <User size={24} color={COLORS.accentPrimary} />
                           </View>
                         </View>
                         <View style={styles.cardText}>
@@ -218,7 +222,7 @@ const LoginScreen: React.FC = () => {
                       <View style={styles.cardContent}>
                         <View style={styles.iconWrapper}>
                           <View style={[styles.iconBackground, styles.teacherIconBackground]}>
-                            <GraduationCap size={24} color="#F97316" />
+                          <GraduationCap size={24} color={COLORS.accentWarmAlt} />
                           </View>
                         </View>
                         <View style={styles.cardText}>
@@ -243,9 +247,9 @@ const LoginScreen: React.FC = () => {
                           ]}
                         >
                           {loginData.userType === 'student' ? (
-                            <User size={18} color="#2563EB" />
+                          <User size={18} color={COLORS.accentPrimary} />
                           ) : (
-                            <GraduationCap size={18} color="#F97316" />
+                          <GraduationCap size={18} color={COLORS.accentWarmAlt} />
                           )}
                         </View>
                         <Text style={styles.typeLabel}>
@@ -269,12 +273,12 @@ const LoginScreen: React.FC = () => {
                     <View>
                       <Text style={styles.inputLabel}>Email</Text>
                       <View style={styles.inputWrapper}>
-                        <Mail size={20} color="#64748B" style={styles.inputIcon} />
+                        <Mail size={20} color={COLORS.textSubtle} style={styles.inputIcon} />
                         <TextInput
                           value={loginData.email}
                           onChangeText={value => handleInputChange('email', value)}
                           placeholder="seu@email.com"
-                          placeholderTextColor="#94A3B8"
+                          placeholderTextColor={COLORS.textSubtle}
                           keyboardType="email-address"
                           autoCapitalize="none"
                           autoCorrect={false}
@@ -286,12 +290,12 @@ const LoginScreen: React.FC = () => {
                     <View>
                       <Text style={styles.inputLabel}>Senha</Text>
                       <View style={styles.inputWrapper}>
-                        <Lock size={20} color="#64748B" style={styles.inputIcon} />
+                        <Lock size={20} color={COLORS.textSubtle} style={styles.inputIcon} />
                         <TextInput
                           value={loginData.password}
                           onChangeText={value => handleInputChange('password', value)}
                           placeholder="••••••••"
-                          placeholderTextColor="#94A3B8"
+                          placeholderTextColor={COLORS.textSubtle}
                           secureTextEntry={!showPassword}
                           style={styles.input}
                         />
@@ -302,9 +306,9 @@ const LoginScreen: React.FC = () => {
                           accessibilityLabel={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                         >
                           {showPassword ? (
-                            <EyeOff size={20} color="#475569" />
+                            <EyeOff size={20} color={COLORS.textMuted} />
                           ) : (
-                            <Eye size={20} color="#475569" />
+                            <Eye size={20} color={COLORS.textMuted} />
                           )}
                         </TouchableOpacity>
                       </View>
@@ -330,11 +334,32 @@ const LoginScreen: React.FC = () => {
                     >
                       {isLoading ? (
                         <View style={styles.loadingContent}>
-                          <ActivityIndicator size="small" color="#FFFFFF" />
-                          <Text style={styles.loadingText}>Entrando...</Text>
+                          <ActivityIndicator
+                            size="small"
+                            color={
+                              loginData.userType === 'teacher'
+                                ? COLORS.accentHighlight
+                                : COLORS.white
+                            }
+                          />
+                          <Text
+                            style={[
+                              styles.loadingText,
+                              loginData.userType === 'teacher' && styles.teacherSubmitButtonText,
+                            ]}
+                          >
+                            Entrando...
+                          </Text>
                         </View>
                       ) : (
-                        <Text style={styles.submitButtonText}>Entrar</Text>
+                        <Text
+                          style={[
+                            styles.submitButtonText,
+                            loginData.userType === 'teacher' && styles.teacherSubmitButtonText,
+                          ]}
+                        >
+                          Entrar
+                        </Text>
                       )}
                     </TouchableOpacity>
                   </>
@@ -432,11 +457,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#111827',
+    color: COLORS.heading,
   },
   subtitle: {
     fontSize: 16,
-    color: '#475569',
+    color: COLORS.textMuted,
     textAlign: 'center',
   },
   formContainer: {
@@ -444,8 +469,8 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     padding: 24,
     borderWidth: 1,
-    borderColor: 'rgba(124, 58, 237, 0.08)',
-    shadowColor: '#94A3B8',
+    borderColor: 'rgba(106, 64, 180, 0.12)',
+    shadowColor: COLORS.accentPrimary,
     shadowOffset: { width: 0, height: 14 },
     shadowOpacity: 0.25,
     shadowRadius: 24,
@@ -458,24 +483,24 @@ const styles = StyleSheet.create({
   selectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#1F2937',
+    color: COLORS.text,
     textAlign: 'center',
     marginBottom: 8,
   },
   userTypeCard: {
     borderWidth: 1,
-    borderColor: 'rgba(148, 163, 184, 0.25)',
+    borderColor: 'rgba(106, 64, 180, 0.18)',
     borderRadius: 24,
     padding: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.92)',
-    shadowColor: '#94A3B8',
+    shadowColor: COLORS.accentPrimary,
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.18,
     shadowRadius: 20,
     elevation: 4,
   },
   userTypeCardSelected: {
-    borderColor: 'rgba(79, 70, 229, 0.4)',
+    borderColor: 'rgba(106, 64, 180, 0.4)',
     transform: [{ translateY: -2 }],
   },
   studentCard: {},
@@ -496,10 +521,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   studentIconBackground: {
-    backgroundColor: 'rgba(37, 99, 235, 0.15)',
+    backgroundColor: 'rgba(106, 64, 180, 0.18)',
   },
   teacherIconBackground: {
-    backgroundColor: 'rgba(249, 115, 22, 0.15)',
+    backgroundColor: 'rgba(247, 232, 163, 0.3)',
   },
   cardText: {
     flex: 1,
@@ -508,11 +533,11 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1F2937',
+    color: COLORS.text,
   },
   cardDescription: {
     fontSize: 14,
-    color: '#475569',
+    color: COLORS.textMuted,
   },
   selectedTypeIndicator: {
     flexDirection: 'row',
@@ -521,7 +546,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     paddingVertical: 10,
     paddingHorizontal: 14,
-    backgroundColor: 'rgba(148, 163, 184, 0.12)',
+    backgroundColor: 'rgba(183, 203, 245, 0.24)',
   },
   typeDisplay: {
     flexDirection: 'row',
@@ -536,31 +561,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   selectedStudentBackground: {
-    backgroundColor: 'rgba(37, 99, 235, 0.18)',
+    backgroundColor: 'rgba(106, 64, 180, 0.2)',
   },
   selectedTeacherBackground: {
-    backgroundColor: 'rgba(249, 115, 22, 0.18)',
+    backgroundColor: 'rgba(247, 232, 163, 0.34)',
   },
   typeLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: COLORS.text,
   },
   changeTypeButton: {
     paddingVertical: 6,
     paddingHorizontal: 14,
     borderRadius: 14,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: 'rgba(228, 236, 255, 0.5)',
   },
   changeTypeText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#4338CA',
+    color: COLORS.accentPrimary,
   },
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1F2937',
+    color: COLORS.text,
     marginBottom: 8,
   },
   inputWrapper: {
@@ -568,8 +593,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.9)',
-    backgroundColor: '#FFFFFF',
+    borderColor: 'rgba(106, 64, 180, 0.2)',
+    backgroundColor: 'rgba(228, 236, 255, 0.45)',
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
@@ -579,7 +604,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#1F2937',
+    color: COLORS.text,
   },
   passwordToggle: {
     padding: 6,
@@ -593,7 +618,7 @@ const styles = StyleSheet.create({
   },
   forgotPasswordText: {
     fontSize: 14,
-    color: '#4338CA',
+    color: COLORS.accentPrimary,
     fontWeight: '500',
   },
   submitButton: {
@@ -603,18 +628,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   studentSubmitButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.accentPrimary,
   },
   teacherSubmitButton: {
-    backgroundColor: '#F97316',
+    backgroundColor: COLORS.accentWarm,
+    borderWidth: 1,
+    borderColor: COLORS.accentHighlight,
   },
   submitButtonDisabled: {
-    backgroundColor: '#CBD5F5',
+    backgroundColor: COLORS.accentSecondary,
   },
   submitButtonText: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontSize: 16,
     fontWeight: '600',
+  },
+  teacherSubmitButtonText: {
+    color: COLORS.accentHighlight,
   },
   loadingContent: {
     flexDirection: 'row',
@@ -622,7 +652,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   loadingText: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -633,11 +663,11 @@ const styles = StyleSheet.create({
   },
   signupText: {
     fontSize: 14,
-    color: '#475569',
+    color: COLORS.textMuted,
   },
   signupButtonText: {
     fontSize: 14,
-    color: '#4338CA',
+    color: COLORS.accentPrimary,
     fontWeight: '600',
   },
   footer: {
@@ -646,12 +676,12 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 12,
-    color: '#64748B',
+    color: COLORS.textSubtle,
     textAlign: 'center',
   },
   popupOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    backgroundColor: 'rgba(31, 37, 71, 0.55)',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
@@ -664,7 +694,7 @@ const styles = StyleSheet.create({
     gap: 16,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
-    shadowColor: '#0F172A',
+    shadowColor: COLORS.accentPrimary,
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.25,
     shadowRadius: 32,
@@ -686,11 +716,11 @@ const styles = StyleSheet.create({
   popupTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
+    color: COLORS.heading,
   },
   popupMessage: {
     fontSize: 15,
-    color: '#1F2937',
+    color: COLORS.text,
     textAlign: 'center',
   },
   popupCloseButton: {
@@ -698,10 +728,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 32,
     borderRadius: 16,
-    backgroundColor: '#4338CA',
+    backgroundColor: COLORS.accentPrimary,
   },
   popupCloseButtonText: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontSize: 15,
     fontWeight: '600',
   },
