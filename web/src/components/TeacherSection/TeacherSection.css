@@ -1,6 +1,6 @@
 .teacher-section {
   padding: clamp(4rem, 10vw, 7rem) 0;
-  background: linear-gradient(140deg, rgba(255, 246, 241, 0.6) 0%, rgba(253, 243, 255, 0.8) 55%, rgba(238, 242, 255, 0.9) 100%);
+  background: linear-gradient(140deg, rgba(247, 249, 255, 0.82) 0%, rgba(230, 237, 255, 0.92) 55%, rgba(212, 221, 250, 0.95) 100%);
 }
 
 .teacher-shell {
@@ -24,11 +24,11 @@
   gap: 0.55rem;
   padding: 0.45rem 1rem;
   border-radius: 999px;
-  background: rgba(20, 184, 166, 0.12);
-  color: #0f766e;
+  background: rgba(247, 232, 163, 0.28);
+  color: #5b309d;
   font-weight: 600;
   width: fit-content;
-  box-shadow: 0 14px 34px rgba(20, 184, 166, 0.18);
+  box-shadow: 0 14px 34px rgba(106, 64, 180, 0.18);
 }
 
 .teacher-eyebrow svg {
@@ -39,20 +39,22 @@
 .teacher-copy h2 {
   font-size: clamp(2.3rem, 3.5vw, 3.1rem);
   line-height: 1.15;
-  color: #0f172a;
+  color: #1f2547;
   letter-spacing: -0.01em;
   margin: 0;
 }
 
 .teacher-copy h2 span {
-  color: #fb7185;
+  background: linear-gradient(130deg, #5b309d, #7d58ce 60%, #f7e8a3 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .teacher-copy p {
   margin: 0;
   font-size: 1.1rem;
   line-height: 1.7;
-  color: #1e293b;
+  color: #2f3a66;
 }
 
 .teacher-highlights {
@@ -67,19 +69,19 @@
   display: flex;
   align-items: center;
   gap: 0.85rem;
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(124, 58, 237, 0.1);
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(106, 64, 180, 0.16);
   border-radius: 18px;
   padding: 0.85rem 1.1rem;
   font-weight: 500;
-  color: #1f2937;
-  box-shadow: 0 18px 32px rgba(148, 163, 184, 0.16);
+  color: #2a325d;
+  box-shadow: 0 18px 32px rgba(106, 64, 180, 0.12);
 }
 
 .teacher-highlights li svg {
   width: 1.2rem;
   height: 1.2rem;
-  color: #7c3aed;
+  color: #6a40b4;
 }
 
 .teacher-cta {
@@ -87,18 +89,18 @@
   border: none;
   border-radius: 999px;
   padding: 0.95rem 2.4rem;
-  background: linear-gradient(135deg, #f97316, #fb7185);
-  color: #fff7ed;
+  background: linear-gradient(135deg, #6a40b4, #8357d9);
+  color: #ffffff;
   font-size: 1.02rem;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 22px 36px rgba(249, 115, 22, 0.25);
+  box-shadow: 0 22px 36px rgba(106, 64, 180, 0.24);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .teacher-cta:hover {
   transform: translateY(-2px);
-  box-shadow: 0 28px 46px rgba(249, 115, 22, 0.32);
+  box-shadow: 0 28px 46px rgba(88, 48, 156, 0.3);
 }
 
 .teacher-visual {
@@ -112,10 +114,10 @@
   width: clamp(280px, 32vw, 360px);
   border-radius: 26px;
   padding: 1.85rem;
-  background: linear-gradient(150deg, rgba(124, 58, 237, 0.12), rgba(20, 184, 166, 0.16));
-  box-shadow: 0 28px 50px rgba(15, 23, 42, 0.14);
+  background: linear-gradient(150deg, rgba(106, 64, 180, 0.18), rgba(183, 203, 245, 0.28));
+  box-shadow: 0 28px 50px rgba(88, 48, 156, 0.18);
   backdrop-filter: blur(6px);
-  border: 1px solid rgba(124, 58, 237, 0.2);
+  border: 1px solid rgba(106, 64, 180, 0.24);
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -127,7 +129,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 15% 15%, rgba(249, 115, 22, 0.18) 0%, rgba(249, 115, 22, 0) 60%);
+  background: radial-gradient(circle at 15% 15%, rgba(247, 232, 163, 0.25) 0%, rgba(247, 232, 163, 0) 60%);
   pointer-events: none;
 }
 
@@ -141,29 +143,29 @@
   width: 56px;
   height: 56px;
   border-radius: 18px;
-  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  background: linear-gradient(135deg, #6a40b4, #8357d9);
   color: white;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 1.1rem;
-  box-shadow: 0 14px 22px rgba(124, 58, 237, 0.32);
+  box-shadow: 0 14px 22px rgba(106, 64, 180, 0.28);
 }
 
 .teacher-card-header strong {
   font-size: 1.125rem;
-  color: #0f172a;
+  color: #1f2547;
 }
 
 .teacher-card-header small {
   display: block;
-  color: #334155;
+  color: #56608c;
   margin-top: 0.1rem;
 }
 
 .teacher-card-body {
-  background: rgba(255, 255, 255, 0.86);
+  background: rgba(255, 255, 255, 0.92);
   border-radius: 20px;
   padding: 1rem 1.1rem;
   display: flex;
@@ -177,18 +179,19 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  color: #0f766e;
+  color: #5b309d;
   font-weight: 600;
 }
 
 .teacher-stat svg {
   width: 1rem;
   height: 1rem;
+  color: #6a40b4;
 }
 
 .teacher-card-body p {
   margin: 0;
-  color: #1f2937;
+  color: #2a325d;
   font-size: 0.95rem;
   line-height: 1.55;
 }
@@ -204,11 +207,11 @@
 
 .teacher-card-footer strong {
   font-size: 1.4rem;
-  color: #fb7185;
+  color: #5b309d;
 }
 
 .teacher-card-footer span {
-  color: #475569;
+  color: #56608c;
   font-size: 0.9rem;
 }
 
@@ -218,15 +221,15 @@
   padding: 0.65rem 1.5rem;
   font-weight: 600;
   cursor: pointer;
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.92), rgba(20, 184, 166, 0.92));
+  background: linear-gradient(135deg, #6a40b4, #8a5fd9);
   color: white;
-  box-shadow: 0 18px 32px rgba(124, 58, 237, 0.24);
+  box-shadow: 0 18px 32px rgba(106, 64, 180, 0.24);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .teacher-card-footer button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 24px 40px rgba(124, 58, 237, 0.32);
+  box-shadow: 0 24px 40px rgba(88, 48, 156, 0.3);
 }
 
 @media (max-width: 1024px) {
@@ -256,5 +259,26 @@
   .teacher-cta {
     width: 100%;
     text-align: center;
+  }
+}
+
+@media (max-width: 520px) {
+  .teacher-section {
+    padding: clamp(3rem, 14vw, 4.5rem) 0;
+  }
+
+  .teacher-copy {
+    gap: 1.5rem;
+  }
+
+  .teacher-highlights li {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.65rem;
+  }
+
+  .teacher-card {
+    padding: 1.6rem;
+    border-radius: 22px;
   }
 }

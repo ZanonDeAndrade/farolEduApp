@@ -1,19 +1,21 @@
 .available-classes {
   padding: clamp(4.2rem, 9vw, 7rem) 0;
-  background: linear-gradient(180deg, rgba(255, 247, 244, 0.92) 0%, rgba(255, 255, 255, 0.94) 65%, rgba(243, 232, 255, 0.92) 100%);
+  background: linear-gradient(180deg, rgba(247, 249, 255, 0.94) 0%, rgba(255, 255, 255, 0.95) 65%, rgba(230, 237, 255, 0.92) 100%);
 }
 
 .classes-title {
   font-size: clamp(2.2rem, 5vw, 3.1rem);
   font-weight: 700;
-  color: #0f172a;
+  color: #1f2547;
   text-align: center;
   margin-bottom: clamp(2.5rem, 6vw, 4rem);
   line-height: 1.2;
 }
 
 .classes-title span {
-  color: #7c3aed;
+  background: linear-gradient(130deg, #5b309d, #7d58ce 65%, #f7e8a3 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .teacher-grid {

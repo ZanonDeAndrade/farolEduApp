@@ -99,6 +99,18 @@ const Navbar: React.FC = () => {
                 </button>
               </li>
             ))}
+            <li className="navbar__mobile-actions">
+              <Link to="/login" className="navbar__mobile-action" onClick={closeMenu}>
+                Entrar
+              </Link>
+              <Link
+                to="/register"
+                className="navbar__mobile-action navbar__mobile-action--primary"
+                onClick={closeMenu}
+              >
+                Cadastrar
+              </Link>
+            </li>
           </ul>
 
           <div className="navbar__actions">

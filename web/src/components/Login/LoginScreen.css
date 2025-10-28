@@ -2,18 +2,18 @@
 
 /* Variáveis CSS (assumindo que existem em outro arquivo) */
 :root {
-  --light-blue: #dbeafe;
+  --light-blue: #e4ecff;
   --white: #ffffff;
-  --secondary-blue: #3b82f6;
-  --primary-blue: #2563eb;
-  --yellow: #f59e0b;
-  --yellow-hover: #d97706;
-  --gray-900: #111827;
-  --gray-800: #1f2937;
-  --gray-700: #374151;
-  --gray-600: #4b5563;
-  --gray-300: #d1d5db;
-  --gray-200: #e5e7eb;
+  --secondary-blue: #b7cbf5;
+  --primary-blue: #6a40b4;
+  --yellow: #f7e8a3;
+  --yellow-hover: #f1d86f;
+  --gray-900: #1f2547;
+  --gray-800: #262d53;
+  --gray-700: #343c66;
+  --gray-600: #56608c;
+  --gray-300: #d6ddf5;
+  --gray-200: #e7edff;
   
   --spacing-1: 0.25rem;
   --spacing-2: 0.5rem;
@@ -42,7 +42,7 @@
 /* Container Principal */
 .login-screen-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #fff6f1 0%, #fdf3ff 55%, #eef2ff 100%);
+  background: linear-gradient(135deg, #f7f9ff 0%, #e9efff 55%, #d6defa 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -83,7 +83,7 @@
 }
 
 .login-app-subtitle {
-  color: #475569;
+  color: #56608c;
   font-size: var(--font-size-base);
   margin: 0;
 }
@@ -92,9 +92,9 @@
 .login-form-container {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 1.75rem;
-  box-shadow: 0 28px 48px rgba(148, 163, 184, 0.28);
+  box-shadow: 0 28px 48px rgba(106, 64, 180, 0.16);
   padding: var(--spacing-8);
-  border: 1px solid rgba(124, 58, 237, 0.08);
+  border: 1px solid rgba(106, 64, 180, 0.12);
   backdrop-filter: blur(6px);
 }
 
@@ -122,7 +122,7 @@
 .login-user-type-card {
   width: 100%;
   padding: var(--spacing-6);
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  border: 1px solid rgba(106, 64, 180, 0.16);
   border-radius: 1.5rem;
   background: rgba(255, 255, 255, 0.92);
   cursor: pointer;
@@ -135,13 +135,13 @@
 }
 
 .login-student-card:hover {
-  border-color: rgba(124, 58, 237, 0.4);
-  background: rgba(124, 58, 237, 0.1);
+  border-color: rgba(106, 64, 180, 0.4);
+  background: rgba(106, 64, 180, 0.12);
 }
 
 .login-teacher-card:hover {
-  border-color: rgba(249, 115, 22, 0.35);
-  background: rgba(249, 115, 22, 0.08);
+  border-color: rgba(247, 232, 163, 0.45);
+  background: rgba(247, 232, 163, 0.16);
 }
 
 .login-card-content {
@@ -166,19 +166,19 @@
 }
 
 .login-student-icon-bg {
-  background: rgba(124, 58, 237, 0.18);
+  background: rgba(106, 64, 180, 0.18);
 }
 
 .login-teacher-icon-bg {
-  background: rgba(249, 115, 22, 0.15);
+  background: rgba(247, 232, 163, 0.28);
 }
 
 .login-student-card:hover .login-student-icon-bg {
-  background: rgba(124, 58, 237, 0.32);
+  background: rgba(106, 64, 180, 0.32);
 }
 
 .login-teacher-card:hover .login-teacher-icon-bg {
-  background: rgba(249, 115, 22, 0.24);
+  background: rgba(247, 232, 163, 0.34);
 }
 
 .login-card-icon {
@@ -191,7 +191,7 @@
 }
 
 .login-teacher-icon-bg .login-card-icon {
-  color: var(--yellow);
+  color: #5b309d;
 }
 
 .login-card-text {
@@ -235,11 +235,11 @@
 }
 
 .login-student-bg {
-  background: rgba(124, 58, 237, 0.18);
+  background: rgba(106, 64, 180, 0.18);
 }
 
 .login-teacher-bg {
-  background: rgba(249, 115, 22, 0.16);
+  background: rgba(247, 232, 163, 0.28);
 }
 
 .login-small-icon {
@@ -248,11 +248,11 @@
 }
 
 .login-student-bg .login-small-icon {
-  color: var(--secondary-blue);
+  color: var(--primary-blue);
 }
 
 .login-teacher-bg .login-small-icon {
-  color: var(--yellow);
+  color: #5b309d;
 }
 
 .login-type-label {
@@ -262,7 +262,7 @@
 
 .login-change-type-btn {
   font-size: var(--font-size-sm);
-  color: var(--secondary-blue);
+  color: var(--primary-blue);
   background: none;
   border: none;
   cursor: pointer;
@@ -270,7 +270,7 @@
 }
 
 .login-change-type-btn:hover {
-  color: var(--primary-blue);
+  color: #8357d9;
 }
 
 /* Form Groups */
@@ -298,26 +298,26 @@
   transform: translateY(-50%);
   width: 1.25rem;
   height: 1.25rem;
-  color: var(--gray-600);
+  color: #7d8ab1;
   pointer-events: none;
 }
 
 .login-form-input {
   width: 100%;
   padding: var(--spacing-3) var(--spacing-4) var(--spacing-3) 3rem;
-  border: 1px solid rgba(148, 163, 184, 0.35);
+  border: 1px solid rgba(106, 64, 180, 0.18);
   border-radius: 18px;
   font-size: var(--font-size-base);
   transition: all 0.2s ease-in-out;
   outline: none;
   font-family: inherit;
   box-sizing: border-box;
-  background: rgba(248, 250, 252, 0.85);
+  background: rgba(228, 236, 255, 0.45);
 }
 
 .login-form-input:focus {
-  border-color: rgba(124, 58, 237, 0.6);
-  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.12);
+  border-color: rgba(106, 64, 180, 0.6);
+  box-shadow: 0 0 0 4px rgba(106, 64, 180, 0.14);
   background: #ffffff;
 }
 
@@ -332,13 +332,13 @@
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: #64748b;
+  color: #7d8ab1;
   cursor: pointer;
   transition: color 0.2s ease-in-out;
 }
 
 .login-password-toggle:hover {
-  color: #0f172a;
+  color: #5b309d;
 }
 
 .login-toggle-icon {
@@ -361,7 +361,7 @@
 }
 
 .login-forgot-password-btn:hover {
-  color: #a855f7;
+  color: #8357d9;
 }
 
 /* Submit Button */
@@ -378,23 +378,23 @@
 }
 
 .login-btn-student {
-  background: linear-gradient(135deg, var(--primary-blue), #a855f7);
-  box-shadow: 0 22px 36px rgba(124, 58, 237, 0.25);
+  background: linear-gradient(135deg, var(--primary-blue), #8357d9);
+  box-shadow: 0 22px 36px rgba(106, 64, 180, 0.24);
 }
 
 .login-btn-student:hover {
-  box-shadow: 0 26px 42px rgba(124, 58, 237, 0.32);
+  box-shadow: 0 26px 42px rgba(88, 48, 156, 0.32);
   transform: translateY(-1px);
 }
 
 .login-btn-teacher {
   background: linear-gradient(135deg, var(--yellow), var(--yellow-hover));
-  color: #fff7ed;
-  box-shadow: 0 22px 36px rgba(249, 115, 22, 0.26);
+  color: #5b309d;
+  box-shadow: 0 22px 36px rgba(240, 205, 96, 0.26);
 }
   
 .login-btn-teacher:hover {
-  box-shadow: 0 26px 42px rgba(249, 115, 22, 0.32);
+  box-shadow: 0 26px 42px rgba(240, 197, 82, 0.32);
   transform: translateY(-1px);
 }
 
@@ -453,7 +453,7 @@
 }
 
 .login-signup-btn:hover {
-  color: #a855f7;
+  color: #8357d9;
 }
 
 /* Footer */
@@ -464,7 +464,7 @@
 
 .login-footer-text {
   font-size: var(--font-size-sm);
-  color: #64748b;
+  color: var(--gray-600);
   margin: 0;
 }
 
@@ -486,7 +486,7 @@
   max-width: 24rem;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 1.5rem;
-  box-shadow: 0 28px 48px rgba(15, 23, 42, 0.22);
+  box-shadow: 0 28px 48px rgba(88, 48, 156, 0.22);
   padding: var(--spacing-6);
   border: 1px solid transparent;
   animation: login-popup-fade 0.25s ease-out;
@@ -527,7 +527,7 @@
 }
 
 .login-popup-success {
-  border-color: rgba(124, 58, 237, 0.35);
+  border-color: rgba(106, 64, 180, 0.35);
 }
 
 .login-popup-success .login-popup-icon {
@@ -535,7 +535,7 @@
 }
 
 .login-popup-success .login-popup-close {
-  background: linear-gradient(135deg, var(--primary-blue), #a855f7);
+  background: linear-gradient(135deg, var(--primary-blue), #8357d9);
   color: var(--white);
 }
 
@@ -599,5 +599,67 @@
   
   .login-selection-title {
     font-size: var(--font-size-lg);
+  }
+}
+
+@media (max-width: 520px) {
+  .login-screen-container {
+    padding: var(--spacing-3);
+  }
+
+  .login-screen-card {
+    max-width: 100%;
+  }
+
+  .login-form-container {
+    padding: var(--spacing-5);
+    border-radius: 1.5rem;
+  }
+
+  .login-user-type-card {
+    padding: var(--spacing-3);
+  }
+
+  .login-card-content {
+    flex-direction: column;
+    gap: var(--spacing-2);
+    text-align: center;
+  }
+
+  .login-card-text {
+    text-align: center;
+  }
+
+  .login-selected-type-indicator {
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-3);
+  }
+
+  .login-type-display {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .login-change-type-btn {
+    align-self: center;
+  }
+
+  .login-form-group {
+    gap: var(--spacing-2);
+  }
+}
+
+@media (max-width: 360px) {
+  .login-form-container {
+    padding: var(--spacing-4);
+  }
+
+  .login-form-input {
+    font-size: 16px;
+  }
+
+  .login-submit-btn {
+    font-size: var(--font-size-sm);
   }
 }
