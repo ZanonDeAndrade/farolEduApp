@@ -1,15 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String
-  role      String   // "student" | "teacher"
-  createdAt DateTime @default(now())
+  id             Int              @id @default(autoincrement())
+  name           String
+  email          String           @unique
+  password       String
+  role           String           // "student" | "teacher"
+  authProvider   String           @default("EMAIL")
+  authProviderId String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
-  studentSchedules Schedule[] @relation("StudentSchedules")
-  teacherSchedules Schedule[] @relation("TeacherSchedules")
+  studentSchedules Schedule[]     @relation("StudentSchedules")
+  teacherSchedules Schedule[]     @relation("TeacherSchedules")
+  teacherProfile  TeacherProfile?
+  teacherClasses  TeacherClass[]
+}
 
-  @@map("users") // <-- tabela física "users"
+model TeacherProfile {
+  id                 Int       @id @default(autoincrement())
+  userId             Int       @unique
+  phone              String
+  city               String
+  region             String?
+  teachingModes      String[]  @default([])
+  languages          String[]  @default([])
+  hourlyRate         Decimal?  @db.Decimal(10, 2)
+  adTitle            String
+  methodology        String
+  about              String
+  experience         String?
+  profilePhoto       String?
+  advertisesFromHome Boolean   @default(false)
+  advertisesTravel   Boolean   @default(false)
+  advertisesOnline   Boolean   @default(false)
+  wantsToAdvertise   Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("teacher_profiles")
 }
 
 model Schedule {
@@ -21,6 +59,22 @@ model Schedule {
 
   student User @relation("StudentSchedules", fields: [studentId], references: [id])
   teacher User @relation("TeacherSchedules", fields: [teacherId], references: [id])
+}
 
-  @@map("schedules")
+model TeacherClass {
+  id              Int      @id @default(autoincrement())
+  teacherId       Int
+  title           String
+  description     String?
+  subject         String?
+  modality        String   @default("online")
+  startTime       DateTime?
+  durationMinutes Int      @default(60)
+  price           Decimal? @db.Decimal(10, 2)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  teacher User @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@map("teacher_classes")
 }

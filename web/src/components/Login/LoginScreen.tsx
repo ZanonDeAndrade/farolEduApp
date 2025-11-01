@@ -80,12 +80,19 @@ const LoginScreen: React.FC = () => {
 
       // Guarda token e perfil
       localStorage.setItem('token', data.token);
-      const profile = data.teacher || data.user || data.student || {};
+      const profile: { role?: string } = data.teacher || data.user || data.student || {};
       localStorage.setItem('profile', JSON.stringify(profile));
+      window.dispatchEvent(new Event('faroledu-auth-change'));
       setPopup({ type: 'success', message: 'Login realizado com sucesso! Redirecionando...' });
 
+      const roleLower = (profile?.role ?? '').toLowerCase();
+      const targetRoute =
+        roleLower === 'teacher'
+          ? '/dashboard'
+          : '/';
+
       redirectTimeoutRef.current = window.setTimeout(() => {
-        navigate('/dashboard'); // ajuste o destino se quiserr
+        navigate(targetRoute);
         redirectTimeoutRef.current = null;
       }, 1200);
     } catch (err: any) {

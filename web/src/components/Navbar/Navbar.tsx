@@ -19,6 +19,7 @@ const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const [profile, setProfile] = useState<{ name?: string; email?: string; role?: string } | null>(null);
 
   const activeHash = useMemo(() => {
     if (location.pathname !== '/') {
@@ -26,6 +27,76 @@ const Navbar: React.FC = () => {
     }
     return location.hash || '#inicio';
   }, [location.hash, location.pathname]);
+
+  const readProfile = useCallback(() => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setProfile(null);
+        return;
+      }
+      const rawProfile = localStorage.getItem('profile');
+      if (!rawProfile) {
+        setProfile(null);
+        return;
+      }
+      const parsed = JSON.parse(rawProfile);
+      if (parsed && typeof parsed === 'object') {
+        setProfile(parsed);
+      } else {
+        setProfile(null);
+      }
+    } catch (error) {
+      console.warn('Não foi possível carregar o perfil salvo.', error);
+      setProfile(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    readProfile();
+
+    const handleStorageChange = () => readProfile();
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('faroledu-auth-change', handleStorageChange as EventListener);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('faroledu-auth-change', handleStorageChange as EventListener);
+    };
+  }, [readProfile]);
+
+  const displayName = useMemo(() => {
+    if (!profile) return null;
+    const name = profile.name?.trim();
+    if (name) return name;
+    const email = profile.email?.trim();
+    if (email) {
+      const nickname = email.split('@')[0];
+      return nickname || 'Minha conta';
+    }
+    return 'Minha conta';
+  }, [profile]);
+
+  const profileTarget = useMemo(() => {
+    if (!profile) return '/';
+    return (profile.role ?? '').toLowerCase() === 'teacher' ? '/dashboard' : '/';
+  }, [profile]);
+
+  const isAuthenticated = Boolean(displayName);
+
+  const handleLogout = useCallback(() => {
+    setIsMenuOpen(false);
+    localStorage.removeItem('token');
+    localStorage.removeItem('profile');
+    setProfile(null);
+    window.dispatchEvent(new Event('faroledu-auth-change'));
+    navigate('/', { replace: false });
+  }, [navigate]);
+
+  const handleProfileClick = useCallback(() => {
+    setIsMenuOpen(false);
+    navigate(profileTarget, { replace: false });
+  }, [navigate, profileTarget]);
 
   useEffect(() => {
     setIsMenuOpen(false);
@@ -100,26 +171,60 @@ const Navbar: React.FC = () => {
               </li>
             ))}
             <li className="navbar__mobile-actions">
-              <Link to="/login" className="navbar__mobile-action" onClick={closeMenu}>
-                Entrar
-              </Link>
-              <Link
-                to="/register"
-                className="navbar__mobile-action navbar__mobile-action--primary"
-                onClick={closeMenu}
-              >
-                Cadastrar
-              </Link>
+              {isAuthenticated ? (
+                <div className="navbar__mobile-profile">
+                  <button
+                    type="button"
+                    className="navbar__mobile-action navbar__mobile-profile-button"
+                    onClick={handleProfileClick}
+                  >
+                    {displayName}
+                  </button>
+                  <button
+                    type="button"
+                    className="navbar__mobile-action navbar__mobile-action--secondary"
+                    onClick={handleLogout}
+                  >
+                    Sair
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <Link to="/login" className="navbar__mobile-action" onClick={closeMenu}>
+                    Entrar
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="navbar__mobile-action navbar__mobile-action--primary"
+                    onClick={closeMenu}
+                  >
+                    Cadastrar
+                  </Link>
+                </>
+              )}
             </li>
           </ul>
 
           <div className="navbar__actions">
-            <Link to="/login" className="navbar__action" onClick={closeMenu}>
-              Entrar
-            </Link>
-            <Link to="/register" className="navbar__action navbar__action--primary" onClick={closeMenu}>
-              Cadastrar
-            </Link>
+            {isAuthenticated ? (
+              <div className="navbar__profile">
+                <button type="button" className="navbar__profile-pill" onClick={handleProfileClick}>
+                  {displayName}
+                </button>
+                <button type="button" className="navbar__logout" onClick={handleLogout}>
+                  Sair
+                </button>
+              </div>
+            ) : (
+              <>
+                <Link to="/login" className="navbar__action" onClick={closeMenu}>
+                  Entrar
+                </Link>
+                <Link to="/register" className="navbar__action navbar__action--primary" onClick={closeMenu}>
+                  Cadastrar
+                </Link>
+              </>
+            )}
           </div>
 
           <button
