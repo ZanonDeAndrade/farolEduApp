@@ -9,6 +9,7 @@ import Footer from './components/Footer/Footer';
 import LoginScreen from './components/Login/LoginScreen';
 import './App.css';
 import RegisterScreen from './components/Register/RegisterScreen';
+import TeacherDashboard from './components/TeacherDashboard/TeacherDashboard';
 
 const HomePage: React.FC = () => (
   <>
@@ -29,6 +30,7 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginScreen />} />
             <Route path="/register" element={<RegisterScreen />} />
+            <Route path="/dashboard" element={<TeacherDashboard />} />
           </Routes>
         </main>
         <Footer />

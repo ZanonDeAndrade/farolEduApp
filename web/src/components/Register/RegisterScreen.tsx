@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
-import { User, GraduationCap, Mail, Lock, Eye, EyeOff, ArrowLeft, Phone, MapPin, CheckCircle, XCircle } from 'lucide-react';
+import { useState } from 'react';
+import { User, GraduationCap, Mail, Lock, Eye, EyeOff, ArrowLeft, Phone, MapPin, CheckCircle, XCircle, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './RegisterScreen.css';
-import { registerTeacher, loginTeacher, registerStudent, loginStudent } from "../../services/auth";
+import { registerTeacher, loginTeacher, registerStudent, loginStudent, AuthProvider } from "../../services/auth";
+import { LANGUAGE_OPTIONS } from "../../constants/languages";
 import LogoImage from '../../assets/Logo.png';
 
+
+type TeachingMode = 'home' | 'travel' | 'online';
 
 interface RegisterData {
   name: string;
@@ -14,9 +17,47 @@ interface RegisterData {
   password: string;
   confirmPassword: string;
   userType: 'student' | 'teacher' | null;
-  subjects?: string[];
-  experience?: string;
+  subjects: string[];
+  experience: string;
+  authMethod: 'email' | 'google';
+  teachingModes: TeachingMode[];
+  languages: string[];
+  hourlyRate: string;
+  adTitle: string;
+  methodology: string;
+  about: string;
+  profilePhoto?: File | null;
+  preferredModality: 'online' | 'presencial' | 'hibrida';
+  studentRegion: string;
+  wantsFavorites: boolean;
+  wantsDirectMessages: boolean;
 }
+
+const MAX_PROFILE_PHOTO_BYTES = 2.5 * 1024 * 1024; // ~2.5 MB
+
+const authProviderMap: Record<RegisterData['authMethod'], AuthProvider> = {
+  email: 'EMAIL',
+  google: 'GOOGLE',
+};
+
+const authProviderLabel: Record<RegisterData['authMethod'], string> = {
+  email: 'e-mail',
+  google: 'Google',
+};
+
+const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new Error('Não foi possível ler a imagem selecionada.'));
+      }
+    };
+    reader.onerror = () => reject(new Error('Não foi possível ler a imagem selecionada.'));
+    reader.readAsDataURL(file);
+  });
 
 const RegisterScreen = () => {
   const navigate = useNavigate();
@@ -30,7 +71,19 @@ const RegisterScreen = () => {
     confirmPassword: '',
     userType: null,
     subjects: [],
-    experience: ''
+    experience: '',
+    authMethod: 'email',
+    teachingModes: [],
+    languages: [],
+    hourlyRate: '',
+    adTitle: '',
+    methodology: '',
+    about: '',
+    profilePhoto: undefined,
+    preferredModality: 'online',
+    studentRegion: '',
+    wantsFavorites: true,
+    wantsDirectMessages: true,
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -38,75 +91,171 @@ const RegisterScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [popup, setPopup] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const redirectTimeoutRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (redirectTimeoutRef.current) {
-        window.clearTimeout(redirectTimeoutRef.current);
-      }
-    };
-  }, []);
+  const [languageQuery, setLanguageQuery] = useState('');
+  const [lastSubmittedType, setLastSubmittedType] = useState<'student' | 'teacher' | null>(null);
 
   const handleUserTypeSelect = (type: 'student' | 'teacher') => {
-    setRegisterData(prev => ({ ...prev, userType: type }));
+    setRegisterData(prev => ({
+      ...prev,
+      userType: type,
+      subjects: type === 'teacher' ? prev.subjects : [],
+      experience: type === 'teacher' ? prev.experience : '',
+      teachingModes: type === 'teacher' ? prev.teachingModes : [],
+      languages: type === 'teacher' ? prev.languages : [],
+      hourlyRate: type === 'teacher' ? prev.hourlyRate : '',
+      adTitle: type === 'teacher' ? prev.adTitle : '',
+      methodology: type === 'teacher' ? prev.methodology : '',
+      about: type === 'teacher' ? prev.about : '',
+      preferredModality: type === 'student' ? prev.preferredModality : prev.preferredModality,
+      studentRegion: type === 'student' ? prev.studentRegion : '',
+    }));
+    if (type === 'teacher') {
+      setLanguageQuery('');
+    }
   };
 
   const handleUserTypeChange = (type: 'student' | 'teacher' | null) => {
-    setRegisterData(prev => ({ ...prev, userType: type }));
+    setRegisterData(prev => ({
+      ...prev,
+      userType: type,
+      subjects: type === 'teacher' ? prev.subjects : [],
+      experience: type === 'teacher' ? prev.experience : '',
+      teachingModes: type === 'teacher' ? prev.teachingModes : [],
+      languages: type === 'teacher' ? prev.languages : [],
+      hourlyRate: type === 'teacher' ? prev.hourlyRate : '',
+      adTitle: type === 'teacher' ? prev.adTitle : '',
+      methodology: type === 'teacher' ? prev.methodology : '',
+      about: type === 'teacher' ? prev.about : '',
+      preferredModality: type === 'student' ? prev.preferredModality : 'online',
+      studentRegion: type === 'student' ? prev.studentRegion : '',
+    }));
+    if (type !== 'teacher') {
+      setLanguageQuery('');
+    }
   };
 
-  const handleInputChange = (field: keyof RegisterData, value: string | number | string[]) => {
+  const handleInputChange = <K extends keyof RegisterData>(field: K, value: RegisterData[K]) => {
     setRegisterData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSubjectChange = (subject: string, checked: boolean) => {
     setRegisterData(prev => ({
       ...prev,
-      subjects: checked 
-        ? [...(prev.subjects || []), subject]
-        : (prev.subjects || []).filter(s => s !== subject)
+      subjects: checked
+        ? [...prev.subjects, subject]
+        : prev.subjects.filter(s => s !== subject)
+    }));
+  };
+
+  const handleTeachingModeToggle = (mode: TeachingMode) => {
+    setRegisterData(prev => {
+      const exists = prev.teachingModes.includes(mode);
+      return {
+        ...prev,
+        teachingModes: exists ? prev.teachingModes.filter(item => item !== mode) : [...prev.teachingModes, mode],
+      };
+    });
+  };
+
+  const handleLanguageToggle = (languageCode: string) => {
+    setRegisterData(prev => {
+      const exists = prev.languages.includes(languageCode);
+      return {
+        ...prev,
+        languages: exists ? prev.languages.filter(item => item !== languageCode) : [...prev.languages, languageCode],
+      };
+    });
+  };
+
+  const handleAuthMethodSelect = (method: 'email' | 'google') => {
+    setRegisterData(prev => ({ ...prev, authMethod: method }));
+  };
+
+  const handlePreferredModalityChange = (value: 'online' | 'presencial' | 'hibrida') => {
+    setRegisterData(prev => ({ ...prev, preferredModality: value }));
+  };
+
+  const handleProfilePhotoChange = (file: File | null) => {
+    setRegisterData(prev => ({ ...prev, profilePhoto: file ?? undefined }));
+  };
+
+  const handleCityChange = (value: string) => {
+    setRegisterData(prev => ({
+      ...prev,
+      city: value,
+      studentRegion: prev.userType === 'student' && !prev.studentRegion ? value : prev.studentRegion,
     }));
   };
 
   const handleSubmit = async () => {
     if (!registerData.userType) return;
     if (registerData.password !== registerData.confirmPassword) return;
-  
+    if (!isStep4Valid) return;
+
+    if (
+      registerData.userType === 'teacher' &&
+      registerData.profilePhoto &&
+      registerData.profilePhoto.size > MAX_PROFILE_PHOTO_BYTES
+    ) {
+      setPopup({
+        type: 'error',
+        message: 'A foto de perfil deve ter no máximo 2,5 MB. Escolha uma imagem menor.',
+      });
+      return;
+    }
+
     setIsLoading(true);
     setPopup(null);
-    if (redirectTimeoutRef.current) {
-      window.clearTimeout(redirectTimeoutRef.current);
-      redirectTimeoutRef.current = null;
-    }
     try {
-      const payload = {
+      const basePayload = {
         name: registerData.name.trim(),
         email: registerData.email.trim().toLowerCase(),
         password: registerData.password,
       };
-  
-      if (registerData.userType === "teacher") {
-        // cria professor no backend
-        await registerTeacher(payload);
-        // login professor
-        await loginTeacher({ email: payload.email, password: payload.password });
-      } else {
-        // cria aluno no backend
-        await registerStudent(payload);
-        // login aluno
-        await loginStudent({ email: payload.email, password: payload.password });
-      }
-  
-      setPopup({ type: 'success', message: 'Conta criada com sucesso! Redirecionando para o login...' });
 
-      redirectTimeoutRef.current = window.setTimeout(() => {
-        navigate("/login"); // ou direto pro dashboard: navigate("/dashboard")
-        redirectTimeoutRef.current = null;
-      }, 1400);
+      if (registerData.userType === 'teacher') {
+        const profilePhotoBase64 = registerData.profilePhoto
+          ? await fileToBase64(registerData.profilePhoto)
+          : undefined;
+
+        const teacherPayload = {
+          ...basePayload,
+          authProvider: authProviderMap[registerData.authMethod],
+          phone: registerData.phone.trim(),
+          city: registerData.city.trim(),
+          region: registerData.city.trim(),
+          teachingModes: registerData.teachingModes,
+          languages: registerData.languages,
+          hourlyRate: registerData.hourlyRate,
+          adTitle: registerData.adTitle.trim(),
+          methodology: registerData.methodology.trim(),
+          about: registerData.about.trim(),
+          experience: registerData.experience.trim() || undefined,
+          profilePhoto: profilePhotoBase64,
+          wantsToAdvertise: false,
+        };
+
+        await registerTeacher(teacherPayload);
+        await loginTeacher({ email: basePayload.email, password: basePayload.password });
+      } else {
+        await registerStudent(basePayload);
+        await loginStudent({ email: basePayload.email, password: basePayload.password });
+      }
+
+      setLastSubmittedType(registerData.userType);
+
+      setPopup({
+        type: 'success',
+        message:
+          registerData.userType === 'teacher'
+            ? 'Perfil de professor criado com sucesso! Salve suas aulas e volte quando quiser para ajustar o anúncio.'
+            : 'Conta criada com sucesso! Personalize seu perfil para aproveitar todos os recursos.',
+      });
     } catch (err: any) {
       const status = err?.response?.status;
-      const message = err?.response?.data?.message || "Erro ao criar conta";
+      const messageFromServer = err?.response?.data?.message;
+      const fallbackMessage = !err?.response && err?.message ? err.message : "Erro ao criar conta";
+      const message = messageFromServer || fallbackMessage;
       if (status === 409) {
         setPopup({ type: 'error', message: 'Usuário já cadastrado. Tente fazer login ou recuperar a senha.' });
       } else {
@@ -118,11 +267,27 @@ const RegisterScreen = () => {
   };
 
   const handleClosePopup = () => {
-    if (redirectTimeoutRef.current) {
-      window.clearTimeout(redirectTimeoutRef.current);
-      redirectTimeoutRef.current = null;
-    }
     setPopup(null);
+  };
+
+  const handleContinueAfterSuccess = () => {
+    setPopup(null);
+    if (lastSubmittedType === 'teacher') {
+      navigate('/dashboard');
+    } else {
+      navigate('/');
+    }
+  };
+
+  const handleAdvertiseDecision = (decision: 'now' | 'later') => {
+    if (decision === 'now') {
+      try {
+        window.localStorage.setItem('faroledu_advertise_intent', 'true');
+      } catch (error) {
+        console.warn('Não foi possível registrar a intenção de anúncio.', error);
+      }
+    }
+    handleContinueAfterSuccess();
   };
 
 
@@ -139,18 +304,60 @@ const RegisterScreen = () => {
   };
 
   const isStep1Valid = registerData.userType !== null;
-  const isStep2Valid = registerData.name && registerData.email && registerData.phone && registerData.city;
+  const isStep2Valid =
+    registerData.name.trim().length > 0 &&
+    registerData.email.trim().length > 0 &&
+    registerData.phone.trim().length > 0 &&
+    registerData.city.trim().length > 0 &&
+    (registerData.userType === 'teacher'
+      ? registerData.teachingModes.length > 0
+      : registerData.userType === 'student'
+        ? registerData.studentRegion.trim().length > 0
+        : false);
   const isStep3Valid = registerData.password && registerData.confirmPassword && registerData.password === registerData.confirmPassword;
-  const isStep4Valid = registerData.userType === 'student' || (registerData.userType === 'teacher' && registerData.subjects && registerData.subjects.length > 0);
+  const hourlyRateNumber = Number(registerData.hourlyRate.replace(',', '.'));
 
-  const subjectOptions = [
-    'Matemática', 'Português', 'Inglês', 'Física', 'Química', 'Biologia',
-    'História', 'Geografia', 'Filosofia', 'Sociologia', 'Literatura',
-    'Programação', 'Música', 'Artes', 'Educação Física'
-  ];
+  const isTeacherProfileValid =
+    registerData.userType === 'teacher' &&
+    registerData.subjects.length > 0 &&
+    registerData.adTitle.trim().length > 0 &&
+    registerData.methodology.trim().length > 0 &&
+    registerData.about.trim().length > 0 &&
+    !Number.isNaN(hourlyRateNumber) &&
+    hourlyRateNumber > 0;
+
+  const isStep4Valid = registerData.userType === 'student' || isTeacherProfileValid;
+
+const subjectOptions = [
+  'Matemática', 'Português', 'Inglês', 'Física', 'Química', 'Biologia',
+  'História', 'Geografia', 'Filosofia', 'Sociologia', 'Literatura',
+  'Programação', 'Música', 'Artes', 'Educação Física'
+];
+
+const MAX_AD_TITLE = 200;
+const MAX_METHOD_TEXT = 500;
+const MAX_BIO_TEXT = 500;
+
+const teachingModeOptions: { value: TeachingMode; label: string; description: string }[] = [
+  { value: 'home', label: 'Na minha casa', description: 'Recebo alunos no meu endereço' },
+  { value: 'travel', label: 'Posso me deslocar', description: 'Vou até o aluno dentro da minha região' },
+  { value: 'online', label: 'Aulas online', description: 'Ofereço encontros virtuais' },
+];
 
   const passwordsMatch = registerData.password === registerData.confirmPassword;
   const passwordStrong = registerData.password.length >= 6;
+
+  const normalizedLanguageQuery = languageQuery.trim().toLowerCase();
+  const filteredLanguages = LANGUAGE_OPTIONS.filter(option => {
+    if (!normalizedLanguageQuery) return true;
+    return (
+      option.label.toLowerCase().includes(normalizedLanguageQuery) ||
+      option.code.toLowerCase().includes(normalizedLanguageQuery)
+    );
+  });
+  const selectedLanguageObjects = registerData.languages
+    .map(code => LANGUAGE_OPTIONS.find(option => option.code === code))
+    .filter((item): item is (typeof LANGUAGE_OPTIONS)[number] => Boolean(item));
 
   return (
     <div className="register-container">
@@ -172,9 +379,47 @@ const RegisterScreen = () => {
               </strong>
             </div>
             <p className="register-popup-message">{popup.message}</p>
-            <button type="button" className="register-popup-close" onClick={handleClosePopup}>
-              Fechar
-            </button>
+            {popup.type === 'success' ? (
+              <div className="register-popup-actions">
+                {lastSubmittedType === 'teacher' && (
+                  <>
+                    <p className="register-popup-reminder">
+                      Você pode editar título, metodologia, valores, idiomas ou foto a qualquer momento em Perfil &gt; Editar perfil.
+                    </p>
+                    <div className="register-popup-advertise">
+                      <p>Gostaria de anunciar suas aulas agora?</p>
+                      <div className="register-popup-buttons">
+                        <button
+                          type="button"
+                          className="register-popup-primary"
+                          onClick={() => handleAdvertiseDecision('now')}
+                        >
+                          Sim, quero anunciar
+                        </button>
+                        <button
+                          type="button"
+                          className="register-popup-secondary"
+                          onClick={() => handleAdvertiseDecision('later')}
+                        >
+                          Talvez depois
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+                <button
+                  type="button"
+                  className="register-popup-primary"
+                  onClick={handleContinueAfterSuccess}
+                >
+                  {lastSubmittedType === 'teacher' ? 'Ir para o painel' : 'Ir para a página inicial'}
+                </button>
+              </div>
+            ) : (
+              <button type="button" className="register-popup-close" onClick={handleClosePopup}>
+                Fechar
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -249,21 +494,65 @@ const RegisterScreen = () => {
                     </button>
                   </div>
                 ) : (
-                  <div className="register-profile-step">
-                    <div className="register-selected-type">
-                      <div className="register-type-display">
-                        <span className="register-type-label">
-                          Conta: {registerData.userType === 'student' ? 'Estudante' : 'Professor'}
-                        </span>
+                  <>
+                    <div className="register-profile-step">
+                      <div className="register-selected-type">
+                        <div className="register-type-display">
+                          <span className="register-type-label">
+                            Conta: {registerData.userType === 'student' ? 'Estudante' : 'Professor'}
+                          </span>
+                        </div>
+                        <button 
+                          className="register-change-type-btn"
+                          onClick={() => handleUserTypeChange(null)}
+                        >
+                          Alterar
+                        </button>
                       </div>
-                      <button 
-                        className="register-change-type-btn"
-                        onClick={() => handleUserTypeChange(null)}
-                      >
-                        Alterar
-                      </button>
                     </div>
-                  </div>
+
+                    <div className="register-auth-section">
+                      <p className="register-auth-title">Como prefere continuar?</p>
+                      <p className="register-auth-subtitle">
+                        Escolha a forma de acesso ideal para sua conta de {registerData.userType === 'teacher' ? 'professor' : 'estudante'}.
+                      </p>
+
+                      <div className="register-auth-options">
+                        <button
+                          type="button"
+                          className={`register-auth-option ${registerData.authMethod === 'email' ? 'is-active' : ''}`}
+                          onClick={() => handleAuthMethodSelect('email')}
+                        >
+                          <div className="register-auth-icon is-email">
+                            <Mail className="register-auth-icon-svg" />
+                          </div>
+                          <div className="register-auth-copy">
+                            <span className="register-auth-label">Continuar com e-mail</span>
+                            <span className="register-auth-helper">Defina manualmente e-mail e senha</span>
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          className={`register-auth-option ${registerData.authMethod === 'google' ? 'is-active' : ''}`}
+                          onClick={() => handleAuthMethodSelect('google')}
+                        >
+                          <div className="register-auth-icon is-google">
+                            <span>G</span>
+                          </div>
+                          <div className="register-auth-copy">
+                            <span className="register-auth-label">Entrar com Google</span>
+                            <span className="register-auth-helper">Usa o e-mail da sua conta Google</span>
+                          </div>
+                        </button>
+
+                      </div>
+
+                      <p className="register-auth-hint">
+                        Nós confirmaremos suas informações pessoais para garantir a segurança da conta e completar o seu perfil.
+                      </p>
+                    </div>
+                  </>
                 )}
 
                 {registerData.userType && (
@@ -326,18 +615,158 @@ const RegisterScreen = () => {
                 </div>
 
                 <div className="register-form-group">
-                  <label className="register-form-label">Cidade</label>
+                  <label className="register-form-label">Cidade/Região (qualquer lugar do Brasil)</label>
                   <div className="register-input-wrapper">
                     <MapPin className="register-input-icon" />
                     <input
                       type="text"
                       className="register-form-input"
                       value={registerData.city}
-                      onChange={e => handleInputChange('city', e.target.value)}
-                      placeholder="Sua cidade"
+                      onChange={e => handleCityChange(e.target.value)}
+                      placeholder="Ex.: Recife - PE"
                     />
                   </div>
+                  <p className="register-helper-text">
+                    Informe onde você atende para conectar estudantes próximos ou interessados em aulas online.
+                  </p>
                 </div>
+
+                {registerData.userType === 'student' && (
+                  <>
+                    <div className="register-form-group">
+                      <label className="register-form-label">Região onde mora</label>
+                      <div className="register-input-wrapper">
+                        <MapPin className="register-input-icon" />
+                        <input
+                          type="text"
+                          className="register-form-input"
+                          value={registerData.studentRegion}
+                          onChange={e => handleInputChange('studentRegion', e.target.value)}
+                          placeholder="Bairro ou região"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="register-form-group">
+                      <label className="register-form-label">Preferência de modalidade</label>
+                      <div className="register-modality-group">
+                        {[{ value: 'online', label: 'Online', description: 'Estudo 100% remoto' }, { value: 'presencial', label: 'Presencial', description: 'Quero aulas na minha região' }, { value: 'hibrida', label: 'Híbrida', description: 'Misturo online e presencial' }].map(option => {
+                          const active = registerData.preferredModality === option.value;
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              className={`register-modality-option ${active ? 'is-active' : ''}`}
+                              onClick={() => handlePreferredModalityChange(option.value as 'online' | 'presencial' | 'hibrida')}
+                            >
+                              <span className="register-modality-label">{option.label}</span>
+                              <span className="register-modality-description">{option.description}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {registerData.userType === 'teacher' && (
+                  <>
+                    <div className="register-section">
+                      <h3 className="register-section-title">Como você oferece suas aulas?</h3>
+                      <div className="register-chip-group">
+                        {teachingModeOptions.map(option => {
+                          const active = registerData.teachingModes.includes(option.value);
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              className={`register-chip-option ${active ? 'is-active' : ''}`}
+                              onClick={() => handleTeachingModeToggle(option.value)}
+                            >
+                              <span className="register-chip-label">{option.label}</span>
+                              <span className="register-chip-description">{option.description}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="register-helper-text">Selecione pelo menos uma opção.</p>
+                    </div>
+
+                    <div className="register-section">
+                      <h3 className="register-section-title">Idiomas adicionais (opcional)</h3>
+                      <p className="register-helper-text">
+                        Use a busca para encontrar outros idiomas e clique para adicionar ou remover da sua lista.
+                      </p>
+
+                      <div className="register-language-selector">
+                        <div className="register-language-selected">
+                          <div className="register-language-selected-header">
+                            <span>Selecionados ({selectedLanguageObjects.length})</span>
+                            {selectedLanguageObjects.length > 0 && (
+                              <button
+                                type="button"
+                                className="register-language-clear"
+                                onClick={() => handleInputChange('languages', [])}
+                              >
+                                Remover todos
+                              </button>
+                            )}
+                          </div>
+                          <div className="register-language-selected-list">
+                            {selectedLanguageObjects.length === 0 ? (
+                              <span className="register-language-empty">
+                                Você ainda não selecionou idiomas adicionais.
+                              </span>
+                            ) : (
+                              selectedLanguageObjects.map(item => (
+                                <button
+                                  key={item.code}
+                                  type="button"
+                                  className="register-language-chip"
+                                  onClick={() => handleLanguageToggle(item.code)}
+                                >
+                                  {item.label}
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="register-language-search">
+                          <Search className="register-language-search-icon" />
+                          <input
+                            type="text"
+                            className="register-language-search-input"
+                            value={languageQuery}
+                            onChange={event => setLanguageQuery(event.target.value)}
+                            placeholder="Busque por nome ou código (ex.: inglês, en)"
+                          />
+                        </div>
+
+                        <div className="register-language-result-info">
+                          Mostrando {filteredLanguages.length} de {LANGUAGE_OPTIONS.length} idiomas
+                        </div>
+
+                        <div className="register-language-results">
+                          {filteredLanguages.map(option => {
+                            const active = registerData.languages.includes(option.code);
+                            return (
+                              <button
+                                key={option.code}
+                                type="button"
+                                className={`register-language-option ${active ? 'is-active' : ''}`}
+                                onClick={() => handleLanguageToggle(option.code)}
+                              >
+                                <span className="register-language-option-label">{option.label}</span>
+                                <span className="register-language-option-code">{option.code.toUpperCase()}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <button
                   onClick={goNext}
@@ -353,6 +782,11 @@ const RegisterScreen = () => {
             {currentStep === 3 && (
               <div className="register-form-step">
                 <h2 className="register-step-title">Criar Senha</h2>
+                <p className="register-helper-text">
+                  {registerData.authMethod === 'email'
+                    ? 'Crie uma senha segura para acessar sua conta.'
+                    : `Mesmo escolhendo entrar com ${authProviderLabel[registerData.authMethod]}, configuramos uma senha para garantir o acesso quando preferir.`}
+                </p>
 
                 <div className="register-form-group">
                   <label className="register-form-label">Senha</label>
@@ -417,7 +851,7 @@ const RegisterScreen = () => {
               <div className="register-form-step">
                 <h2 className="register-step-title">Perfil</h2>
 
-                {registerData.userType === 'teacher' && (
+                {registerData.userType === 'teacher' ? (
                   <>
                     <div className="register-form-group">
                       <label className="register-form-label">Matérias que ensina</label>
@@ -426,7 +860,7 @@ const RegisterScreen = () => {
                           <label key={subj} className="register-subject-checkbox">
                             <input
                               type="checkbox"
-                              checked={registerData.subjects?.includes(subj)}
+                              checked={registerData.subjects.includes(subj)}
                               onChange={e => handleSubjectChange(subj, e.target.checked)}
                             />
                             <span className="register-checkmark"></span>
@@ -437,13 +871,127 @@ const RegisterScreen = () => {
                     </div>
 
                     <div className="register-form-group">
-                      <label className="register-form-label">Experiência</label>
+                      <label className="register-form-label">
+                        Tarifa horária (R$)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        className="register-form-input"
+                        value={registerData.hourlyRate}
+                        onChange={e => handleInputChange('hourlyRate', e.target.value)}
+                        placeholder="Informe quanto cobra por hora"
+                      />
+                    </div>
+
+                    <div className="register-form-group">
+                      <label className="register-form-label">
+                        Título do anúncio
+                        <span className="register-char-counter">{registerData.adTitle.length}/{MAX_AD_TITLE}</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="register-form-input"
+                        value={registerData.adTitle}
+                        onChange={e => handleInputChange('adTitle', e.target.value.slice(0, MAX_AD_TITLE))}
+                        placeholder="Ex.: Aulas personalizadas de matemática para ensino médio"
+                        maxLength={MAX_AD_TITLE}
+                      />
+                    </div>
+
+                    <div className="register-form-group">
+                      <label className="register-form-label">
+                        Metodologia
+                        <span className="register-char-counter">{registerData.methodology.length}/{MAX_METHOD_TEXT}</span>
+                      </label>
+                      <textarea
+                        className="register-form-textarea"
+                        value={registerData.methodology}
+                        onChange={e => handleInputChange('methodology', e.target.value.slice(0, MAX_METHOD_TEXT))}
+                        placeholder="Explique como conduz suas aulas, recursos utilizados e diferenciais"
+                        maxLength={MAX_METHOD_TEXT}
+                      />
+                    </div>
+
+                    <div className="register-form-group">
+                      <label className="register-form-label">
+                        Sobre você
+                        <span className="register-char-counter">{registerData.about.length}/{MAX_BIO_TEXT}</span>
+                      </label>
+                      <textarea
+                        className="register-form-textarea"
+                        value={registerData.about}
+                        onChange={e => handleInputChange('about', e.target.value.slice(0, MAX_BIO_TEXT))}
+                        placeholder="Compartilhe sua trajetória, certificações e resultados que já alcançou"
+                        maxLength={MAX_BIO_TEXT}
+                      />
+                    </div>
+
+                    <div className="register-form-group">
+                      <label className="register-form-label">Foto de perfil</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="register-form-input register-file-input"
+                        onChange={event => handleProfilePhotoChange(event.target.files?.[0] ?? null)}
+                      />
+                      <p className="register-helper-text">
+                        Utilize uma foto sozinho(a), sorrindo, com boa iluminação e sem elementos distrativos.
+                      </p>
+                    </div>
+
+                    <div className="register-form-group">
+                      <label className="register-form-label">Experiência (opcional)</label>
                       <textarea
                         className="register-form-textarea"
                         value={registerData.experience}
                         onChange={e => handleInputChange('experience', e.target.value)}
-                        placeholder="Descreva sua experiência como professor"
+                        placeholder="Descreva formações, certificações ou resultados dos seus alunos"
                       />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="register-form-group">
+                      <label className="register-form-label">Foto de perfil</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="register-form-input register-file-input"
+                        onChange={event => handleProfilePhotoChange(event.target.files?.[0] ?? null)}
+                      />
+                      <p className="register-helper-text">
+                        Prefira uma foto nítida, sozinho(a) e com boa iluminação. Ela ajuda professores a reconhecerem você.
+                      </p>
+                    </div>
+
+                    <div className="register-settings-card">
+                      <h3 className="register-settings-title">Preferências do seu perfil</h3>
+                      <label className="register-toggle-option">
+                        <input
+                          type="checkbox"
+                          checked={registerData.wantsFavorites}
+                          onChange={event => handleInputChange('wantsFavorites', event.target.checked)}
+                        />
+                        <span className="register-toggle-indicator" />
+                        <span>
+                          Ativar aba de professores favoritos
+                          <small>Salve contatos e receba novidades dos seus docentes preferidos.</small>
+                        </span>
+                      </label>
+                      <label className="register-toggle-option">
+                        <input
+                          type="checkbox"
+                          checked={registerData.wantsDirectMessages}
+                          onChange={event => handleInputChange('wantsDirectMessages', event.target.checked)}
+                        />
+                        <span className="register-toggle-indicator" />
+                        <span>
+                          Ativar mensagens diretas com professores
+                          <small>Troque arquivos e tire dúvidas em tempo real pelo FarolEdu.</small>
+                        </span>
+                      </label>
                     </div>
                   </>
                 )}
@@ -453,7 +1001,7 @@ const RegisterScreen = () => {
                   disabled={!isStep4Valid || isLoading}
                   className={`register-submit-btn ${isStep4Valid && !isLoading ? 'register-btn-enabled' : 'register-btn-disabled'}`}
                 >
-                  {isLoading ? "Criando conta..." : "Criar Conta"}
+                  {isLoading ? 'Criando conta...' : 'Criar Conta'}
                 </button>
               </div>
             )}
