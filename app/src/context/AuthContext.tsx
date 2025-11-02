@@ -40,6 +40,9 @@ type SignUpInput = {
   email: string;
   password: string;
   userType: UserType;
+  phone?: string;
+  city?: string;
+  experience?: string;
 };
 
 type PersistedAuth = {
@@ -146,10 +149,17 @@ export const AuthProvider: React.FC<PropsWithChildren> = ({ children }) => {
   );
 
   const signUp = useCallback<AuthContextValue['signUp']>(
-    async ({ name, email, password, userType }) => {
+    async ({ name, email, password, userType, phone, city, experience }) => {
       const request =
         userType === 'teacher'
-          ? await registerTeacher({ name, email, password })
+          ? await registerTeacher({
+              name,
+              email,
+              password,
+              phone: phone ?? '',
+              city: city ?? '',
+              experience,
+            })
           : await registerStudent({ name, email, password });
 
       if (!request || typeof request !== 'object') {

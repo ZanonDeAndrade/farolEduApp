@@ -120,6 +120,13 @@ const LoginScreen: React.FC = () => {
       const userName =
         session.profile?.name ? `, ${session.profile.name.split(' ')[0]}` : '';
 
+      const isTeacherProfile =
+        session.profile && typeof session.profile === 'object'
+          ? String((session.profile as { role?: string }).role ?? '').toLowerCase() === 'teacher'
+          : false;
+
+      const targetRoute: keyof RootStackParamList = isTeacherProfile ? 'TeacherDashboard' : 'Home';
+
       setPopup({
         type: 'success',
         message: `Login realizado com sucesso${userName}! Redirecionando...`,
@@ -127,7 +134,7 @@ const LoginScreen: React.FC = () => {
 
       redirectTimeoutRef.current = setTimeout(() => {
         setPopup(null);
-        navigation.navigate('Home');
+        navigation.replace(targetRoute);
         redirectTimeoutRef.current = null;
       }, 1200);
     } catch (error) {

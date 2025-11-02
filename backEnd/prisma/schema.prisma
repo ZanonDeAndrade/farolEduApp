@@ -30,12 +30,6 @@ model TeacherProfile {
   phone              String
   city               String
   region             String?
-  teachingModes      String[]  @default([])
-  languages          String[]  @default([])
-  hourlyRate         Decimal?  @db.Decimal(10, 2)
-  adTitle            String
-  methodology        String
-  about              String
   experience         String?
   profilePhoto       String?
   advertisesFromHome Boolean   @default(false)

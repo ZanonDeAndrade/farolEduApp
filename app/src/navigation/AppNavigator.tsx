@@ -5,6 +5,7 @@ import { enableScreens } from 'react-native-screens';
 import HomeScreen from '../screens/home/HomeScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
+import TeacherDashboardScreen from '../screens/TeacherDashboardScreen';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -26,6 +27,7 @@ const AppNavigator: React.FC = () => {
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
+        <Stack.Screen name="TeacherDashboard" component={TeacherDashboardScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

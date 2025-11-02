@@ -18,6 +18,7 @@ import { GRADIENTS } from '../theme/gradients';
 import { COLORS } from '../theme/colors';
 import type { RootStackParamList } from '../navigation/types';
 import type { SectionKey } from '../screens/home/types';
+import { useAuth } from '../context/AuthContext';
 
 const LOGO_IMAGE = require('../../assets/Logo.png');
 
@@ -55,27 +56,61 @@ const Navbar: React.FC<NavbarProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { width } = useWindowDimensions();
   const isCompact = width < 640;
+  const { token, profile } = useAuth();
+
+  const isTeacher = useMemo(() => {
+    if (!profile || typeof profile !== 'object') return false;
+    const role = (profile as { role?: string }).role;
+    if (!role) return false;
+    return role.toLowerCase() === 'teacher';
+  }, [profile]);
 
   const derivedLinks = useMemo<NavbarLink[]>(() => {
     if (links && links.length > 0) {
-      return links;
+      const base = [...links];
+      if (isTeacher && !base.some(link => link.label === 'Painel')) {
+        base.push({
+          label: 'Painel',
+          onPress: () => navigation.navigate('TeacherDashboard'),
+          isActive: route.name === 'TeacherDashboard',
+        });
+      }
+      return base;
     }
 
     if (route.name === 'Home' && onNavigateSection) {
-      return DEFAULT_LINKS.map(item => ({
+      const mapped = DEFAULT_LINKS.map(item => ({
         label: item.label,
         onPress: () => item.key && onNavigateSection(item.key),
       }));
+      if (isTeacher) {
+        mapped.push({
+          label: 'Painel',
+          onPress: () => navigation.navigate('TeacherDashboard'),
+          isActive: route.name === 'TeacherDashboard',
+        });
+      }
+      return mapped;
     }
 
-    return [
+    const baseLinks: NavbarLink[] = [
       {
         label: 'Início',
         isActive: route.name === 'Home',
         onPress: () => navigation.navigate('Home'),
       },
     ];
-  }, [links, navigation, onNavigateSection, route.name]);
+
+    if (isTeacher) {
+      baseLinks.push({
+        label: 'Painel',
+        isActive: route.name === 'TeacherDashboard',
+        onPress: () => navigation.navigate('TeacherDashboard'),
+      });
+    }
+
+    return baseLinks;
+  }, [isTeacher, links, navigation, onNavigateSection, route.name]);
 
   const handleLogoPress = () => {
     if (route.name !== 'Home') {
@@ -108,8 +143,9 @@ const Navbar: React.FC<NavbarProps> = ({
     closeMenu();
   }, [closeMenu, route.name]);
 
-  const renderInlineActions = showAuthButtons && !isCompact;
-  const renderMenuAuthActions = showAuthButtons && isCompact;
+  const hasSession = Boolean(token);
+  const renderInlineActions = showAuthButtons && !hasSession && !isCompact;
+  const renderMenuAuthActions = showAuthButtons && !hasSession && isCompact;
   const shouldRenderMenuButton = derivedLinks.length > 0 || renderMenuAuthActions;
 
   return (

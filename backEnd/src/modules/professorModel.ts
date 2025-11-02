@@ -6,12 +6,6 @@ const teacherProfileSelect = {
   phone: true,
   city: true,
   region: true,
-  teachingModes: true,
-  languages: true,
-  hourlyRate: true,
-  adTitle: true,
-  methodology: true,
-  about: true,
   experience: true,
   profilePhoto: true,
   advertisesFromHome: true,
@@ -34,15 +28,12 @@ export const createTeacherWithProfile = async (data: {
     phone: string;
     city: string;
     region?: string | null;
-    teachingModes: string[];
-    languages: string[];
-    hourlyRate?: number | Prisma.Decimal | null;
-    adTitle: string;
-    methodology: string;
-    about: string;
     experience?: string | null;
     profilePhoto?: string | null;
     wantsToAdvertise?: boolean;
+    advertisesFromHome?: boolean;
+    advertisesTravel?: boolean;
+    advertisesOnline?: boolean;
   };
 }) => {
   try {
@@ -59,17 +50,11 @@ export const createTeacherWithProfile = async (data: {
             phone: data.profile.phone,
             city: data.profile.city,
             region: data.profile.region ?? null,
-            teachingModes: data.profile.teachingModes,
-            languages: data.profile.languages,
-            hourlyRate: data.profile.hourlyRate ?? null,
-            adTitle: data.profile.adTitle,
-            methodology: data.profile.methodology,
-            about: data.profile.about,
             experience: data.profile.experience ?? null,
             profilePhoto: data.profile.profilePhoto ?? null,
-            advertisesFromHome: data.profile.teachingModes.includes("home"),
-            advertisesTravel: data.profile.teachingModes.includes("travel"),
-            advertisesOnline: data.profile.teachingModes.includes("online"),
+            advertisesFromHome: Boolean(data.profile.advertisesFromHome),
+            advertisesTravel: Boolean(data.profile.advertisesTravel),
+            advertisesOnline: Boolean(data.profile.advertisesOnline),
             wantsToAdvertise: data.profile.wantsToAdvertise ?? false,
           },
         },

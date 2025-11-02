@@ -20,6 +20,7 @@ const Navbar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<{ name?: string; email?: string; role?: string } | null>(null);
+  const [hasRedirectedToDashboard, setHasRedirectedToDashboard] = useState(false);
 
   const activeHash = useMemo(() => {
     if (location.pathname !== '/') {
@@ -83,12 +84,24 @@ const Navbar: React.FC = () => {
   }, [profile]);
 
   const isAuthenticated = Boolean(displayName);
+  const isTeacher = (profile?.role ?? '').toLowerCase() === 'teacher';
+
+  useEffect(() => {
+    if (isTeacher && location.pathname !== '/dashboard' && !hasRedirectedToDashboard) {
+      setHasRedirectedToDashboard(true);
+      navigate('/dashboard');
+    }
+    if (!isTeacher && hasRedirectedToDashboard) {
+      setHasRedirectedToDashboard(false);
+    }
+  }, [isTeacher, location.pathname, navigate, hasRedirectedToDashboard]);
 
   const handleLogout = useCallback(() => {
     setIsMenuOpen(false);
     localStorage.removeItem('token');
     localStorage.removeItem('profile');
     setProfile(null);
+    setHasRedirectedToDashboard(false);
     window.dispatchEvent(new Event('faroledu-auth-change'));
     navigate('/', { replace: false });
   }, [navigate]);
@@ -119,6 +132,12 @@ const Navbar: React.FC = () => {
 
   const handleSectionNavigate = useCallback(
     (hash: string) => {
+      if (hash === '#oferecer-aula' && isTeacher) {
+        setIsMenuOpen(false);
+        navigate('/dashboard', { replace: false });
+        return;
+      }
+
       closeMenu();
 
       if (location.pathname !== '/') {
@@ -129,7 +148,7 @@ const Navbar: React.FC = () => {
 
       scrollToHash(hash);
     },
-    [closeMenu, location.pathname, navigate, scrollToHash],
+    [closeMenu, isTeacher, location.pathname, navigate, scrollToHash],
   );
 
   const handleLogoClick = useCallback(() => {
