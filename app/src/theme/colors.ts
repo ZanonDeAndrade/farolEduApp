@@ -27,6 +27,11 @@ export const COLORS = {
   highlightWarm: 'rgba(247, 232, 163, 0.2)',
   shadow: 'rgba(31, 37, 71, 0.16)',
   white: '#FFFFFF',
+  neutral900: '#0F172A',
+  neutral800: '#1E293B',
+  neutral700: '#334155',
+  neutral600: '#475569',
+  neutral500: '#64748B',
 } as const;
 
 export type ColorName = keyof typeof COLORS;

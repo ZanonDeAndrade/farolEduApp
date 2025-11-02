@@ -20,11 +20,18 @@ export const registerTeacher = async (payload: {
   name: string;
   email: string;
   password: string;
+  phone: string;
+  city: string;
+  experience?: string;
 }) => {
   const body = {
     name: payload.name.trim(),
     email: payload.email.trim().toLowerCase(),
     password: payload.password,
+    phone: payload.phone.trim(),
+    city: payload.city.trim(),
+    region: payload.city.trim(),
+    experience: payload.experience?.trim() || undefined,
   };
 
   return apiRequest<RegisterTeacherResponse>('/api/professors/register', {

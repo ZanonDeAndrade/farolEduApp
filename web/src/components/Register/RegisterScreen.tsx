@@ -1,13 +1,10 @@
 import { useState } from 'react';
-import { User, GraduationCap, Mail, Lock, Eye, EyeOff, ArrowLeft, Phone, MapPin, CheckCircle, XCircle, Search } from 'lucide-react';
+import { User, GraduationCap, Mail, Lock, Eye, EyeOff, ArrowLeft, Phone, MapPin, CheckCircle, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './RegisterScreen.css';
 import { registerTeacher, loginTeacher, registerStudent, loginStudent, AuthProvider } from "../../services/auth";
-import { LANGUAGE_OPTIONS } from "../../constants/languages";
 import LogoImage from '../../assets/Logo.png';
 
-
-type TeachingMode = 'home' | 'travel' | 'online';
 
 interface RegisterData {
   name: string;
@@ -17,15 +14,8 @@ interface RegisterData {
   password: string;
   confirmPassword: string;
   userType: 'student' | 'teacher' | null;
-  subjects: string[];
   experience: string;
   authMethod: 'email' | 'google';
-  teachingModes: TeachingMode[];
-  languages: string[];
-  hourlyRate: string;
-  adTitle: string;
-  methodology: string;
-  about: string;
   profilePhoto?: File | null;
   preferredModality: 'online' | 'presencial' | 'hibrida';
   studentRegion: string;
@@ -70,15 +60,8 @@ const RegisterScreen = () => {
     password: '',
     confirmPassword: '',
     userType: null,
-    subjects: [],
     experience: '',
     authMethod: 'email',
-    teachingModes: [],
-    languages: [],
-    hourlyRate: '',
-    adTitle: '',
-    methodology: '',
-    about: '',
     profilePhoto: undefined,
     preferredModality: 'online',
     studentRegion: '',
@@ -91,80 +74,30 @@ const RegisterScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [popup, setPopup] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const [languageQuery, setLanguageQuery] = useState('');
   const [lastSubmittedType, setLastSubmittedType] = useState<'student' | 'teacher' | null>(null);
 
   const handleUserTypeSelect = (type: 'student' | 'teacher') => {
     setRegisterData(prev => ({
       ...prev,
       userType: type,
-      subjects: type === 'teacher' ? prev.subjects : [],
       experience: type === 'teacher' ? prev.experience : '',
-      teachingModes: type === 'teacher' ? prev.teachingModes : [],
-      languages: type === 'teacher' ? prev.languages : [],
-      hourlyRate: type === 'teacher' ? prev.hourlyRate : '',
-      adTitle: type === 'teacher' ? prev.adTitle : '',
-      methodology: type === 'teacher' ? prev.methodology : '',
-      about: type === 'teacher' ? prev.about : '',
       preferredModality: type === 'student' ? prev.preferredModality : prev.preferredModality,
       studentRegion: type === 'student' ? prev.studentRegion : '',
     }));
-    if (type === 'teacher') {
-      setLanguageQuery('');
-    }
   };
 
   const handleUserTypeChange = (type: 'student' | 'teacher' | null) => {
     setRegisterData(prev => ({
       ...prev,
       userType: type,
-      subjects: type === 'teacher' ? prev.subjects : [],
       experience: type === 'teacher' ? prev.experience : '',
-      teachingModes: type === 'teacher' ? prev.teachingModes : [],
-      languages: type === 'teacher' ? prev.languages : [],
-      hourlyRate: type === 'teacher' ? prev.hourlyRate : '',
-      adTitle: type === 'teacher' ? prev.adTitle : '',
-      methodology: type === 'teacher' ? prev.methodology : '',
-      about: type === 'teacher' ? prev.about : '',
       preferredModality: type === 'student' ? prev.preferredModality : 'online',
       studentRegion: type === 'student' ? prev.studentRegion : '',
     }));
-    if (type !== 'teacher') {
-      setLanguageQuery('');
-    }
   };
 
   const handleInputChange = <K extends keyof RegisterData>(field: K, value: RegisterData[K]) => {
     setRegisterData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSubjectChange = (subject: string, checked: boolean) => {
-    setRegisterData(prev => ({
-      ...prev,
-      subjects: checked
-        ? [...prev.subjects, subject]
-        : prev.subjects.filter(s => s !== subject)
-    }));
-  };
-
-  const handleTeachingModeToggle = (mode: TeachingMode) => {
-    setRegisterData(prev => {
-      const exists = prev.teachingModes.includes(mode);
-      return {
-        ...prev,
-        teachingModes: exists ? prev.teachingModes.filter(item => item !== mode) : [...prev.teachingModes, mode],
-      };
-    });
-  };
-
-  const handleLanguageToggle = (languageCode: string) => {
-    setRegisterData(prev => {
-      const exists = prev.languages.includes(languageCode);
-      return {
-        ...prev,
-        languages: exists ? prev.languages.filter(item => item !== languageCode) : [...prev.languages, languageCode],
-      };
-    });
   };
 
   const handleAuthMethodSelect = (method: 'email' | 'google') => {
@@ -224,12 +157,6 @@ const RegisterScreen = () => {
           phone: registerData.phone.trim(),
           city: registerData.city.trim(),
           region: registerData.city.trim(),
-          teachingModes: registerData.teachingModes,
-          languages: registerData.languages,
-          hourlyRate: registerData.hourlyRate,
-          adTitle: registerData.adTitle.trim(),
-          methodology: registerData.methodology.trim(),
-          about: registerData.about.trim(),
           experience: registerData.experience.trim() || undefined,
           profilePhoto: profilePhotoBase64,
           wantsToAdvertise: false,
@@ -273,7 +200,8 @@ const RegisterScreen = () => {
   const handleContinueAfterSuccess = () => {
     setPopup(null);
     if (lastSubmittedType === 'teacher') {
-      navigate('/dashboard');
+      const dashboardUrl = `${window.location.origin.replace(/\/$/, '')}/dashboard`;
+      window.location.replace(dashboardUrl);
     } else {
       navigate('/');
     }
@@ -310,54 +238,17 @@ const RegisterScreen = () => {
     registerData.phone.trim().length > 0 &&
     registerData.city.trim().length > 0 &&
     (registerData.userType === 'teacher'
-      ? registerData.teachingModes.length > 0
+      ? true
       : registerData.userType === 'student'
         ? registerData.studentRegion.trim().length > 0
         : false);
   const isStep3Valid = registerData.password && registerData.confirmPassword && registerData.password === registerData.confirmPassword;
-  const hourlyRateNumber = Number(registerData.hourlyRate.replace(',', '.'));
-
-  const isTeacherProfileValid =
-    registerData.userType === 'teacher' &&
-    registerData.subjects.length > 0 &&
-    registerData.adTitle.trim().length > 0 &&
-    registerData.methodology.trim().length > 0 &&
-    registerData.about.trim().length > 0 &&
-    !Number.isNaN(hourlyRateNumber) &&
-    hourlyRateNumber > 0;
+  const isTeacherProfileValid = registerData.userType === 'teacher';
 
   const isStep4Valid = registerData.userType === 'student' || isTeacherProfileValid;
 
-const subjectOptions = [
-  'Matemática', 'Português', 'Inglês', 'Física', 'Química', 'Biologia',
-  'História', 'Geografia', 'Filosofia', 'Sociologia', 'Literatura',
-  'Programação', 'Música', 'Artes', 'Educação Física'
-];
-
-const MAX_AD_TITLE = 200;
-const MAX_METHOD_TEXT = 500;
-const MAX_BIO_TEXT = 500;
-
-const teachingModeOptions: { value: TeachingMode; label: string; description: string }[] = [
-  { value: 'home', label: 'Na minha casa', description: 'Recebo alunos no meu endereço' },
-  { value: 'travel', label: 'Posso me deslocar', description: 'Vou até o aluno dentro da minha região' },
-  { value: 'online', label: 'Aulas online', description: 'Ofereço encontros virtuais' },
-];
-
   const passwordsMatch = registerData.password === registerData.confirmPassword;
   const passwordStrong = registerData.password.length >= 6;
-
-  const normalizedLanguageQuery = languageQuery.trim().toLowerCase();
-  const filteredLanguages = LANGUAGE_OPTIONS.filter(option => {
-    if (!normalizedLanguageQuery) return true;
-    return (
-      option.label.toLowerCase().includes(normalizedLanguageQuery) ||
-      option.code.toLowerCase().includes(normalizedLanguageQuery)
-    );
-  });
-  const selectedLanguageObjects = registerData.languages
-    .map(code => LANGUAGE_OPTIONS.find(option => option.code === code))
-    .filter((item): item is (typeof LANGUAGE_OPTIONS)[number] => Boolean(item));
 
   return (
     <div className="register-container">
@@ -384,7 +275,7 @@ const teachingModeOptions: { value: TeachingMode; label: string; description: st
                 {lastSubmittedType === 'teacher' && (
                   <>
                     <p className="register-popup-reminder">
-                      Você pode editar título, metodologia, valores, idiomas ou foto a qualquer momento em Perfil &gt; Editar perfil.
+                      Você pode atualizar seus dados de aulas a qualquer momento em Perfil &gt; Editar perfil.
                     </p>
                     <div className="register-popup-advertise">
                       <p>Gostaria de anunciar suas aulas agora?</p>
@@ -631,6 +522,33 @@ const teachingModeOptions: { value: TeachingMode; label: string; description: st
                   </p>
                 </div>
 
+                {registerData.userType === 'teacher' && (
+                  <>
+                    <div className="register-form-group">
+                      <label className="register-form-label">Foto de perfil</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="register-form-input register-file-input"
+                        onChange={event => handleProfilePhotoChange(event.target.files?.[0] ?? null)}
+                      />
+                      <p className="register-helper-text">
+                        Utilize uma foto sozinho(a), sorrindo, com boa iluminação e sem elementos distrativos.
+                      </p>
+                    </div>
+
+                    <div className="register-form-group">
+                      <label className="register-form-label">Experiência (opcional)</label>
+                      <textarea
+                        className="register-form-textarea"
+                        value={registerData.experience}
+                        onChange={e => handleInputChange('experience', e.target.value)}
+                        placeholder="Descreva formações, certificações ou resultados dos seus alunos"
+                      />
+                    </div>
+                  </>
+                )}
+
                 {registerData.userType === 'student' && (
                   <>
                     <div className="register-form-group">
@@ -664,105 +582,6 @@ const teachingModeOptions: { value: TeachingMode; label: string; description: st
                             </button>
                           );
                         })}
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {registerData.userType === 'teacher' && (
-                  <>
-                    <div className="register-section">
-                      <h3 className="register-section-title">Como você oferece suas aulas?</h3>
-                      <div className="register-chip-group">
-                        {teachingModeOptions.map(option => {
-                          const active = registerData.teachingModes.includes(option.value);
-                          return (
-                            <button
-                              key={option.value}
-                              type="button"
-                              className={`register-chip-option ${active ? 'is-active' : ''}`}
-                              onClick={() => handleTeachingModeToggle(option.value)}
-                            >
-                              <span className="register-chip-label">{option.label}</span>
-                              <span className="register-chip-description">{option.description}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <p className="register-helper-text">Selecione pelo menos uma opção.</p>
-                    </div>
-
-                    <div className="register-section">
-                      <h3 className="register-section-title">Idiomas adicionais (opcional)</h3>
-                      <p className="register-helper-text">
-                        Use a busca para encontrar outros idiomas e clique para adicionar ou remover da sua lista.
-                      </p>
-
-                      <div className="register-language-selector">
-                        <div className="register-language-selected">
-                          <div className="register-language-selected-header">
-                            <span>Selecionados ({selectedLanguageObjects.length})</span>
-                            {selectedLanguageObjects.length > 0 && (
-                              <button
-                                type="button"
-                                className="register-language-clear"
-                                onClick={() => handleInputChange('languages', [])}
-                              >
-                                Remover todos
-                              </button>
-                            )}
-                          </div>
-                          <div className="register-language-selected-list">
-                            {selectedLanguageObjects.length === 0 ? (
-                              <span className="register-language-empty">
-                                Você ainda não selecionou idiomas adicionais.
-                              </span>
-                            ) : (
-                              selectedLanguageObjects.map(item => (
-                                <button
-                                  key={item.code}
-                                  type="button"
-                                  className="register-language-chip"
-                                  onClick={() => handleLanguageToggle(item.code)}
-                                >
-                                  {item.label}
-                                </button>
-                              ))
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="register-language-search">
-                          <Search className="register-language-search-icon" />
-                          <input
-                            type="text"
-                            className="register-language-search-input"
-                            value={languageQuery}
-                            onChange={event => setLanguageQuery(event.target.value)}
-                            placeholder="Busque por nome ou código (ex.: inglês, en)"
-                          />
-                        </div>
-
-                        <div className="register-language-result-info">
-                          Mostrando {filteredLanguages.length} de {LANGUAGE_OPTIONS.length} idiomas
-                        </div>
-
-                        <div className="register-language-results">
-                          {filteredLanguages.map(option => {
-                            const active = registerData.languages.includes(option.code);
-                            return (
-                              <button
-                                key={option.code}
-                                type="button"
-                                className={`register-language-option ${active ? 'is-active' : ''}`}
-                                onClick={() => handleLanguageToggle(option.code)}
-                              >
-                                <span className="register-language-option-label">{option.label}</span>
-                                <span className="register-language-option-code">{option.code.toUpperCase()}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
                       </div>
                     </div>
                   </>
@@ -852,105 +671,9 @@ const teachingModeOptions: { value: TeachingMode; label: string; description: st
                 <h2 className="register-step-title">Perfil</h2>
 
                 {registerData.userType === 'teacher' ? (
-                  <>
-                    <div className="register-form-group">
-                      <label className="register-form-label">Matérias que ensina</label>
-                      <div className="register-subjects-grid">
-                        {subjectOptions.map(subj => (
-                          <label key={subj} className="register-subject-checkbox">
-                            <input
-                              type="checkbox"
-                              checked={registerData.subjects.includes(subj)}
-                              onChange={e => handleSubjectChange(subj, e.target.checked)}
-                            />
-                            <span className="register-checkmark"></span>
-                            {subj}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="register-form-group">
-                      <label className="register-form-label">
-                        Tarifa horária (R$)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.5"
-                        className="register-form-input"
-                        value={registerData.hourlyRate}
-                        onChange={e => handleInputChange('hourlyRate', e.target.value)}
-                        placeholder="Informe quanto cobra por hora"
-                      />
-                    </div>
-
-                    <div className="register-form-group">
-                      <label className="register-form-label">
-                        Título do anúncio
-                        <span className="register-char-counter">{registerData.adTitle.length}/{MAX_AD_TITLE}</span>
-                      </label>
-                      <input
-                        type="text"
-                        className="register-form-input"
-                        value={registerData.adTitle}
-                        onChange={e => handleInputChange('adTitle', e.target.value.slice(0, MAX_AD_TITLE))}
-                        placeholder="Ex.: Aulas personalizadas de matemática para ensino médio"
-                        maxLength={MAX_AD_TITLE}
-                      />
-                    </div>
-
-                    <div className="register-form-group">
-                      <label className="register-form-label">
-                        Metodologia
-                        <span className="register-char-counter">{registerData.methodology.length}/{MAX_METHOD_TEXT}</span>
-                      </label>
-                      <textarea
-                        className="register-form-textarea"
-                        value={registerData.methodology}
-                        onChange={e => handleInputChange('methodology', e.target.value.slice(0, MAX_METHOD_TEXT))}
-                        placeholder="Explique como conduz suas aulas, recursos utilizados e diferenciais"
-                        maxLength={MAX_METHOD_TEXT}
-                      />
-                    </div>
-
-                    <div className="register-form-group">
-                      <label className="register-form-label">
-                        Sobre você
-                        <span className="register-char-counter">{registerData.about.length}/{MAX_BIO_TEXT}</span>
-                      </label>
-                      <textarea
-                        className="register-form-textarea"
-                        value={registerData.about}
-                        onChange={e => handleInputChange('about', e.target.value.slice(0, MAX_BIO_TEXT))}
-                        placeholder="Compartilhe sua trajetória, certificações e resultados que já alcançou"
-                        maxLength={MAX_BIO_TEXT}
-                      />
-                    </div>
-
-                    <div className="register-form-group">
-                      <label className="register-form-label">Foto de perfil</label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="register-form-input register-file-input"
-                        onChange={event => handleProfilePhotoChange(event.target.files?.[0] ?? null)}
-                      />
-                      <p className="register-helper-text">
-                        Utilize uma foto sozinho(a), sorrindo, com boa iluminação e sem elementos distrativos.
-                      </p>
-                    </div>
-
-                    <div className="register-form-group">
-                      <label className="register-form-label">Experiência (opcional)</label>
-                      <textarea
-                        className="register-form-textarea"
-                        value={registerData.experience}
-                        onChange={e => handleInputChange('experience', e.target.value)}
-                        placeholder="Descreva formações, certificações ou resultados dos seus alunos"
-                      />
-                    </div>
-                  </>
+                  <p className="register-helper-text">
+                    Revise suas informações e finalize o cadastro para começar a divulgar suas aulas.
+                  </p>
                 ) : (
                   <>
                     <div className="register-form-group">

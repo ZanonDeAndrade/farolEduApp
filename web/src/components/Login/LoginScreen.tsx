@@ -92,7 +92,12 @@ const LoginScreen: React.FC = () => {
           : '/';
 
       redirectTimeoutRef.current = window.setTimeout(() => {
-        navigate(targetRoute);
+        if (roleLower === 'teacher') {
+          const dashboardUrl = `${window.location.origin.replace(/\/$/, '')}/dashboard`;
+          window.location.replace(dashboardUrl);
+        } else {
+          navigate(targetRoute);
+        }
         redirectTimeoutRef.current = null;
       }, 1200);
     } catch (err: any) {

@@ -216,6 +216,9 @@ const RegisterScreen: React.FC = () => {
         email: trimmedEmail,
         password,
         userType: registerData.userType,
+        phone: registerData.phone,
+        city: registerData.city,
+        experience: registerData.experience,
       });
 
       const session = await signIn({
@@ -227,6 +230,15 @@ const RegisterScreen: React.FC = () => {
       const displayName =
         createdProfile?.name ?? session.profile?.name ?? registerData.name;
 
+      const isTeacherProfile =
+        registerData.userType === 'teacher' &&
+        session.profile &&
+        typeof session.profile === 'object'
+          ? String((session.profile as { role?: string }).role ?? '').toLowerCase() === 'teacher'
+          : false;
+
+      const targetRoute: keyof RootStackParamList = isTeacherProfile ? 'TeacherDashboard' : 'Home';
+
       setPopup({
         type: 'success',
         message: `Conta criada com sucesso, ${displayName.split(' ')[0]}! Redirecionando...`,
@@ -234,7 +246,7 @@ const RegisterScreen: React.FC = () => {
 
       redirectTimeoutRef.current = setTimeout(() => {
         setPopup(null);
-        navigation.navigate('Home');
+        navigation.replace(targetRoute);
         redirectTimeoutRef.current = null;
       }, 1400);
     } catch (error) {
