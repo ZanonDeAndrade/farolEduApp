@@ -51,3 +51,35 @@ export async function fetchTeacherSchedules() {
   const { data } = await api.get<TeacherScheduleResponse[]>("/api/schedules");
   return data;
 }
+
+export interface PublicTeacherClassResponse extends TeacherClassResponse {
+  teacher: {
+    id: number | null;
+    name: string | null;
+    email: string | null;
+    profile: {
+      city: string | null;
+      region: string | null;
+      experience: string | null;
+      profilePhoto: string | null;
+    } | null;
+  } | null;
+}
+
+export interface PublicTeacherClassQuery {
+  q?: string;
+  city?: string;
+  modality?: string;
+  take?: number;
+}
+
+export async function fetchPublicTeacherClasses(query?: PublicTeacherClassQuery) {
+  const params = new URLSearchParams();
+  if (query?.q) params.set("q", query.q);
+  if (query?.city) params.set("city", query.city);
+  if (query?.modality) params.set("modality", query.modality);
+  if (query?.take) params.set("take", String(query.take));
+  const suffix = params.toString() ? `?${params.toString()}` : "";
+  const { data } = await api.get<PublicTeacherClassResponse[]>(`/api/teacher-classes/public${suffix}`);
+  return data;
+}

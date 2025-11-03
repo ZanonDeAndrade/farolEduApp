@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
-import { createTeacherClass, getTeacherClassesByTeacher } from "../modules/teacherClassModel";
+import { createTeacherClass, getPublicTeacherClasses, getTeacherClassesByTeacher } from "../modules/teacherClassModel";
+import { Prisma } from "@prisma/client";
 
 const ALLOWED_MODALITIES = new Set(["online", "home", "travel", "hybrid", "presencial"]);
 
@@ -83,5 +84,62 @@ export const listTeacherClassesHandler = async (req: Request, res: Response) => 
   } catch (error) {
     console.error("Erro ao listar aulas do professor:", error);
     return res.status(500).json({ message: "Erro interno ao listar aulas" });
+  }
+};
+
+const serializePrice = (price: Prisma.Decimal | number | null | undefined) => {
+  if (price === null || price === undefined) return null;
+  if (price instanceof Prisma.Decimal) {
+    return Number(price.toString());
+  }
+  if (typeof price === "string") {
+    const numeric = Number(price);
+    return Number.isFinite(numeric) ? numeric : null;
+  }
+  return Number(price);
+};
+
+export const listPublicTeacherClassesHandler = async (req: Request, res: Response) => {
+  try {
+    const { q, modality, city, take } = req.query ?? {};
+
+    const classes = await getPublicTeacherClasses({
+      query: typeof q === "string" ? q : undefined,
+      modality: typeof modality === "string" ? modality : undefined,
+      city: typeof city === "string" ? city : undefined,
+      take: typeof take === "string" && take.trim() ? Number(take) : undefined,
+    });
+
+    const payload = classes.map(item => ({
+      id: item.id,
+      teacherId: item.teacherId,
+      title: item.title,
+      subject: item.subject,
+      description: item.description,
+      modality: item.modality,
+      durationMinutes: item.durationMinutes,
+      price: serializePrice(item.price),
+      startTime: item.startTime,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+      teacher: {
+        id: item.teacher?.id ?? null,
+        name: item.teacher?.name ?? null,
+        email: item.teacher?.email ?? null,
+        profile: item.teacher?.teacherProfile
+          ? {
+              city: item.teacher.teacherProfile.city,
+              region: item.teacher.teacherProfile.region,
+              experience: item.teacher.teacherProfile.experience,
+              profilePhoto: item.teacher.teacherProfile.profilePhoto,
+            }
+          : null,
+      },
+    }));
+
+    return res.json(payload);
+  } catch (error) {
+    console.error("Erro ao listar aulas públicas:", error);
+    return res.status(500).json({ message: "Erro interno ao listar aulas públicas" });
   }
 };

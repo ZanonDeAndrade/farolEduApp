@@ -1,14 +1,14 @@
 export type SectionKey = 'inicio' | 'aulas' | 'sobre' | 'oferecer-aula' | 'rodape';
 
-export type Teacher = {
-  id: string;
-  name: string;
-  subject: string;
-  level?: string;
-  description?: string;
-  city?: string;
-  modalities?: Array<'online' | 'presencial'>;
-  distanceKm?: number;
+export type TeacherClassPreview = {
+  id: number;
+  title: string;
+  subject?: string | null;
+  description?: string | null;
+  modality: string;
+  price?: number | null;
+  teacherName?: string | null;
+  city?: string | null;
 };
 
 export type SearchFilters = {

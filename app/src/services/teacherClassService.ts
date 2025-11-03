@@ -27,6 +27,30 @@ export type TeacherSchedule = {
   };
 };
 
+export type PublicTeacherClass = {
+  id: number;
+  teacherId: number;
+  title: string;
+  subject?: string | null;
+  description?: string | null;
+  modality: string;
+  durationMinutes: number;
+  price?: number | null;
+  createdAt: string;
+  updatedAt: string;
+  teacher: {
+    id: number | null;
+    name: string | null;
+    email: string | null;
+    profile: {
+      city: string | null;
+      region: string | null;
+      experience: string | null;
+      profilePhoto: string | null;
+    } | null;
+  } | null;
+};
+
 export type CreateTeacherClassPayload = {
   title: string;
   subject?: string;
@@ -34,6 +58,13 @@ export type CreateTeacherClassPayload = {
   modality?: string;
   durationMinutes?: number;
   price?: number;
+};
+
+export type PublicTeacherClassQuery = {
+  q?: string;
+  city?: string;
+  modality?: string;
+  take?: number;
 };
 
 export const fetchTeacherClasses = async (token: string) => {
@@ -50,4 +81,14 @@ export const createTeacherClass = async (token: string, payload: CreateTeacherCl
     token,
     body: payload,
   });
+};
+
+export const fetchPublicTeacherClasses = async (query?: PublicTeacherClassQuery) => {
+  const params = new URLSearchParams();
+  if (query?.q) params.set('q', query.q);
+  if (query?.city) params.set('city', query.city);
+  if (query?.modality) params.set('modality', query.modality);
+  if (query?.take) params.set('take', String(query.take));
+  const suffix = params.toString() ? `?${params.toString()}` : '';
+  return apiRequest<PublicTeacherClass[]>(`/api/teacher-classes/public${suffix}`);
 };

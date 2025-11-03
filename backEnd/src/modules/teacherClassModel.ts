@@ -58,3 +58,78 @@ export const getTeacherClassesByTeacher = async (teacherId: number) => {
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
   });
 };
+
+export interface PublicTeacherClassFilters {
+  query?: string;
+  modality?: string;
+  city?: string;
+  take?: number;
+}
+
+export const getPublicTeacherClasses = async (filters: PublicTeacherClassFilters) => {
+  const { query, modality, city } = filters ?? {};
+  const normalizedTake = Number.isFinite(filters?.take) ? Math.min(Math.max(Math.trunc(filters!.take as number), 1), 50) : 12;
+
+  const where: Prisma.TeacherClassWhereInput = {};
+  const andConditions: Prisma.TeacherClassWhereInput[] = [];
+
+  if (query && query.trim()) {
+    const normalizedQuery = query.trim();
+    andConditions.push({
+      OR: [
+        { title: { contains: normalizedQuery, mode: "insensitive" } },
+        { subject: { contains: normalizedQuery, mode: "insensitive" } },
+        { description: { contains: normalizedQuery, mode: "insensitive" } },
+        {
+          teacher: {
+            name: { contains: normalizedQuery, mode: "insensitive" },
+          },
+        },
+      ],
+    });
+  }
+
+  if (modality && modality.trim()) {
+    andConditions.push({
+      modality: { equals: modality.trim().toLowerCase() },
+    });
+  }
+
+  if (city && city.trim()) {
+    const normalizedCity = city.trim();
+    andConditions.push({
+      teacher: {
+        teacherProfile: {
+          city: { contains: normalizedCity, mode: "insensitive" },
+        },
+      },
+    });
+  }
+
+  if (andConditions.length) {
+    where.AND = andConditions;
+  }
+
+  return prisma.teacherClass.findMany({
+    where,
+    include: {
+      teacher: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          teacherProfile: {
+            select: {
+              city: true,
+              region: true,
+              experience: true,
+              profilePhoto: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: normalizedTake,
+  });
+};
