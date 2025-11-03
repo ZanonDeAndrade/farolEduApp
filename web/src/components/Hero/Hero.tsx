@@ -1,23 +1,55 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, MapPin, Sparkles, GraduationCap, Users, Wifi } from 'lucide-react';
 import './Hero.css';
 import FarolImage from '../../assets/ImagemFarol.png';
+import type { SearchFilters } from '../../types/search';
 
-const Hero: React.FC = () => {
-  const [formData, setFormData] = useState({ subject: '', location: '' });
-  const [filters, setFilters] = useState({ nearby: true, online: false });
+type HeroProps = {
+  onSearch?: (filters: SearchFilters) => void;
+  initialFilters?: SearchFilters;
+};
+
+const Hero: React.FC<HeroProps> = ({ onSearch, initialFilters }) => {
+  const [formData, setFormData] = useState({
+    subject: initialFilters?.subject ?? '',
+    location: initialFilters?.location ?? '',
+  });
+  const [filters, setFilters] = useState({
+    nearby: initialFilters?.nearby ?? false,
+    online: initialFilters?.online ?? false,
+  });
+
+  useEffect(() => {
+    if (!initialFilters) return;
+    setFormData({ subject: initialFilters.subject, location: initialFilters.location });
+    setFilters({ nearby: initialFilters.nearby, online: initialFilters.online });
+  }, [initialFilters]);
 
   const handleInputChange = (field: 'subject' | 'location', value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const toggleFilter = (filter: 'nearby' | 'online') => {
-    setFilters(prev => ({ ...prev, [filter]: !prev[filter] }));
+    setFilters(prev => {
+      const updated = { ...prev, [filter]: !prev[filter] };
+      onSearch?.({
+        subject: formData.subject.trim(),
+        location: formData.location.trim(),
+        nearby: updated.nearby,
+        online: updated.online,
+      });
+      return updated;
+    });
   };
 
   const handleSearch = (event: React.FormEvent) => {
     event.preventDefault();
-    console.log('Busca FarolEdu:', { ...formData, filters });
+    onSearch?.({
+      subject: formData.subject.trim(),
+      location: formData.location.trim(),
+      nearby: filters.nearby,
+      online: filters.online,
+    });
   };
 
   return (

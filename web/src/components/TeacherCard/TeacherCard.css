@@ -74,16 +74,43 @@
   z-index: 1;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
+  align-items: flex-end;
+  gap: 1.2rem;
   border-top: 1px solid rgba(106, 64, 180, 0.16);
   padding-top: 1.25rem;
+  flex-wrap: wrap;
 }
 
-.teacher-name {
-  font-size: 1.1rem;
+.card-meta {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.meta-label {
+  font-size: 0.85rem;
   font-weight: 600;
-  color: #2a325d;
+  color: #6b739b;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.meta-value {
+  font-size: 1rem;
+  color: #1f2547;
+  font-weight: 600;
+}
+
+.meta-price {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #5b309d;
 }
 
 .teacher-card .btn {
@@ -109,7 +136,8 @@
 
   .card-body {
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
+    gap: 1rem;
   }
 
   .teacher-card .btn {

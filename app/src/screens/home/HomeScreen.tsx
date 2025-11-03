@@ -45,7 +45,7 @@ const HomeScreen: React.FC = () => {
 
   const handleSearch = useCallback(
     (filters: SearchFilters) => {
-      setSearchFilters(filters);
+      setSearchFilters({ ...filters });
       scrollToSection('aulas');
     },
     [scrollToSection],

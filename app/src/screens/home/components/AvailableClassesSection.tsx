@@ -1,24 +1,46 @@
-import React, { useMemo } from 'react';
-import { LayoutChangeEvent, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, LayoutChangeEvent, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MapPin, Wifi } from 'lucide-react-native';
 import { availableStyles } from '../styles/availableStyles';
-import { DEFAULT_SEARCH_FILTERS, TEACHERS } from '../constants';
-import type { SearchFilters, Teacher } from '../types';
+import { DEFAULT_SEARCH_FILTERS } from '../constants';
+import type { SearchFilters, TeacherClassPreview } from '../types';
 import { GRADIENTS } from '../../../theme/gradients';
 import { COLORS } from '../../../theme/colors';
+import {
+  fetchPublicTeacherClasses,
+  type PublicTeacherClass,
+} from '../../../services/teacherClassService';
+
+const mapToPreview = (entry: PublicTeacherClass): TeacherClassPreview => ({
+  id: entry.id,
+  title: entry.title,
+  subject: entry.subject ?? undefined,
+  description: entry.description ?? undefined,
+  modality: entry.modality,
+  price: entry.price ?? null,
+  teacherName: entry.teacher?.name ?? undefined,
+  city: entry.teacher?.profile?.city ?? entry.teacher?.profile?.region ?? undefined,
+});
+
+const formatModality = (value: string) => {
+  switch (value) {
+    case 'online':
+      return 'Online';
+    case 'home':
+      return 'Na casa do professor';
+    case 'travel':
+      return 'Professor vai até você';
+    case 'hybrid':
+      return 'Modelo híbrido';
+    default:
+      return 'Presencial';
+  }
+};
 
 type AvailableClassesSectionProps = {
   search?: SearchFilters;
   onLayout?: (event: LayoutChangeEvent) => void;
-};
-
-const matchText = (value: string | undefined, query: string) => {
-  if (!query) {
-    return true;
-  }
-
-  return value?.toLowerCase().includes(query.toLowerCase()) ?? false;
 };
 
 const AvailableClassesSection: React.FC<AvailableClassesSectionProps> = ({ search, onLayout }) => {
@@ -26,36 +48,51 @@ const AvailableClassesSection: React.FC<AvailableClassesSectionProps> = ({ searc
   const subjectLabel = appliedFilters.subject.trim();
   const locationLabel = appliedFilters.location.trim();
 
-  const filteredTeachers = useMemo(() => {
-    const normalizedSubject = subjectLabel.toLowerCase();
-    const normalizedLocation = locationLabel.toLowerCase();
+  const [classes, setClasses] = useState<TeacherClassPreview[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    return TEACHERS.filter(teacher => {
-      const matchesSubject =
-        !normalizedSubject ||
-        matchText(teacher.subject, normalizedSubject) ||
-        matchText(teacher.description, normalizedSubject) ||
-        matchText(teacher.name, normalizedSubject);
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoading(true);
+    setError(null);
 
-      const matchesLocation =
-        !normalizedLocation ||
-        matchText(teacher.city, normalizedLocation) ||
-        (normalizedLocation === 'online' && teacher.modalities?.includes('online'));
+    const query = {
+      q: appliedFilters.subject.trim() || undefined,
+      city: appliedFilters.location.trim() || undefined,
+      modality: appliedFilters.online ? 'online' : undefined,
+      take: 12,
+    };
 
-      const matchesNearby =
-        !appliedFilters.nearby || (teacher.distanceKm ?? Number.POSITIVE_INFINITY) <= 20 || normalizedLocation.length > 0;
+    fetchPublicTeacherClasses(query)
+      .then(data => {
+        if (!isMounted) return;
+        setClasses(data.map(mapToPreview));
+      })
+      .catch(err => {
+        if (!isMounted) return;
+        console.error('Erro ao buscar aulas públicas:', err);
+        setError('Não foi possível carregar as aulas agora. Tente novamente em instantes.');
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      });
 
-      const matchesOnline = !appliedFilters.online || teacher.modalities?.includes('online');
+    return () => {
+      isMounted = false;
+    };
+  }, [appliedFilters.location, appliedFilters.online, appliedFilters.subject]);
 
-      return matchesSubject && matchesLocation && matchesNearby && matchesOnline;
-    });
-  }, [appliedFilters.location, appliedFilters.nearby, appliedFilters.online, appliedFilters.subject]);
-
-  const hasActiveFilters =
-    subjectLabel.length > 0 ||
-    locationLabel.length > 0 ||
-    appliedFilters.online ||
-    appliedFilters.nearby;
+  const hasActiveFilters = useMemo(() => {
+    return (
+      subjectLabel.length > 0 ||
+      locationLabel.length > 0 ||
+      appliedFilters.online ||
+      appliedFilters.nearby
+    );
+  }, [appliedFilters.nearby, appliedFilters.online, subjectLabel.length, locationLabel.length]);
 
   return (
     <LinearGradient {...GRADIENTS.availableBackground} style={availableStyles.container} onLayout={onLayout}>
@@ -89,7 +126,16 @@ const AvailableClassesSection: React.FC<AvailableClassesSectionProps> = ({ searc
         </View>
       ) : null}
 
-      {filteredTeachers.length === 0 ? (
+      {isLoading ? (
+        <View style={availableStyles.loadingWrapper}>
+          <ActivityIndicator color={COLORS.accentPrimary} size="small" />
+          <Text style={availableStyles.loadingText}>Carregando aulas...</Text>
+        </View>
+      ) : error ? (
+        <View style={availableStyles.emptyState}>
+          <Text style={availableStyles.emptyStateTitle}>{error}</Text>
+        </View>
+      ) : classes.length === 0 ? (
         <View style={availableStyles.emptyState}>
           <Text style={availableStyles.emptyStateTitle}>Ainda não encontramos aulas com esse perfil.</Text>
           <Text style={availableStyles.emptyStateSubtitle}>
@@ -98,8 +144,8 @@ const AvailableClassesSection: React.FC<AvailableClassesSectionProps> = ({ searc
         </View>
       ) : (
         <View style={availableStyles.list}>
-          {filteredTeachers.map(teacher => (
-            <TeacherCard key={teacher.id} teacher={teacher} />
+          {classes.map(item => (
+            <TeacherCard key={item.id} teacher={item} />
           ))}
         </View>
       )}
@@ -107,15 +153,15 @@ const AvailableClassesSection: React.FC<AvailableClassesSectionProps> = ({ searc
   );
 };
 
-const TeacherCard: React.FC<{ teacher: Teacher }> = ({ teacher }) => (
+const TeacherCard: React.FC<{ teacher: TeacherClassPreview }> = ({ teacher }) => (
   <LinearGradient {...GRADIENTS.availableCard} style={availableStyles.card}>
     <View style={availableStyles.cardHeader}>
       <LinearGradient {...GRADIENTS.teacherAvatar} style={availableStyles.avatar}>
-        <Text style={availableStyles.avatarText}>{teacher.subject.charAt(0)}</Text>
+        <Text style={availableStyles.avatarText}>{(teacher.subject || teacher.title).charAt(0)}</Text>
       </LinearGradient>
       <View style={availableStyles.info}>
-        <Text style={availableStyles.subject}>{teacher.subject}</Text>
-        {teacher.level ? <Text style={availableStyles.level}>{teacher.level}</Text> : null}
+        <Text style={availableStyles.subject}>{teacher.subject || teacher.title}</Text>
+        <Text style={availableStyles.level}>{formatModality(teacher.modality)}</Text>
         {teacher.description ? <Text style={availableStyles.description}>{teacher.description}</Text> : null}
       </View>
     </View>
@@ -128,33 +174,33 @@ const TeacherCard: React.FC<{ teacher: Teacher }> = ({ teacher }) => (
         </View>
       ) : null}
       <View style={availableStyles.metaTags}>
-        {teacher.modalities?.map(mode => (
-          <View key={mode} style={[availableStyles.metaTag, mode === 'online' && availableStyles.metaTagOnline]}>
-            {mode === 'online' ? (
-              <Wifi size={12} color={COLORS.white} />
-            ) : (
-              <MapPin size={12} color={COLORS.accentPrimary} />
-            )}
-            <Text
-              style={[
-                availableStyles.metaTagText,
-                mode === 'online' ? availableStyles.metaTagTextInverted : undefined,
-              ]}
-            >
-              {mode === 'online' ? 'Online' : 'Presencial'}
-            </Text>
-          </View>
-        ))}
-        {typeof teacher.distanceKm === 'number' ? (
-          <View style={availableStyles.metaBadge}>
-            <Text style={availableStyles.metaBadgeText}>{teacher.distanceKm} km</Text>
-          </View>
-        ) : null}
+        <View style={[availableStyles.metaTag, teacher.modality === 'online' && availableStyles.metaTagOnline]}>
+          {teacher.modality === 'online' ? (
+            <Wifi size={12} color={COLORS.white} />
+          ) : (
+            <MapPin size={12} color={COLORS.accentPrimary} />
+          )}
+          <Text
+            style={[
+              availableStyles.metaTagText,
+              teacher.modality === 'online' ? availableStyles.metaTagTextInverted : undefined,
+            ]}
+          >
+            {teacher.modality === 'online' ? 'Online' : 'Presencial'}
+          </Text>
+        </View>
       </View>
     </View>
 
     <View style={availableStyles.footer}>
-      <Text style={availableStyles.teacherName}>Prof. {teacher.name}</Text>
+      <View>
+        {teacher.teacherName ? <Text style={availableStyles.teacherName}>Prof. {teacher.teacherName}</Text> : null}
+        <Text style={availableStyles.teacherPrice}>
+          {teacher.price !== null && teacher.price !== undefined
+            ? `R$ ${Number(teacher.price).toFixed(2)}`
+            : 'Valor a combinar'}
+        </Text>
+      </View>
       <TouchableOpacity style={availableStyles.actionWrapper}>
         <LinearGradient {...GRADIENTS.buttonSecondary} style={availableStyles.action}>
           <Text style={availableStyles.actionText}>Ver aula</Text>

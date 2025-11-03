@@ -146,6 +146,16 @@ export const availableStyles = StyleSheet.create({
   metaTagTextInverted: {
     color: COLORS.white,
   },
+  loadingWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 12,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: COLORS.textMuted,
+  },
   metaBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -162,10 +172,18 @@ export const availableStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  footerInfo: {
+    gap: 4,
+  },
   teacherName: {
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.heading,
+  },
+  teacherPrice: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.accentPrimary,
   },
   ctaContainer: {
     borderRadius: 999,

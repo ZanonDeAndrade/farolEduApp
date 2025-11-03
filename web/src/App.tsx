@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar/Navbar';
 import Hero from './components/Hero/Hero';
@@ -10,15 +10,24 @@ import LoginScreen from './components/Login/LoginScreen';
 import './App.css';
 import RegisterScreen from './components/Register/RegisterScreen';
 import TeacherDashboard from './components/TeacherDashboard/TeacherDashboard';
+import { DEFAULT_SEARCH_FILTERS, type SearchFilters } from './types/search';
 
-const HomePage: React.FC = () => (
-  <>
-    <Hero />
-    <AvailableClasses />
-    <AboutSection />
-    <TeacherSection />
-  </>
-);
+const HomePage: React.FC = () => {
+  const [filters, setFilters] = useState<SearchFilters>(DEFAULT_SEARCH_FILTERS);
+
+  const handleSearch = (next: SearchFilters) => {
+    setFilters({ ...next });
+  };
+
+  return (
+    <>
+      <Hero onSearch={handleSearch} initialFilters={filters} />
+      <AvailableClasses filters={filters} />
+      <AboutSection />
+      <TeacherSection />
+    </>
+  );
+};
 
 function App() {
   return (
