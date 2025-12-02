@@ -48,6 +48,65 @@ export const createTeacherClass = async (input: CreateTeacherClassInput) => {
   });
 };
 
+export const updateTeacherClassByTeacher = async (
+  teacherId: number,
+  classId: number,
+  data: Partial<CreateTeacherClassInput>,
+) => {
+  if (!Number.isFinite(teacherId) || !Number.isFinite(classId)) {
+    throw new Error("INVALID_IDS");
+  }
+
+  const existing = await prisma.teacherClass.findFirst({
+    where: { id: classId, teacherId },
+  });
+  if (!existing) {
+    return null;
+  }
+
+  let price: Prisma.Decimal | null | undefined = existing.price;
+  if (data.price !== undefined) {
+    if (data.price === null) {
+      price = null;
+    } else if (data.price instanceof Prisma.Decimal) {
+      price = data.price;
+    } else {
+      price = new Prisma.Decimal(Number(data.price).toFixed(2));
+    }
+  }
+
+  return prisma.teacherClass.update({
+    where: { id: classId },
+    data: {
+      title: data.title?.trim() ?? existing.title,
+      description: data.description?.trim() ?? existing.description,
+      subject: data.subject?.trim() ?? existing.subject,
+      modality: data.modality?.trim().toLowerCase() ?? existing.modality,
+      startTime: data.startTime ?? existing.startTime,
+      durationMinutes:
+        Number.isFinite(data.durationMinutes) && data.durationMinutes
+          ? Math.max(15, Math.round(data.durationMinutes))
+          : existing.durationMinutes,
+      price,
+    },
+  });
+};
+
+export const deleteTeacherClassByTeacher = async (teacherId: number, classId: number) => {
+  if (!Number.isFinite(teacherId) || !Number.isFinite(classId)) {
+    throw new Error("INVALID_IDS");
+  }
+
+  const existing = await prisma.teacherClass.findFirst({
+    where: { id: classId, teacherId },
+    select: { id: true },
+  });
+  if (!existing) return null;
+
+  await prisma.teacherClass.delete({ where: { id: classId } });
+  return true;
+};
+
 export const getTeacherClassesByTeacher = async (teacherId: number) => {
   if (!Number.isFinite(teacherId)) {
     throw new Error("INVALID_TEACHER_ID");
@@ -64,10 +123,11 @@ export interface PublicTeacherClassFilters {
   modality?: string;
   city?: string;
   take?: number;
+  teacherId?: number;
 }
 
 export const getPublicTeacherClasses = async (filters: PublicTeacherClassFilters) => {
-  const { query, modality, city } = filters ?? {};
+  const { query, modality, city, teacherId } = filters ?? {};
   const normalizedTake = Number.isFinite(filters?.take) ? Math.min(Math.max(Math.trunc(filters!.take as number), 1), 50) : 12;
 
   const where: Prisma.TeacherClassWhereInput = {};
@@ -106,6 +166,10 @@ export const getPublicTeacherClasses = async (filters: PublicTeacherClassFilters
     });
   }
 
+  if (Number.isFinite(teacherId)) {
+    andConditions.push({ teacherId: Number(teacherId) });
+  }
+
   if (andConditions.length) {
     where.AND = andConditions;
   }
@@ -124,6 +188,7 @@ export const getPublicTeacherClasses = async (filters: PublicTeacherClassFilters
               region: true,
               experience: true,
               profilePhoto: true,
+              phone: true,
             },
           },
         },

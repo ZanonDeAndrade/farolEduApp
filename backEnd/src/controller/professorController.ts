@@ -172,6 +172,53 @@ export const getTeacher = async (req: Request, res: Response) => {
   }
 };
 
+// Perfil público do professor + aulas
+export const getTeacherPublic = async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "ID inválido" });
+
+    const teacher = await prisma.user.findFirst({
+      where: {
+        id,
+        role: { equals: "teacher", mode: "insensitive" },
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        teacherProfile: {
+          select: {
+            city: true,
+            region: true,
+            experience: true,
+            phone: true,
+          },
+        },
+        teacherClasses: {
+          select: {
+            id: true,
+            title: true,
+            subject: true,
+            description: true,
+            modality: true,
+            price: true,
+            durationMinutes: true,
+          },
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
+
+    if (!teacher) return res.status(404).json({ message: "Professor não encontrado" });
+    return res.json(teacher);
+  } catch (error) {
+    console.error("Erro ao buscar professor público:", error);
+    return res.status(500).json({ message: "Erro interno ao buscar professor" });
+  }
+};
+
 // (Opcional) endpoint de debug para conferir o usuário do token
 export const meFromToken = async (req: Request, res: Response) => {
   try {

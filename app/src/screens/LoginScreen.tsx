@@ -17,6 +17,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Controller, useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   CheckCircle,
   Eye,
@@ -33,12 +36,18 @@ import { ApiError } from '../services/apiClient';
 import Navbar, { type NavbarLink } from '../components/Navbar';
 import { COLORS } from '../theme/colors';
 
-type NullableUserType = AuthUserType | null;
-
 type PopupState = {
   type: 'success' | 'error';
   message: string;
 };
+
+const loginSchema = z.object({
+  email: z.string().email('Informe um email válido'),
+  password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
+  userType: z.enum(['student', 'teacher'], { required_error: 'Selecione um tipo de conta' }),
+});
+
+type LoginForm = z.infer<typeof loginSchema>;
 
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -46,14 +55,21 @@ const LoginScreen: React.FC = () => {
   const { width } = useWindowDimensions();
   const isCompact = width < 400;
   const isUltraCompact = width < 340;
-  const [loginData, setLoginData] = useState<{
-    email: string;
-    password: string;
-    userType: NullableUserType;
-  }>({
-    email: '',
-    password: '',
-    userType: null,
+  const {
+    control,
+    handleSubmit,
+    formState: { isValid, errors },
+    watch,
+    setValue,
+    reset,
+  } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+      userType: undefined as unknown as AuthUserType,
+    },
+    mode: 'onChange',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -78,29 +94,21 @@ const LoginScreen: React.FC = () => {
     [navigation],
   );
 
-  const handleUserTypeSelect = useCallback((type: AuthUserType) => {
-    setLoginData(prev => ({ ...prev, userType: type }));
-  }, []);
+  const selectedType = watch('userType');
+  const emailValue = watch('email');
+  const passwordValue = watch('password');
 
-  const handleInputChange = useCallback((field: 'email' | 'password', value: string) => {
-    setLoginData(prev => ({ ...prev, [field]: value }));
-  }, []);
+  const handleUserTypeSelect = useCallback(
+    (type: AuthUserType) => {
+      setValue('userType', type, { shouldValidate: true });
+    },
+    [setValue],
+  );
 
-  const isFormValid = useMemo(() => {
-    return (
-      loginData.email.trim().length > 0 &&
-      loginData.password.length > 0 &&
-      Boolean(loginData.userType)
-    );
-  }, [loginData]);
-
-  const handleSubmit = useCallback(async () => {
-    if (!isFormValid || !loginData.userType) {
-      return;
-    }
-
-    const email = loginData.email.trim().toLowerCase();
-    const password = loginData.password;
+  const onSubmit = useCallback(
+    handleSubmit(async formData => {
+      const email = formData.email.trim().toLowerCase();
+      const password = formData.password;
 
     setIsLoading(true);
     setPopup(null);
@@ -114,7 +122,7 @@ const LoginScreen: React.FC = () => {
       const session = await signIn({
         email,
         password,
-        userType: loginData.userType,
+        userType: formData.userType,
       });
 
       const userName =
@@ -131,6 +139,7 @@ const LoginScreen: React.FC = () => {
         type: 'success',
         message: `Login realizado com sucesso${userName}! Redirecionando...`,
       });
+      reset();
 
       redirectTimeoutRef.current = setTimeout(() => {
         setPopup(null);
@@ -149,7 +158,9 @@ const LoginScreen: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [isFormValid, loginData, navigation, signIn]);
+    }),
+    [handleSubmit, navigation, reset, signIn],
+  );
 
   const handleCreateAccount = useCallback(() => {
     navigation.navigate('Register');
@@ -209,7 +220,7 @@ const LoginScreen: React.FC = () => {
                   isUltraCompact && styles.formContainerUltraCompact,
                 ]}
               >
-                {!loginData.userType ? (
+                {!selectedType ? (
                   <View style={[styles.userTypeSelection, isCompact && styles.userTypeSelectionCompact]}>
                     <Text style={[styles.selectionTitle, isCompact && styles.selectionTitleCompact]}>
                       Como você quer entrar?
@@ -221,7 +232,7 @@ const LoginScreen: React.FC = () => {
                       style={[
                         styles.userTypeCard,
                         styles.studentCard,
-                        loginData.userType === 'student' && styles.userTypeCardSelected,
+                        selectedType === 'student' && styles.userTypeCardSelected,
                         isCompact && styles.userTypeCardCompact,
                       ]}
                     >
@@ -246,7 +257,7 @@ const LoginScreen: React.FC = () => {
                       style={[
                         styles.userTypeCard,
                         styles.teacherCard,
-                        loginData.userType === 'teacher' && styles.userTypeCardSelected,
+                        selectedType === 'teacher' && styles.userTypeCardSelected,
                         isCompact && styles.userTypeCardCompact,
                       ]}
                     >
@@ -277,29 +288,28 @@ const LoginScreen: React.FC = () => {
                         <View
                           style={[
                             styles.selectedTypeIcon,
-                            loginData.userType === 'student'
+                            selectedType === 'student'
                               ? styles.selectedStudentBackground
                               : styles.selectedTeacherBackground,
                           ]}
                         >
-                          {loginData.userType === 'student' ? (
+                          {selectedType === 'student' ? (
                           <User size={18} color={COLORS.accentPrimary} />
                           ) : (
                           <GraduationCap size={18} color={COLORS.accentWarmAlt} />
                           )}
                         </View>
                         <Text style={styles.typeLabel}>
-                          {loginData.userType === 'student' ? 'Estudante' : 'Professor'}
+                          {selectedType === 'student' ? 'Estudante' : 'Professor'}
                         </Text>
                       </View>
 
                       <TouchableOpacity
                         style={styles.changeTypeButton}
                         onPress={() =>
-                          setLoginData(prev => ({
-                            ...prev,
-                            userType: null,
-                          }))
+                          setValue('userType', undefined as unknown as AuthUserType, {
+                            shouldValidate: true,
+                          })
                         }
                       >
                         <Text style={styles.changeTypeText}>Alterar</Text>
@@ -310,30 +320,47 @@ const LoginScreen: React.FC = () => {
                       <Text style={styles.inputLabel}>Email</Text>
                       <View style={styles.inputWrapper}>
                         <Mail size={20} color={COLORS.textSubtle} style={styles.inputIcon} />
-                        <TextInput
-                          value={loginData.email}
-                          onChangeText={value => handleInputChange('email', value)}
-                          placeholder="seu@email.com"
-                          placeholderTextColor={COLORS.textSubtle}
-                          keyboardType="email-address"
-                          autoCapitalize="none"
-                          autoCorrect={false}
-                          style={styles.input}
+                        <Controller
+                          control={control}
+                          name="email"
+                          render={({ field: { value, onChange, onBlur } }) => (
+                            <TextInput
+                              value={value}
+                              onChangeText={onChange}
+                              onBlur={onBlur}
+                              placeholder="seu@email.com"
+                              placeholderTextColor={COLORS.textSubtle}
+                              keyboardType="email-address"
+                              autoCapitalize="none"
+                              autoCorrect={false}
+                              style={styles.input}
+                              accessibilityLabel="Email"
+                            />
+                          )}
                         />
                       </View>
+                      {errors.email ? <Text style={styles.errorText}>{errors.email.message}</Text> : null}
                     </View>
 
                     <View style={styles.formGroup}>
                       <Text style={styles.inputLabel}>Senha</Text>
                       <View style={styles.inputWrapper}>
                         <Lock size={20} color={COLORS.textSubtle} style={styles.inputIcon} />
-                        <TextInput
-                          value={loginData.password}
-                          onChangeText={value => handleInputChange('password', value)}
-                          placeholder="••••••••"
-                          placeholderTextColor={COLORS.textSubtle}
-                          secureTextEntry={!showPassword}
-                          style={styles.input}
+                        <Controller
+                          control={control}
+                          name="password"
+                          render={({ field: { value, onChange, onBlur } }) => (
+                            <TextInput
+                              value={value}
+                              onChangeText={onChange}
+                              onBlur={onBlur}
+                              placeholder="••••••••"
+                              placeholderTextColor={COLORS.textSubtle}
+                              secureTextEntry={!showPassword}
+                              style={styles.input}
+                              accessibilityLabel="Senha"
+                            />
+                          )}
                         />
                         <TouchableOpacity
                           onPress={() => setShowPassword(prev => !prev)}
@@ -348,6 +375,7 @@ const LoginScreen: React.FC = () => {
                           )}
                         </TouchableOpacity>
                       </View>
+                      {errors.password ? <Text style={styles.errorText}>{errors.password.message}</Text> : null}
                     </View>
 
                     <View style={[styles.forgotPasswordContainer, isCompact && styles.forgotPasswordCompact]}>
@@ -356,16 +384,16 @@ const LoginScreen: React.FC = () => {
                       </TouchableOpacity>
                     </View>
 
-                    <TouchableOpacity
+                      <TouchableOpacity
                       activeOpacity={0.9}
-                      onPress={handleSubmit}
-                      disabled={!isFormValid || isLoading}
+                      onPress={onSubmit}
+                      disabled={!isValid || isLoading}
                       style={[
                         styles.submitButton,
-                        loginData.userType === 'student'
+                        selectedType === 'student'
                           ? styles.studentSubmitButton
                           : styles.teacherSubmitButton,
-                        (!isFormValid || isLoading) && styles.submitButtonDisabled,
+                        (!isValid || isLoading) && styles.submitButtonDisabled,
                         isCompact && styles.submitButtonCompact,
                       ]}
                     >
@@ -374,7 +402,7 @@ const LoginScreen: React.FC = () => {
                           <ActivityIndicator
                             size="small"
                             color={
-                              loginData.userType === 'teacher'
+                              selectedType === 'teacher'
                                 ? COLORS.accentHighlight
                                 : COLORS.white
                             }
@@ -382,7 +410,7 @@ const LoginScreen: React.FC = () => {
                           <Text
                             style={[
                               styles.loadingText,
-                              loginData.userType === 'teacher' && styles.teacherSubmitButtonText,
+                              selectedType === 'teacher' && styles.teacherSubmitButtonText,
                             ]}
                           >
                             Entrando...
@@ -392,7 +420,7 @@ const LoginScreen: React.FC = () => {
                         <Text
                           style={[
                             styles.submitButtonText,
-                            loginData.userType === 'teacher' && styles.teacherSubmitButtonText,
+                            selectedType === 'teacher' && styles.teacherSubmitButtonText,
                           ]}
                         >
                           Entrar

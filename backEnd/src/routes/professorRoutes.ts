@@ -5,6 +5,7 @@ import {
   getTeacher,
   loginTeacher,
   meFromToken,
+  getTeacherPublic,
 } from "../controller/professorController";
 import { authenticate } from "../middlewares/authMiddleware";
 
@@ -13,6 +14,7 @@ const router = Router();
 // Público
 router.post("/register", registerTeacher);
 router.post("/login", loginTeacher);
+router.get("/public/:id", getTeacherPublic);
 
 // Debug/Perfil via token
 router.get("/me", authenticate, meFromToken);

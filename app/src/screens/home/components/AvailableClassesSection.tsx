@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, LayoutChangeEvent, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MapPin, Wifi } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { availableStyles } from '../styles/availableStyles';
 import { DEFAULT_SEARCH_FILTERS } from '../constants';
 import type { SearchFilters, TeacherClassPreview } from '../types';
@@ -11,9 +13,11 @@ import {
   fetchPublicTeacherClasses,
   type PublicTeacherClass,
 } from '../../../services/teacherClassService';
+import type { RootStackParamList } from '../../../navigation/types';
 
 const mapToPreview = (entry: PublicTeacherClass): TeacherClassPreview => ({
   id: entry.id,
+  teacherId: entry.teacherId,
   title: entry.title,
   subject: entry.subject ?? undefined,
   description: entry.description ?? undefined,
@@ -44,6 +48,7 @@ type AvailableClassesSectionProps = {
 };
 
 const AvailableClassesSection: React.FC<AvailableClassesSectionProps> = ({ search, onLayout }) => {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const appliedFilters = search ?? DEFAULT_SEARCH_FILTERS;
   const subjectLabel = appliedFilters.subject.trim();
   const locationLabel = appliedFilters.location.trim();
@@ -145,7 +150,15 @@ const AvailableClassesSection: React.FC<AvailableClassesSectionProps> = ({ searc
       ) : (
         <View style={availableStyles.list}>
           {classes.map(item => (
-            <TeacherCard key={item.id} teacher={item} />
+            <TeacherCard
+              key={item.id}
+              teacher={item}
+              onPress={() => {
+                if (item.teacherId) {
+                  navigation.navigate('ProfessorDetail', { teacherId: item.teacherId });
+                }
+              }}
+            />
           ))}
         </View>
       )}
@@ -153,7 +166,10 @@ const AvailableClassesSection: React.FC<AvailableClassesSectionProps> = ({ searc
   );
 };
 
-const TeacherCard: React.FC<{ teacher: TeacherClassPreview }> = ({ teacher }) => (
+const TeacherCard: React.FC<{
+  teacher: TeacherClassPreview;
+  onPress?: () => void;
+}> = ({ teacher, onPress }) => (
   <LinearGradient {...GRADIENTS.availableCard} style={availableStyles.card}>
     <View style={availableStyles.cardHeader}>
       <LinearGradient {...GRADIENTS.teacherAvatar} style={availableStyles.avatar}>
@@ -201,7 +217,13 @@ const TeacherCard: React.FC<{ teacher: TeacherClassPreview }> = ({ teacher }) =>
             : 'Valor a combinar'}
         </Text>
       </View>
-      <TouchableOpacity style={availableStyles.actionWrapper}>
+      <TouchableOpacity
+        style={availableStyles.actionWrapper}
+        onPress={onPress}
+        disabled={!onPress}
+        accessibilityRole="button"
+        accessibilityLabel="Ver detalhes do professor e aula"
+      >
         <LinearGradient {...GRADIENTS.buttonSecondary} style={availableStyles.action}>
           <Text style={availableStyles.actionText}>Ver aula</Text>
         </LinearGradient>

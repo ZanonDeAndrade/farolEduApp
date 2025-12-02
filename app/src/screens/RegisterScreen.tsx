@@ -17,6 +17,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Controller, useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ArrowLeft,
   CheckCircle,
@@ -42,18 +45,6 @@ type PopupState = {
   message: string;
 };
 
-type RegisterData = {
-  name: string;
-  email: string;
-  phone: string;
-  city: string;
-  password: string;
-  confirmPassword: string;
-  userType: NullableUserType;
-  subjects: string[];
-  experience: string;
-};
-
 const SUBJECT_OPTIONS = [
   'Matemática',
   'Português',
@@ -72,22 +63,57 @@ const SUBJECT_OPTIONS = [
   'Educação Física',
 ] as const;
 
+const registerSchema = z
+  .object({
+    name: z.string().min(3, 'Informe seu nome completo'),
+    email: z.string().email('Email inválido'),
+    phone: z.string().min(8, 'Informe um telefone válido'),
+    city: z.string().min(2, 'Cidade obrigatória'),
+    password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
+    confirmPassword: z.string().min(6, 'Confirme a senha'),
+    userType: z.enum(['student', 'teacher'], { required_error: 'Selecione o tipo de conta' }),
+    subjects: z.array(z.string()).default([]),
+    experience: z.string().optional(),
+  })
+  .refine(data => data.password === data.confirmPassword, {
+    message: 'Senhas não conferem',
+    path: ['confirmPassword'],
+  })
+  .refine(
+    data => (data.userType === 'teacher' ? data.subjects.length > 0 : true),
+    { message: 'Selecione pelo menos uma matéria', path: ['subjects'] },
+  );
+
+type RegisterForm = z.infer<typeof registerSchema>;
+
 const RegisterScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { signUp, signIn } = useAuth();
   const { width } = useWindowDimensions();
   const isCompact = width < 420;
   const isUltraCompact = width < 360;
-  const [registerData, setRegisterData] = useState<RegisterData>({
-    name: '',
-    email: '',
-    phone: '',
-    city: '',
-    password: '',
-    confirmPassword: '',
-    userType: null,
-    subjects: [],
-    experience: '',
+  const {
+    control,
+    handleSubmit,
+    watch,
+    setValue,
+    trigger,
+    formState: { errors, isValid },
+    reset,
+  } = useForm<RegisterForm>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      city: '',
+      password: '',
+      confirmPassword: '',
+      userType: undefined as unknown as AuthUserType,
+      subjects: [],
+      experience: '',
+    },
+    mode: 'onChange',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -118,150 +144,154 @@ const RegisterScreen: React.FC = () => {
     [navigation],
   );
 
-  const handleUserTypeSelect = useCallback((type: AuthUserType) => {
-    setRegisterData(prev => ({
-      ...prev,
-      userType: type,
-      subjects: type === 'teacher' ? prev.subjects : [],
-      experience: type === 'teacher' ? prev.experience : '',
-    }));
-  }, []);
+  const userType = watch('userType');
+  const subjects = watch('subjects');
+  const passwordValue = watch('password');
+  const confirmPasswordValue = watch('confirmPassword');
 
-  const handleUserTypeChange = useCallback((type: NullableUserType) => {
-    setRegisterData(prev => ({
-      ...prev,
-      userType: type,
-      subjects: type === 'teacher' ? prev.subjects : [],
-      experience: type === 'teacher' ? prev.experience : '',
-    }));
-  }, []);
-
-  const handleInputChange = useCallback(
-    (field: keyof RegisterData, value: string) => {
-      setRegisterData(prev => ({ ...prev, [field]: value }));
+  const handleUserTypeSelect = useCallback(
+    (type: AuthUserType) => {
+      setValue('userType', type, { shouldValidate: true });
+      if (type !== 'teacher') {
+        setValue('subjects', [], { shouldValidate: true });
+        setValue('experience', '', { shouldValidate: false });
+      }
     },
-    [],
+    [setValue],
   );
 
-  const handleSubjectToggle = useCallback((subject: string) => {
-    setRegisterData(prev => {
-      const currentSubjects = prev.subjects ?? [];
-      const exists = currentSubjects.includes(subject);
-      return {
-        ...prev,
-        subjects: exists ? currentSubjects.filter(item => item !== subject) : [...currentSubjects, subject],
-      };
-    });
-  }, []);
+  const handleUserTypeChange = useCallback(
+    (type: NullableUserType) => {
+      setValue('userType', type as AuthUserType, { shouldValidate: true });
+      if (type !== 'teacher') {
+        setValue('subjects', [], { shouldValidate: true });
+        setValue('experience', '', { shouldValidate: false });
+      }
+    },
+    [setValue],
+  );
 
-  const isStep1Valid = useMemo(() => registerData.userType !== null, [registerData.userType]);
+  const handleSubjectToggle = useCallback(
+    (subject: string) => {
+      const currentSubjects = subjects ?? [];
+      const exists = currentSubjects.includes(subject);
+      const next = exists ? currentSubjects.filter(item => item !== subject) : [...currentSubjects, subject];
+      setValue('subjects', next, { shouldValidate: true });
+    },
+    [setValue, subjects],
+  );
+
+  const nameValue = watch('name');
+  const emailValue = watch('email');
+  const phoneValue = watch('phone');
+  const cityValue = watch('city');
+  const isStep1Valid = useMemo(() => Boolean(userType), [userType]);
 
   const isStep2Valid = useMemo(() => {
     return (
-      registerData.name.trim().length > 0 &&
-      registerData.email.trim().length > 0 &&
-      registerData.phone.trim().length > 0 &&
-      registerData.city.trim().length > 0
+      nameValue.trim().length > 0 &&
+      emailValue.trim().length > 0 &&
+      phoneValue.trim().length > 0 &&
+      cityValue.trim().length > 0
     );
-  }, [registerData.name, registerData.email, registerData.phone, registerData.city]);
+  }, [cityValue, emailValue, nameValue, phoneValue]);
 
-  const passwordStrong = useMemo(() => registerData.password.length >= 6, [registerData.password]);
+  const passwordStrong = useMemo(() => passwordValue.length >= 6, [passwordValue]);
   const passwordsMatch = useMemo(
     () =>
-      registerData.password.length > 0 &&
-      registerData.confirmPassword.length > 0 &&
-      registerData.password === registerData.confirmPassword,
-    [registerData.password, registerData.confirmPassword],
+      passwordValue.length > 0 &&
+      confirmPasswordValue.length > 0 &&
+      passwordValue === confirmPasswordValue,
+    [confirmPasswordValue, passwordValue],
   );
 
   const isStep3Valid = useMemo(
-    () =>
-      registerData.password.trim().length > 0 &&
-      registerData.confirmPassword.trim().length > 0 &&
-      passwordStrong &&
-      passwordsMatch,
-    [passwordStrong, passwordsMatch, registerData.password, registerData.confirmPassword],
+    () => passwordValue.trim().length > 0 && confirmPasswordValue.trim().length > 0 && passwordStrong && passwordsMatch,
+    [confirmPasswordValue, passwordStrong, passwordValue, passwordsMatch],
   );
 
   const isStep4Valid = useMemo(() => {
-    if (registerData.userType === 'student') {
+    if (userType === 'student') {
       return true;
     }
-    if (registerData.userType === 'teacher') {
-      return registerData.subjects.length > 0;
+    if (userType === 'teacher') {
+      return (subjects?.length ?? 0) > 0;
     }
     return false;
-  }, [registerData.subjects, registerData.userType]);
+  }, [subjects?.length, userType]);
 
-  const handleSubmit = useCallback(async () => {
-    if (!isStep4Valid || !registerData.userType) {
-      return;
-    }
-
-    setIsLoading(true);
-    setPopup(null);
-
-    if (redirectTimeoutRef.current) {
-      clearTimeout(redirectTimeoutRef.current);
-      redirectTimeoutRef.current = null;
-    }
-
-    const trimmedName = registerData.name.trim();
-    const trimmedEmail = registerData.email.trim().toLowerCase();
-    const password = registerData.password;
-
-    try {
-      const createdProfile = await signUp({
-        name: trimmedName,
-        email: trimmedEmail,
-        password,
-        userType: registerData.userType,
-        phone: registerData.phone,
-        city: registerData.city,
-        experience: registerData.experience,
-      });
-
-      const session = await signIn({
-        email: trimmedEmail,
-        password,
-        userType: registerData.userType,
-      });
-
-      const displayName =
-        createdProfile?.name ?? session.profile?.name ?? registerData.name;
-
-      const isTeacherProfile =
-        registerData.userType === 'teacher' &&
-        session.profile &&
-        typeof session.profile === 'object'
-          ? String((session.profile as { role?: string }).role ?? '').toLowerCase() === 'teacher'
-          : false;
-
-      const targetRoute: keyof RootStackParamList = isTeacherProfile ? 'TeacherDashboard' : 'Home';
-
-      setPopup({
-        type: 'success',
-        message: `Conta criada com sucesso, ${displayName.split(' ')[0]}! Redirecionando...`,
-      });
-
-      redirectTimeoutRef.current = setTimeout(() => {
-        setPopup(null);
-        navigation.replace(targetRoute);
-        redirectTimeoutRef.current = null;
-      }, 1400);
-    } catch (error) {
-      console.error('Erro ao registrar:', error);
-      let fallback = 'Erro ao criar conta. Verifique as informações e tente novamente.';
-      if (error instanceof ApiError) {
-        fallback = error.message;
-      } else if (error instanceof Error) {
-        fallback = error.message;
+  const handleCreateAccount = useCallback(
+    handleSubmit(async formData => {
+      if (!isStep4Valid || !formData.userType) {
+        return;
       }
-      setPopup({ type: 'error', message: fallback });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isStep4Valid, navigation, registerData, signIn, signUp]);
+
+      setIsLoading(true);
+      setPopup(null);
+
+      if (redirectTimeoutRef.current) {
+        clearTimeout(redirectTimeoutRef.current);
+        redirectTimeoutRef.current = null;
+      }
+
+      const trimmedName = formData.name.trim();
+      const trimmedEmail = formData.email.trim().toLowerCase();
+      const password = formData.password;
+
+      try {
+        const createdProfile = await signUp({
+          name: trimmedName,
+          email: trimmedEmail,
+          password,
+          userType: formData.userType,
+          phone: formData.phone,
+          city: formData.city,
+          experience: formData.experience,
+        });
+
+        const session = await signIn({
+          email: trimmedEmail,
+          password,
+          userType: formData.userType,
+        });
+
+        const displayName = createdProfile?.name ?? session.profile?.name ?? formData.name;
+
+        const isTeacherProfile =
+          formData.userType === 'teacher' &&
+          session.profile &&
+          typeof session.profile === 'object'
+            ? String((session.profile as { role?: string }).role ?? '').toLowerCase() === 'teacher'
+            : false;
+
+        const targetRoute: keyof RootStackParamList = isTeacherProfile ? 'TeacherDashboard' : 'Home';
+
+        setPopup({
+          type: 'success',
+          message: `Conta criada com sucesso, ${displayName.split(' ')[0]}! Redirecionando...`,
+        });
+        reset();
+
+        redirectTimeoutRef.current = setTimeout(() => {
+          setPopup(null);
+          navigation.replace(targetRoute);
+          redirectTimeoutRef.current = null;
+        }, 1400);
+      } catch (error) {
+        console.error('Erro ao registrar:', error);
+        let fallback = 'Erro ao criar conta. Verifique as informações e tente novamente.';
+        if (error instanceof ApiError) {
+          fallback = error.message;
+        } else if (error instanceof Error) {
+          fallback = error.message;
+        }
+        setPopup({ type: 'error', message: fallback });
+      } finally {
+        setIsLoading(false);
+      }
+    }),
+    [handleSubmit, isStep4Valid, navigation, reset, signIn, signUp],
+  );
 
   const handleClosePopup = useCallback(() => {
     if (redirectTimeoutRef.current) {
@@ -279,9 +309,19 @@ const RegisterScreen: React.FC = () => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
   }, [currentStep, navigation]);
 
-  const goNext = useCallback(() => {
+  const goNext = useCallback(async () => {
+    if (currentStep === 1) {
+      const ok = await trigger('userType');
+      if (!ok) return;
+    } else if (currentStep === 2) {
+      const ok = await trigger(['name', 'email', 'phone', 'city']);
+      if (!ok) return;
+    } else if (currentStep === 3) {
+      const ok = await trigger(['password', 'confirmPassword']);
+      if (!ok) return;
+    }
     setCurrentStep(prev => Math.min(prev + 1, 4));
-  }, []);
+  }, [currentStep, trigger]);
 
   const renderProgressSteps = useMemo(() => [1, 2, 3, 4], []);
 
@@ -374,7 +414,7 @@ const RegisterScreen: React.FC = () => {
                   <View style={[styles.formStep, isCompact && styles.formStepCompact]}>
                     <Text style={[styles.stepTitle, isCompact && styles.stepTitleCompact]}>Tipo de Conta</Text>
 
-                    {!registerData.userType ? (
+                    {!userType ? (
                       <View style={[styles.userTypeSelection, isCompact && styles.userTypeSelectionCompact]}>
                         <TouchableOpacity
                           activeOpacity={0.85}
@@ -382,7 +422,7 @@ const RegisterScreen: React.FC = () => {
                           style={[
                             styles.userTypeCard,
                             styles.studentCard,
-                            registerData.userType === 'student' && styles.userTypeCardSelected,
+                            userType === 'student' && styles.userTypeCardSelected,
                             isCompact && styles.userTypeCardCompact,
                           ]}
                         >
@@ -405,7 +445,7 @@ const RegisterScreen: React.FC = () => {
                           style={[
                             styles.userTypeCard,
                             styles.teacherCard,
-                            registerData.userType === 'teacher' && styles.userTypeCardSelected,
+                            userType === 'teacher' && styles.userTypeCardSelected,
                             isCompact && styles.userTypeCardCompact,
                           ]}
                         >
@@ -426,7 +466,7 @@ const RegisterScreen: React.FC = () => {
                       <View style={styles.profileStep}>
                         <View style={styles.selectedType}>
                           <Text style={styles.selectedTypeLabel}>
-                            Conta: {registerData.userType === 'student' ? 'Estudante' : 'Professor'}
+                            Conta: {userType === 'student' ? 'Estudante' : 'Professor'}
                           </Text>
                           <TouchableOpacity
                             onPress={() => handleUserTypeChange(null)}
@@ -439,7 +479,7 @@ const RegisterScreen: React.FC = () => {
                       </View>
                     )}
 
-                    {registerData.userType && (
+                    {userType && (
                       <TouchableOpacity
                         activeOpacity={0.9}
                         onPress={goNext}
@@ -462,61 +502,97 @@ const RegisterScreen: React.FC = () => {
 
                     <View style={styles.formGroup}>
                       <Text style={styles.inputLabel}>Nome Completo</Text>
-                      <View style={styles.inputWrapper}>
-                        <User size={20} color="#64748B" style={styles.inputIcon} />
-                        <TextInput
-                          value={registerData.name}
-                          onChangeText={value => handleInputChange('name', value)}
-                          placeholder="Seu nome completo"
-                          placeholderTextColor="#94A3B8"
-                          style={styles.input}
-                        />
-                      </View>
+                      <Controller
+                        control={control}
+                        name="name"
+                        render={({ field: { value, onChange, onBlur } }) => (
+                          <View style={styles.inputWrapper}>
+                            <User size={20} color="#64748B" style={styles.inputIcon} />
+                            <TextInput
+                              value={value}
+                              onChangeText={onChange}
+                              onBlur={onBlur}
+                              placeholder="Seu nome completo"
+                              placeholderTextColor="#94A3B8"
+                              style={styles.input}
+                              accessibilityLabel="Nome completo"
+                            />
+                          </View>
+                        )}
+                      />
+                      {errors.name ? <Text style={styles.errorText}>{errors.name.message}</Text> : null}
                     </View>
 
                     <View style={styles.formGroup}>
                       <Text style={styles.inputLabel}>Email</Text>
-                      <View style={styles.inputWrapper}>
-                        <Mail size={20} color="#64748B" style={styles.inputIcon} />
-                        <TextInput
-                          value={registerData.email}
-                          onChangeText={value => handleInputChange('email', value)}
-                          placeholder="seu@email.com"
-                          placeholderTextColor="#94A3B8"
-                          autoCapitalize="none"
-                          keyboardType="email-address"
-                          style={styles.input}
-                        />
-                      </View>
+                      <Controller
+                        control={control}
+                        name="email"
+                        render={({ field: { value, onChange, onBlur } }) => (
+                          <View style={styles.inputWrapper}>
+                            <Mail size={20} color="#64748B" style={styles.inputIcon} />
+                            <TextInput
+                              value={value}
+                              onChangeText={onChange}
+                              onBlur={onBlur}
+                              placeholder="seu@email.com"
+                              placeholderTextColor="#94A3B8"
+                              autoCapitalize="none"
+                              keyboardType="email-address"
+                              style={styles.input}
+                              accessibilityLabel="Email"
+                            />
+                          </View>
+                        )}
+                      />
+                      {errors.email ? <Text style={styles.errorText}>{errors.email.message}</Text> : null}
                     </View>
 
                     <View style={styles.formGroup}>
                       <Text style={styles.inputLabel}>Telefone</Text>
-                      <View style={styles.inputWrapper}>
-                        <Phone size={20} color="#64748B" style={styles.inputIcon} />
-                        <TextInput
-                          value={registerData.phone}
-                          onChangeText={value => handleInputChange('phone', value)}
-                          placeholder="(11) 99999-9999"
-                          placeholderTextColor="#94A3B8"
-                          keyboardType="phone-pad"
-                          style={styles.input}
-                        />
-                      </View>
+                      <Controller
+                        control={control}
+                        name="phone"
+                        render={({ field: { value, onChange, onBlur } }) => (
+                          <View style={styles.inputWrapper}>
+                            <Phone size={20} color="#64748B" style={styles.inputIcon} />
+                            <TextInput
+                              value={value}
+                              onChangeText={onChange}
+                              onBlur={onBlur}
+                              placeholder="(11) 99999-9999"
+                              placeholderTextColor="#94A3B8"
+                              keyboardType="phone-pad"
+                              style={styles.input}
+                              accessibilityLabel="Telefone"
+                            />
+                          </View>
+                        )}
+                      />
+                      {errors.phone ? <Text style={styles.errorText}>{errors.phone.message}</Text> : null}
                     </View>
 
                     <View style={styles.formGroup}>
                       <Text style={styles.inputLabel}>Cidade</Text>
-                      <View style={styles.inputWrapper}>
-                        <MapPin size={20} color="#64748B" style={styles.inputIcon} />
-                        <TextInput
-                          value={registerData.city}
-                          onChangeText={value => handleInputChange('city', value)}
-                          placeholder="Sua cidade"
-                          placeholderTextColor="#94A3B8"
-                          style={styles.input}
-                        />
-                      </View>
+                      <Controller
+                        control={control}
+                        name="city"
+                        render={({ field: { value, onChange, onBlur } }) => (
+                          <View style={styles.inputWrapper}>
+                            <MapPin size={20} color="#64748B" style={styles.inputIcon} />
+                            <TextInput
+                              value={value}
+                              onChangeText={onChange}
+                              onBlur={onBlur}
+                              placeholder="Sua cidade"
+                              placeholderTextColor="#94A3B8"
+                              style={styles.input}
+                              accessibilityLabel="Cidade"
+                            />
+                          </View>
+                        )}
+                      />
+                      {errors.city ? <Text style={styles.errorText}>{errors.city.message}</Text> : null}
                     </View>
 
                     <TouchableOpacity
@@ -540,56 +616,76 @@ const RegisterScreen: React.FC = () => {
 
                     <View style={styles.formGroup}>
                       <Text style={styles.inputLabel}>Senha</Text>
-                      <View style={styles.inputWrapper}>
-                        <Lock size={20} color="#64748B" style={styles.inputIcon} />
-                        <TextInput
-                          value={registerData.password}
-                          onChangeText={value => handleInputChange('password', value)}
-                          placeholder="Mínimo 6 caracteres"
-                          placeholderTextColor="#94A3B8"
-                          secureTextEntry={!showPassword}
-                          style={styles.input}
-                        />
-                        <TouchableOpacity
-                          onPress={() => setShowPassword(prev => !prev)}
-                          style={styles.passwordToggle}
-                          activeOpacity={0.7}
-                        >
-                          {showPassword ? <EyeOff size={20} color="#475569" /> : <Eye size={20} color="#475569" />}
-                        </TouchableOpacity>
-                      </View>
-                      {registerData.password.length > 0 && !passwordStrong && (
+                      <Controller
+                        control={control}
+                        name="password"
+                        render={({ field: { value, onChange, onBlur } }) => (
+                          <View style={styles.inputWrapper}>
+                            <Lock size={20} color="#64748B" style={styles.inputIcon} />
+                            <TextInput
+                              value={value}
+                              onChangeText={onChange}
+                              onBlur={onBlur}
+                              placeholder="Mínimo 6 caracteres"
+                              placeholderTextColor="#94A3B8"
+                              secureTextEntry={!showPassword}
+                              style={styles.input}
+                              accessibilityLabel="Senha"
+                            />
+                            <TouchableOpacity
+                              onPress={() => setShowPassword(prev => !prev)}
+                              style={styles.passwordToggle}
+                              activeOpacity={0.7}
+                            >
+                              {showPassword ? <EyeOff size={20} color="#475569" /> : <Eye size={20} color="#475569" />}
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                      />
+                      {errors.password ? (
+                        <Text style={styles.errorText}>{errors.password.message}</Text>
+                      ) : !passwordStrong && passwordValue.length > 0 ? (
                         <Text style={styles.errorText}>Senha deve ter pelo menos 6 caracteres</Text>
-                      )}
+                      ) : null}
                     </View>
 
                     <View style={styles.formGroup}>
                       <Text style={styles.inputLabel}>Confirmar Senha</Text>
-                      <View style={styles.inputWrapper}>
-                        <Lock size={20} color="#64748B" style={styles.inputIcon} />
-                        <TextInput
-                          value={registerData.confirmPassword}
-                          onChangeText={value => handleInputChange('confirmPassword', value)}
-                          placeholder="Digite a senha novamente"
-                          placeholderTextColor="#94A3B8"
-                          secureTextEntry={!showConfirmPassword}
-                          style={styles.input}
-                        />
-                        <TouchableOpacity
-                          onPress={() => setShowConfirmPassword(prev => !prev)}
-                          style={styles.passwordToggle}
-                          activeOpacity={0.7}
-                        >
-                          {showConfirmPassword ? (
-                            <EyeOff size={20} color="#475569" />
-                          ) : (
-                            <Eye size={20} color="#475569" />
-                          )}
-                        </TouchableOpacity>
-                      </View>
-                      {registerData.confirmPassword.length > 0 && !passwordsMatch && (
+                      <Controller
+                        control={control}
+                        name="confirmPassword"
+                        render={({ field: { value, onChange, onBlur } }) => (
+                          <View style={styles.inputWrapper}>
+                            <Lock size={20} color="#64748B" style={styles.inputIcon} />
+                            <TextInput
+                              value={value}
+                              onChangeText={onChange}
+                              onBlur={onBlur}
+                              placeholder="Digite a senha novamente"
+                              placeholderTextColor="#94A3B8"
+                              secureTextEntry={!showConfirmPassword}
+                              style={styles.input}
+                              accessibilityLabel="Confirmar senha"
+                            />
+                            <TouchableOpacity
+                              onPress={() => setShowConfirmPassword(prev => !prev)}
+                              style={styles.passwordToggle}
+                              activeOpacity={0.7}
+                            >
+                              {showConfirmPassword ? (
+                                <EyeOff size={20} color="#475569" />
+                              ) : (
+                                <Eye size={20} color="#475569" />
+                              )}
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                      />
+                      {errors.confirmPassword ? (
+                        <Text style={styles.errorText}>{errors.confirmPassword.message}</Text>
+                      ) : !passwordsMatch && confirmPasswordValue.length > 0 ? (
                         <Text style={styles.errorText}>Senhas não conferem</Text>
-                      )}
+                      ) : null}
                     </View>
 
                     <TouchableOpacity
@@ -611,13 +707,13 @@ const RegisterScreen: React.FC = () => {
                   <View style={[styles.formStep, isCompact && styles.formStepCompact]}>
                     <Text style={[styles.stepTitle, isCompact && styles.stepTitleCompact]}>Perfil</Text>
 
-                    {registerData.userType === 'teacher' && (
+                    {userType === 'teacher' && (
                       <>
                         <View style={styles.formGroup}>
                           <Text style={styles.inputLabel}>Matérias que ensina</Text>
                           <View style={styles.subjectGrid}>
                             {SUBJECT_OPTIONS.map(subject => {
-                              const selected = registerData.subjects.includes(subject);
+                              const selected = subjects.includes(subject);
                               return (
                                 <TouchableOpacity
                                   key={subject}
@@ -645,19 +741,29 @@ const RegisterScreen: React.FC = () => {
                               );
                             })}
                           </View>
+                          {errors.subjects ? (
+                            <Text style={styles.errorText}>{errors.subjects.message as string}</Text>
+                          ) : null}
                         </View>
 
                         <View style={styles.formGroup}>
                           <Text style={styles.inputLabel}>Experiência</Text>
-                          <TextInput
-                            value={registerData.experience}
-                            onChangeText={value => handleInputChange('experience', value)}
-                            placeholder="Descreva sua experiência como professor"
-                            placeholderTextColor="#94A3B8"
-                            style={[styles.input, styles.textArea]}
-                            multiline
-                            numberOfLines={4}
-                            textAlignVertical="top"
+                          <Controller
+                            control={control}
+                            name="experience"
+                            render={({ field: { value, onChange, onBlur } }) => (
+                              <TextInput
+                                value={value}
+                                onChangeText={onChange}
+                                onBlur={onBlur}
+                                placeholder="Descreva sua experiência como professor"
+                                placeholderTextColor="#94A3B8"
+                                style={[styles.input, styles.textArea]}
+                                multiline
+                                numberOfLines={4}
+                                textAlignVertical="top"
+                              />
+                            )}
                           />
                         </View>
                       </>
@@ -665,7 +771,7 @@ const RegisterScreen: React.FC = () => {
 
                     <TouchableOpacity
                       activeOpacity={0.9}
-                      onPress={handleSubmit}
+                      onPress={handleCreateAccount}
                       disabled={!isStep4Valid || isLoading}
                       style={[
                         styles.submitButton,

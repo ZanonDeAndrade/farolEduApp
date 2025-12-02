@@ -51,3 +51,29 @@ export const loginTeacher = async (payload: { email: string; password: string })
     body,
   });
 };
+
+export type PublicTeacher = {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  teacherProfile?: {
+    city?: string | null;
+    region?: string | null;
+    experience?: string | null;
+    phone?: string | null;
+  } | null;
+  classes?: {
+    id: number;
+    title: string;
+    subject?: string | null;
+    description?: string | null;
+    modality: string;
+    price?: number | null;
+    durationMinutes: number;
+  }[];
+};
+
+export const fetchPublicTeacher = async (teacherId: number) => {
+  return apiRequest<PublicTeacher>(`/api/professors/public/${teacherId}`);
+};

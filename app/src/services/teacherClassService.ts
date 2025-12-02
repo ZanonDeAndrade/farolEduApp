@@ -65,6 +65,7 @@ export type PublicTeacherClassQuery = {
   city?: string;
   modality?: string;
   take?: number;
+  teacherId?: number;
 };
 
 export const fetchTeacherClasses = async (token: string) => {
@@ -89,6 +90,7 @@ export const fetchPublicTeacherClasses = async (query?: PublicTeacherClassQuery)
   if (query?.city) params.set('city', query.city);
   if (query?.modality) params.set('modality', query.modality);
   if (query?.take) params.set('take', String(query.take));
+  if (query?.teacherId) params.set('teacherId', String(query.teacherId));
   const suffix = params.toString() ? `?${params.toString()}` : '';
   return apiRequest<PublicTeacherClass[]>(`/api/teacher-classes/public${suffix}`);
 };

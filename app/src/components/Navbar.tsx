@@ -57,6 +57,7 @@ const Navbar: React.FC<NavbarProps> = ({
   const { width } = useWindowDimensions();
   const isCompact = width < 640;
   const { token, profile } = useAuth();
+  const hasSession = Boolean(token);
 
   const isTeacher = useMemo(() => {
     if (!profile || typeof profile !== 'object') return false;
@@ -75,6 +76,13 @@ const Navbar: React.FC<NavbarProps> = ({
           isActive: route.name === 'TeacherDashboard',
         });
       }
+      if (hasSession && !base.some(link => link.label === 'Agenda')) {
+        base.push({
+          label: 'Agenda',
+          onPress: () => navigation.navigate('ScheduledClasses'),
+          isActive: route.name === 'ScheduledClasses',
+        });
+      }
       return base;
     }
 
@@ -90,6 +98,13 @@ const Navbar: React.FC<NavbarProps> = ({
           isActive: route.name === 'TeacherDashboard',
         });
       }
+      if (hasSession) {
+        mapped.push({
+          label: 'Agenda',
+          onPress: () => navigation.navigate('ScheduledClasses'),
+          isActive: route.name === 'ScheduledClasses',
+        });
+      }
       return mapped;
     }
 
@@ -98,6 +113,11 @@ const Navbar: React.FC<NavbarProps> = ({
         label: 'Início',
         isActive: route.name === 'Home',
         onPress: () => navigation.navigate('Home'),
+      },
+      {
+        label: 'Encontrar aulas',
+        isActive: route.name === 'SearchProfessors',
+        onPress: () => navigation.navigate('SearchProfessors'),
       },
     ];
 
@@ -108,9 +128,16 @@ const Navbar: React.FC<NavbarProps> = ({
         onPress: () => navigation.navigate('TeacherDashboard'),
       });
     }
+    if (hasSession) {
+      baseLinks.push({
+        label: 'Agenda',
+        isActive: route.name === 'ScheduledClasses',
+        onPress: () => navigation.navigate('ScheduledClasses'),
+      });
+    }
 
     return baseLinks;
-  }, [isTeacher, links, navigation, onNavigateSection, route.name]);
+  }, [hasSession, isTeacher, links, navigation, onNavigateSection, route.name]);
 
   const handleLogoPress = () => {
     if (route.name !== 'Home') {
@@ -143,7 +170,6 @@ const Navbar: React.FC<NavbarProps> = ({
     closeMenu();
   }, [closeMenu, route.name]);
 
-  const hasSession = Boolean(token);
   const renderInlineActions = showAuthButtons && !hasSession && !isCompact;
   const renderMenuAuthActions = showAuthButtons && !hasSession && isCompact;
   const shouldRenderMenuButton = derivedLinks.length > 0 || renderMenuAuthActions;
