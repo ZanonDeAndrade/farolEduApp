@@ -13,9 +13,11 @@ import {
   createTeacherClass,
   fetchTeacherClasses,
   fetchTeacherSchedules,
+  updateTeacherClass,
   TeacherClassResponse,
   TeacherScheduleResponse,
 } from "../../services/teacherClasses";
+import { acceptAppointment, rejectAppointment } from "../../services/appointments";
 import { getStoredProfile } from "../../utils/profile";
 
 interface FormState {
@@ -25,6 +27,7 @@ interface FormState {
   modality: string;
   durationMinutes: number;
   price: string;
+  location: string;
 }
 
 const monthsPT = [
@@ -57,6 +60,7 @@ const TeacherDashboard = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [teacherName, setTeacherName] = useState<string | null>(null);
+  const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
 
   const todayKey = toDateKey(new Date());
   const [selectedDate, setSelectedDate] = useState(todayKey);
@@ -69,9 +73,10 @@ const TeacherDashboard = () => {
     title: "",
     subject: "",
     description: "",
-    modality: "online",
+    modality: "ONLINE",
     durationMinutes: 60,
     price: "",
+    location: "",
   });
 
   useEffect(() => {
@@ -100,7 +105,7 @@ const TeacherDashboard = () => {
         setSchedules(scheduleResp);
         if (scheduleResp.length) {
           const firstUpcoming = scheduleResp
-            .map((item) => ({ item, date: new Date(item.date) }))
+            .map((item) => ({ item, date: new Date(item.startTime) }))
             .filter(({ date }) => !Number.isNaN(date.getTime()))
             .sort((a, b) => a.date.getTime() - b.date.getTime())[0];
           if (firstUpcoming) {
@@ -130,7 +135,7 @@ const TeacherDashboard = () => {
   const eventsByDay = useMemo(() => {
     const map: Record<string, TeacherScheduleResponse[]> = {};
     schedules.forEach((schedule) => {
-      const date = new Date(schedule.date);
+      const date = new Date(schedule.startTime);
       if (Number.isNaN(date.getTime())) return;
       const key = toDateKey(date);
       if (!map[key]) {
@@ -162,6 +167,26 @@ const TeacherDashboard = () => {
 
   const selectedDateEvents = eventsByDay[selectedDate] ?? [];
 
+  const updateScheduleInState = (updated: TeacherScheduleResponse) => {
+    setSchedules(prev =>
+      prev.map(item => (item.id === updated.id ? updated : item)),
+    );
+  };
+
+  const handleDecision = async (id: number, action: "accept" | "reject") => {
+    setActionLoadingId(id);
+    try {
+      const next =
+        action === "accept" ? await acceptAppointment(id) : await rejectAppointment(id);
+      updateScheduleInState(next);
+    } catch (error) {
+      console.error(`Erro ao ${action === "accept" ? "aceitar" : "recusar"} agendamento:`, error);
+      setErrorMessage("Não foi possível atualizar o status. Tente novamente.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   const handleFormChange = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
@@ -183,14 +208,14 @@ const TeacherDashboard = () => {
       return;
     }
 
-    let priceNumber: number | undefined;
+    let priceCents: number | undefined;
     if (form.price.trim()) {
       const parsed = Number(form.price.replace(",", "."));
       if (!Number.isFinite(parsed) || parsed < 0) {
         setErrorMessage("Valor informado é inválido.");
         return;
       }
-      priceNumber = Number(parsed.toFixed(2));
+      priceCents = Math.round(parsed * 100);
     }
 
     setIsSubmitting(true);
@@ -201,7 +226,9 @@ const TeacherDashboard = () => {
         description: form.description.trim() || undefined,
         modality: form.modality,
         durationMinutes: Math.round(duration),
-        price: priceNumber,
+        priceCents,
+        location: form.location.trim() || undefined,
+        active: true,
       };
 
       const created = await createTeacherClass(payload);
@@ -220,12 +247,27 @@ const TeacherDashboard = () => {
         modality: prev.modality,
         durationMinutes: 60,
         price: "",
+        location: "",
       }));
     } catch (error) {
       console.error("Erro ao cadastrar aula:", error);
       setErrorMessage("Não foi possível cadastrar a aula. Tente novamente.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleToggleActive = async (klass: TeacherClassResponse) => {
+    try {
+      const updated = await updateTeacherClass(klass.id, { active: !(klass.active ?? true) });
+      setTeacherClasses((prev) =>
+        prev
+          .map((item) => (item.id === updated.id ? updated : item))
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      );
+    } catch (error) {
+      console.error("Erro ao atualizar aula:", error);
+      setErrorMessage("Não foi possível alterar o status da oferta.");
     }
   };
 
@@ -309,11 +351,9 @@ const TeacherDashboard = () => {
                   value={form.modality}
                   onChange={(event) => handleFormChange("modality", event.target.value)}
                 >
-                  <option value="online">Online</option>
-                  <option value="home">Na minha casa</option>
-                  <option value="travel">Vou até o aluno</option>
-                  <option value="presencial">Presencial combinado</option>
-                  <option value="hybrid">Híbrido</option>
+                  <option value="ONLINE">Online</option>
+                  <option value="PRESENCIAL">Presencial</option>
+                  <option value="AMBOS">Híbrido / ambos</option>
                 </select>
               </label>
 
@@ -337,6 +377,16 @@ const TeacherDashboard = () => {
                   value={form.price}
                   onChange={(event) => handleFormChange("price", event.target.value)}
                   placeholder="Ex: 80.00"
+                />
+              </label>
+
+              <label className="teacher-dashboard-field">
+                <span>Local (opcional)</span>
+                <input
+                  type="text"
+                  value={form.location}
+                  onChange={(event) => handleFormChange("location", event.target.value)}
+                  placeholder="Cidade, região ou link de sala online"
                 />
               </label>
             </div>
@@ -374,36 +424,47 @@ const TeacherDashboard = () => {
             ) : teacherClasses.length ? (
               <ul>
                 {teacherClasses.map((item) => {
-                  const startDate =
-                    item.startTime && !Number.isNaN(new Date(item.startTime).getTime())
-                      ? new Date(item.startTime)
-                      : null;
                   const createdDate = new Date(item.createdAt);
-                  const startLabel = startDate
-                    ? startDate.toLocaleDateString("pt-BR", {
-                        day: "2-digit",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
-                    : null;
                   const createdLabel = createdDate.toLocaleDateString("pt-BR", {
                     day: "2-digit",
                     month: "short",
                     year: "numeric",
                   });
+                  const priceValue =
+                    item.priceCents !== null && item.priceCents !== undefined
+                      ? item.priceCents / 100
+                      : item.price !== null && item.price !== undefined
+                      ? Number(item.price)
+                      : null;
+                  const priceLabel =
+                    priceValue !== null && priceValue !== undefined
+                      ? `R$ ${priceValue.toFixed(2)}`
+                      : "Valor não informado";
+                  const modalityLabel =
+                    item.modality === "PRESENCIAL"
+                      ? "Presencial"
+                      : item.modality === "AMBOS"
+                      ? "Híbrido"
+                      : "Online";
                   return (
                     <li key={item.id} className="teacher-dashboard-class-card">
                       <div className="teacher-dashboard-class-main">
                         <h4>{item.title}</h4>
-                        {item.subject && (
-                          <span className="teacher-dashboard-chip">{item.subject}</span>
-                        )}
+                        <div className="teacher-dashboard-chip-row">
+                          {item.subject && (
+                            <span className="teacher-dashboard-chip">{item.subject}</span>
+                          )}
+                          <span
+                            className={`teacher-dashboard-chip ${item.active === false ? "is-inactive" : ""}`}
+                          >
+                            {item.active === false ? "Pausada" : "Ativa"}
+                          </span>
+                        </div>
                       </div>
                       <div className="teacher-dashboard-class-meta">
                         <span>
                           <CalendarDays size={16} />
-                          {startLabel ? `Disponível: ${startLabel}` : `Criada em ${createdLabel}`}
+                          Criada em {createdLabel}
                         </span>
                         <span>
                           <Clock size={16} />
@@ -411,26 +472,24 @@ const TeacherDashboard = () => {
                         </span>
                         <span>
                           <MapPin size={16} />
-                          {item.modality === "home"
-                            ? "Na sua casa"
-                            : item.modality === "travel"
-                            ? "No aluno"
-                            : item.modality === "presencial"
-                            ? "Presencial"
-                            : item.modality === "hybrid"
-                            ? "Híbrido"
-                            : "Online"}
+                          {modalityLabel}
                         </span>
-                        {item.price && (
-                          <span>
-                            <NotebookPen size={16} />
-                            R$ {Number(item.price).toFixed(2)}
-                          </span>
-                        )}
+                        <span>
+                          <NotebookPen size={16} />
+                          {priceLabel}
+                        </span>
+                        {item.location ? <span>{item.location}</span> : null}
                       </div>
                       {item.description && (
                         <p className="teacher-dashboard-class-description">{item.description}</p>
                       )}
+                      <button
+                        type="button"
+                        className="teacher-dashboard-toggle"
+                        onClick={() => handleToggleActive(item)}
+                      >
+                        {item.active === false ? "Reativar oferta" : "Pausar oferta"}
+                      </button>
                     </li>
                   );
                 })}
@@ -520,22 +579,59 @@ const TeacherDashboard = () => {
             ) : selectedDateEvents.length ? (
               <ul>
                 {selectedDateEvents.map((event) => {
-                  const eventDate = new Date(event.date);
+                  const eventDate = new Date(event.startTime);
                   const time = eventDate.toLocaleTimeString("pt-BR", {
                     hour: "2-digit",
                     minute: "2-digit",
                   });
+                  const endTime = new Date(event.endTime);
+                  const timeEnd = Number.isNaN(endTime.getTime())
+                    ? null
+                    : endTime.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+                  const statusUpper = (event.status || "").toUpperCase();
+                  const isPending = statusUpper === "PENDING" || statusUpper === "AGUARDANDO_PROFESSOR";
                   return (
                     <li key={event.id} className="teacher-dashboard-calendar-item">
                       <div>
-                        <strong>{time}</strong>
+                        <strong>
+                          {time}
+                          {timeEnd ? ` - ${timeEnd}` : ""}
+                        </strong>
                         <p>
                           {event.student?.name
                             ? `Com ${event.student.name}`
                             : "Aula agendada"}
                         </p>
+                        {event.offer?.title ? <p>{event.offer.title}</p> : null}
                       </div>
-                      {event.student?.email && <span>{event.student.email}</span>}
+                      <div className="teacher-dashboard-calendar-tags">
+                        {event.student?.email && <span>{event.student.email}</span>}
+                        <span
+                          className={`teacher-dashboard-chip ${event.status === "CANCELLED" ? "is-inactive" : ""}`}
+                        >
+                          {event.status || "PENDING"}
+                        </span>
+                        {isPending ? (
+                          <div className="teacher-dashboard-actions">
+                            <button
+                              type="button"
+                              className="teacher-dashboard-btn accept"
+                              disabled={actionLoadingId === event.id}
+                              onClick={() => handleDecision(event.id, "accept")}
+                            >
+                              {actionLoadingId === event.id ? "Salvando..." : "Aceitar"}
+                            </button>
+                            <button
+                              type="button"
+                              className="teacher-dashboard-btn reject"
+                              disabled={actionLoadingId === event.id}
+                              onClick={() => handleDecision(event.id, "reject")}
+                            >
+                              {actionLoadingId === event.id ? "Salvando..." : "Recusar"}
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
                     </li>
                   );
                 })}

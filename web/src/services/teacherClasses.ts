@@ -5,9 +5,11 @@ export interface TeacherClassPayload {
   description?: string;
   subject?: string;
   modality?: string;
-  startTime?: string;
   durationMinutes?: number;
   price?: number;
+  priceCents?: number;
+  location?: string;
+  active?: boolean;
 }
 
 export interface TeacherClassResponse {
@@ -17,9 +19,12 @@ export interface TeacherClassResponse {
   description?: string | null;
   subject?: string | null;
   modality: string;
-  startTime?: string | null;
   durationMinutes: number;
-  price?: string | null;
+  price?: number | null;
+  priceCents?: number | null;
+  location?: string | null;
+  active?: boolean;
+  startTime?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -28,27 +33,46 @@ export interface TeacherScheduleResponse {
   id: number;
   studentId: number;
   teacherId: number;
-  date: string;
+  startTime: string;
+  endTime: string;
+  status: string;
+  notes?: string | null;
+  respondedAt?: string | null;
   createdAt: string;
   student?: {
     id: number;
     name: string;
     email: string;
   };
+  offer?: {
+    id: number;
+    title: string;
+    durationMinutes: number;
+    modality: string;
+  } | null;
 }
 
 export async function createTeacherClass(payload: TeacherClassPayload) {
-  const { data } = await api.post<TeacherClassResponse>("/api/teacher-classes", payload);
+  const { data } = await api.post<TeacherClassResponse>("/api/offers", payload);
+  return data;
+}
+
+export async function updateTeacherClass(id: number, payload: Partial<TeacherClassPayload>) {
+  const { data } = await api.patch<TeacherClassResponse>(`/api/offers/${id}`, payload);
   return data;
 }
 
 export async function fetchTeacherClasses() {
-  const { data } = await api.get<TeacherClassResponse[]>("/api/teacher-classes");
+  const { data } = await api.get<TeacherClassResponse[]>("/api/offers");
   return data;
 }
 
-export async function fetchTeacherSchedules() {
-  const { data } = await api.get<TeacherScheduleResponse[]>("/api/schedules");
+export async function fetchTeacherSchedules(params?: { from?: string; to?: string }) {
+  const search = new URLSearchParams();
+  if (params?.from) search.set("from", params.from);
+  if (params?.to) search.set("to", params.to);
+  const suffix = search.toString() ? `?${search.toString()}` : "";
+  const { data } = await api.get<TeacherScheduleResponse[]>(`/api/bookings/me${suffix}`);
   return data;
 }
 
@@ -71,6 +95,8 @@ export interface PublicTeacherClassQuery {
   city?: string;
   modality?: string;
   take?: number;
+  teacherId?: number;
+  teacherName?: string;
 }
 
 export async function fetchPublicTeacherClasses(query?: PublicTeacherClassQuery) {
@@ -79,7 +105,10 @@ export async function fetchPublicTeacherClasses(query?: PublicTeacherClassQuery)
   if (query?.city) params.set("city", query.city);
   if (query?.modality) params.set("modality", query.modality);
   if (query?.take) params.set("take", String(query.take));
+  if (query?.teacherId) params.set("teacherId", String(query.teacherId));
+  if (query?.teacherName) params.set("teacherName", query.teacherName);
   const suffix = params.toString() ? `?${params.toString()}` : "";
-  const { data } = await api.get<PublicTeacherClassResponse[]>(`/api/teacher-classes/public${suffix}`);
+  const url = `/api/offers/public${suffix}`;
+  const { data } = await api.get<PublicTeacherClassResponse[]>(url);
   return data;
 }

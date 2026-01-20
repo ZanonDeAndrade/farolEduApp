@@ -6,7 +6,6 @@ import {
   getTeacherClassesByTeacher,
   updateTeacherClassByTeacher,
 } from "../modules/teacherClassModel";
-import { Prisma } from "@prisma/client";
 import { teacherClassInputSchema, teacherClassUpdateSchema } from "../utils/validators";
 
 export const createTeacherClassHandler = async (req: Request, res: Response) => {
@@ -39,6 +38,9 @@ export const createTeacherClassHandler = async (req: Request, res: Response) => 
       startTime: parsedDate ?? null,
       durationMinutes: payload.durationMinutes,
       price: payload.price ?? null,
+      priceCents: payload.priceCents ?? undefined,
+      location: payload.location ?? null,
+      active: payload.active ?? true,
     });
 
     return res.status(201).json(teacherClass);
@@ -126,21 +128,15 @@ export const deleteTeacherClassHandler = async (req: Request, res: Response) => 
   }
 };
 
-const serializePrice = (price: Prisma.Decimal | number | null | undefined) => {
+const serializePrice = (price: number | string | null | undefined) => {
   if (price === null || price === undefined) return null;
-  if (price instanceof Prisma.Decimal) {
-    return Number(price.toString());
-  }
-  if (typeof price === "string") {
-    const numeric = Number(price);
-    return Number.isFinite(numeric) ? numeric : null;
-  }
-  return Number(price);
+  const numeric = Number(price);
+  return Number.isFinite(numeric) ? numeric : null;
 };
 
 export const listPublicTeacherClassesHandler = async (req: Request, res: Response) => {
   try {
-    const { q, modality, city, take, teacherId } = req.query ?? {};
+    const { q, modality, city, take, teacherId, teacherName } = req.query ?? {};
 
     let teacherFilter: number | undefined = undefined;
     if (typeof teacherId === "string" && teacherId.trim()) {
@@ -156,6 +152,7 @@ export const listPublicTeacherClassesHandler = async (req: Request, res: Respons
       modality: typeof modality === "string" ? modality : undefined,
       city: typeof city === "string" ? city : undefined,
       teacherId: teacherFilter,
+      teacherName: typeof teacherName === "string" ? teacherName : undefined,
       take: typeof take === "string" && take.trim() ? Number(take) : undefined,
     });
 
@@ -168,6 +165,9 @@ export const listPublicTeacherClassesHandler = async (req: Request, res: Respons
       modality: item.modality,
       durationMinutes: item.durationMinutes,
       price: serializePrice(item.price),
+      priceCents: item.priceCents ?? null,
+      location: item.location ?? null,
+      active: item.active,
       startTime: item.startTime,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,

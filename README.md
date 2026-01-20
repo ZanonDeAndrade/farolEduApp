@@ -1,83 +1,83 @@
-# FarolEdu – MVP
+# FarolEdu MVP
 
-Aplicativo mobile (React Native + Expo) e API Node/Express para conectar estudantes e professores particulares. Inclui autenticação com JWT, aulas e agendamentos, fluxo de recomendação com IA (OpenAI) e telas principais do MVP.
+Marketplace de aulas particulares (mobile Expo + API Express). Autenticação JWT, perfis (professor/estudante), ofertas, busca, agendamentos com bloqueio de conflito e agenda/calendário. Backend agora usa **Firestore** via `firebase-admin` (repositórios) em vez de Postgres/Prisma.
 
-## Arquitetura rápida
-- **App (Expo/React Native + TypeScript)**: Context API para sessão, navegação com React Navigation, validação com `react-hook-form` + `zod`, consumo da API REST e IA.
-- **API (Express + TypeScript + Prisma/PostgreSQL)**: Rotas autenticadas com JWT, CRUD de aulas, agendamentos e perfis, endpoint de IA usando OpenAI.
-- **Banco**: PostgreSQL via Prisma (`prisma/schema.prisma`).
-- **IA**: OpenAI `gpt-4o-mini` para sugerir plano rápido de aula/busca de professor.
+## Stack rápida
+- **Mobile (app/)**: Expo/React Native + TS, React Navigation (stack), AuthContext com AsyncStorage, formulários com zod.
+- **Backend (backEnd/)**: Express 5 + TS, Firestore (via firebase-admin), repositórios tipados, JWT (header Authorization), validação zod, rate limit em login/booking, checagem de role.
+- **Arquitetura de dados**: coleções `users`, `teacherProfiles`, `teacherClasses`, `schedules` no Firestore. ID numérico preservado via contador (`counters/{collection}`) para manter compatibilidade com a API.
 
-## Rodando localmente
-### Requisitos
-- Node 18+
-- PostgreSQL em execução
-- npm ou pnpm/yarn
+## Decisões técnicas
+- **Desacoplamento**: controllers chamam módulos que usam repositórios (interfaces + implementações Firestore). Permite trocar storage sem alterar a API.
+- **Transações**: criação e cancelamento de booking usam `firestore.runTransaction` para garantir atomicidade e evitar condições de corrida na checagem de conflitos.
+- **Compatibilidade**: rotas e payloads mantêm contratos antigos (IDs numéricos, campos `priceCents`, etc.).
+- **Migração**: script opcional `src/scripts/migrate-postgres-to-firestore.ts` lê via Prisma e grava no Firestore mantendo IDs.
 
+## Rodar local
 ### Backend
 ```bash
 cd backEnd
-cp .env.example .env            # ajuste DATABASE_URL / OPENAI_API_KEY / JWT_SECRET
+cp .env.example .env   # configure JWT_SECRET / OPENAI_API_KEY opcional / FIREBASE_SERVICE_ACCOUNT
 npm install
-npx prisma migrate deploy       # ou prisma db push para desenvolvimento
-npm run dev                     # porta padrão 5000
+npm run dev            # http://localhost:5000
 ```
 
-### Frontend (Expo)
+### Mobile (Expo)
 ```bash
 cd app
 npm install
-# opcional: defina EXPO_PUBLIC_API_BASE_URL no app.json ou .env para apontar para a API (http://localhost:5000)
+# opcional: EXPO_PUBLIC_API_BASE_URL no app/.env ou app.json (ex.: http://localhost:5000)
 npm start
 ```
 
-## Variáveis de ambiente
-- **Backend**: `DATABASE_URL`, `JWT_SECRET`, `OPENAI_API_KEY`, `PORT` (ver `backEnd/.env.example`).
-- **Frontend**: `EXPO_PUBLIC_API_BASE_URL` (fallback automático para http://localhost:5000 ou 10.0.2.2 no emulador Android).
+## Variáveis de ambiente (backend)
+- `JWT_SECRET` (obrigatória)
+- `FIREBASE_SERVICE_ACCOUNT` (obrigatória): JSON do service account ou base64 do JSON.
+- `OPENAI_API_KEY` (opcional)
+- `PORT` (padrão 5000)
 
-## Rotas principais (REST)
-- `POST /api/users/register` — cria estudante
-- `POST /api/users/login` — login estudante (JWT)
-- `POST /api/professors/register` — cria professor
-- `POST /api/professors/login` — login professor (JWT)
-- `GET /api/professors/public/:id` — perfil público + aulas
-- `GET /api/teacher-classes/public[?q=...&city=...&modality=...&teacherId=...]` — aulas públicas
-- `POST /api/teacher-classes` — criar aula (professor, auth)
-- `PUT /api/teacher-classes/:id` — atualizar aula (professor, auth)
-- `DELETE /api/teacher-classes/:id` — remover aula (professor, auth)
-- `GET /api/teacher-classes` — aulas do professor logado (auth professor)
-- `POST /api/schedules` — criar agendamento (auth)
-- `GET /api/schedules` — listar agenda do usuário (auth)
-- `POST /api/ai/suggest` — sugestão rápida via IA (público)
+## Principais endpoints (REST)
+- Auth/usuários
+  - `POST /api/users/register` — cria estudante
+  - `POST /api/users/login` — login estudante (JWT)
+  - `POST /api/professors/register` — cria professor + perfil
+  - `POST /api/professors/login` — login professor (JWT)
+  - `GET /api/professors/public/:id` — perfil público + ofertas
+- Ofertas (TeacherClass) — protegidas para professor
+  - `GET /api/offers/public?q&city&modality&teacherId&teacherName&take`
+  - `POST /api/offers` — criar oferta (duration, modality ONLINE/PRESENCIAL/AMBOS, priceCents, location, active)
+  - `PUT|PATCH /api/offers/:id` — atualizar oferta
+  - `DELETE /api/offers/:id`
+  - Compatibilidade: `/api/teacher-classes/*` segue ativo.
+- Bookings/agenda — protegidas
+  - `POST /api/bookings` — estudante agenda aula `{ offerId, startTimeISO, notes? }` (bloqueia conflitos professor/estudante; erro 409 com code BOOKING_CONFLICT_*).
+  - `GET /api/bookings` ou `/api/bookings/me` — agenda do usuário logado (`from`/`to` opcionais)
+  - `PATCH /api/bookings/:id/cancel` — professor ou estudante relacionado cancela
+  - Alias: `GET /api/calendar`
+  - Compatibilidade: `/api/schedules` aceita payload legado `{ teacherId, date/startTime }` e resolve oferta ativa do professor.
+- IA
+  - `POST /api/ai/suggest` — sugestão rápida baseada nas ofertas ativas (não depende de OpenAI).
 
-## Fluxos principais do app
-- **Autenticação**: telas de Login/Registro validadas com `react-hook-form` + `zod`, sessão persistida em `AsyncStorage` via `AuthContext`.
-- **Descoberta de professores**: tela "Encontrar aulas" consome `/teacher-classes/public`, filtros por cidade/modalidade e botão de sugestão IA.
-- **Detalhe do professor**: perfil público + aulas e CTA para agendar.
-- **Agendamentos**: tela de agendar (data/hora validada) e listagem de agenda (`/api/schedules`). Painel do professor mostra aulas e agenda.
-- **IA**: botão “Sugestão IA” envia filtros atuais para `/api/ai/suggest` e exibe dica curta de plano/abordagem.
+## Rotas do app
+- `/login`, `/signup`
+- `/search` (busca com filtro cidade/modalidade)
+- `/teacher/offers` (painel professor, cria/pausa ofertas, agenda)
+- `/calendar` (agenda do usuário)
+- `/schedule` (agendar oferta)
+- `/onboarding-role` opcional via fluxo de signup
 
-## Credenciais de teste
-Crie usuários pela própria interface (não há seed). Para testar fluxos protegidos, registre-se e faça login como estudante ou professor.
+## Regras e validação
+- Roles: professor pode criar/editar ofertas; estudante cria bookings. Middleware `requireRole` protege rotas; cancelamento exige vínculo com booking.
+- Booking calcula `endTime = startTime + durationMinutes` da oferta e bloqueia sobreposições (`status` != CANCELLED) para professor e estudante.
+- Modality normalizada para `ONLINE | PRESENCIAL | AMBOS`; ofertas públicas retornam apenas `active=true`.
+- Dados sensíveis protegidos por JWT + rate limit (login/professores e bookings).
 
-## Testes manuais sugeridos
-- Registrar estudante e professor; validar mensagens de erro de formulário.
-- Login de cada perfil, fechar/reabrir app e confirmar sessão persistida.
-- Professor: criar aula no painel, editar/excluir via API (curl) e ver na listagem pública.
-- Estudante: buscar aulas, abrir detalhe, tentar agendar (sem login deve redirecionar; logado deve criar).
-- Chamar botão “Sugestão IA” com e sem `OPENAI_API_KEY` para conferir tratamento de erro.
+## Tests
+- Backend: `npm test` (vitest + supertest, mocks de Firestore e repositórios para não depender de banco real).
 
-## Decisões técnicas
-- **Estado global**: Context API para sessão simples; telas usam hooks locais + react-hook-form.
-- **Validação**: `zod` no app (formularios) e no backend (payloads de aula/agendamento).
-- **Navegação**: React Navigation stack com rotas públicas e privadas (TeacherDashboard, Agenda).
-- **Persistência**: AsyncStorage + fallback em memória para sessão; Prisma para banco.
-- **Segurança**: JWT em rotas protegidas, checagem de role para aulas do professor, sanitização básica de entrada.
-- **IA**: endpoint dedicado e opcional (retorna 501 se não configurado) para evitar quebra do fluxo.
-
-## Limitações e backlog
-- Não há fluxo de recuperação de senha.
-- Falta UI para editar/excluir aulas (apenas API disponível).
-- Sem testes automatizados; apenas fluxo manual.
-- Sem upload de imagem; perfil usa dados textuais.
-
+## Checklist rápido
+- Criar conta, escolher role e logar.
+- Professor: cadastrar/pausar oferta, aparece na busca pública.
+- Estudante: buscar por matéria ou nome do professor e agendar oferta.
+- Calendário/agenda traz somente bookings do usuário, com status.
+- API retorna 409 claro em conflito de horário para professor ou estudante.

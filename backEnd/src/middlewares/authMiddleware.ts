@@ -11,12 +11,11 @@ export interface JwtPayload {
 
 export const authenticate = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ message: "Token não fornecido" });
+  if (!authHeader) return res.status(401).json({ message: "Token nÇœo fornecido" });
 
-  // Aceita variações de espaços múltiplos
   const [scheme, token] = authHeader.trim().split(/\s+/);
   if (scheme !== "Bearer" || !token) {
-    return res.status(401).json({ message: "Formato de token inválido" });
+    return res.status(401).json({ message: "Formato de token invÇ­lido" });
   }
 
   try {
@@ -24,14 +23,28 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
     (req as any).user = decoded;
     return next();
   } catch (err: any) {
-    // Log de debug (opcional em produção)
     console.error("JWT verify error:", { name: err?.name, message: err?.message });
     const reason =
       err?.name === "TokenExpiredError"
         ? "Token expirado"
         : err?.name === "JsonWebTokenError"
-        ? "Assinatura inválida ou token malformado"
-        : "Token inválido ou expirado";
+        ? "Assinatura invÇ­lida ou token malformado"
+        : "Token invÇ­lido ou expirado";
     return res.status(401).json({ message: reason });
   }
+};
+
+export const requireRole = (...roles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const user = (req as any).user as JwtPayload | undefined;
+    if (!user) {
+      return res.status(401).json({ message: "NÇœo autenticado" });
+    }
+    const normalized = (user.role || "").toLowerCase();
+    const allowed = roles.some(role => normalized === role.toLowerCase());
+    if (!allowed) {
+      return res.status(403).json({ message: "PermissÇ£o negada para este recurso" });
+    }
+    return next();
+  };
 };

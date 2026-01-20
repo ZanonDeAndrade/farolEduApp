@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, LayoutChangeEvent, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MapPin, Wifi } from 'lucide-react-native';
+import { MapPin, Sparkles, Wifi } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { availableStyles } from '../styles/availableStyles';
@@ -14,6 +14,7 @@ import {
   type PublicTeacherClass,
 } from '../../../services/teacherClassService';
 import type { RootStackParamList } from '../../../navigation/types';
+import { requestAiSuggestion } from '../../../services/aiService';
 
 const mapToPreview = (entry: PublicTeacherClass): TeacherClassPreview => ({
   id: entry.id,
@@ -23,23 +24,16 @@ const mapToPreview = (entry: PublicTeacherClass): TeacherClassPreview => ({
   description: entry.description ?? undefined,
   modality: entry.modality,
   price: entry.price ?? null,
+  priceCents: entry.priceCents ?? null,
   teacherName: entry.teacher?.name ?? undefined,
   city: entry.teacher?.profile?.city ?? entry.teacher?.profile?.region ?? undefined,
 });
 
 const formatModality = (value: string) => {
-  switch (value) {
-    case 'online':
-      return 'Online';
-    case 'home':
-      return 'Na casa do professor';
-    case 'travel':
-      return 'Professor vai até você';
-    case 'hybrid':
-      return 'Modelo híbrido';
-    default:
-      return 'Presencial';
-  }
+  const normalized = value.trim().toUpperCase();
+  if (normalized === 'ONLINE') return 'Online';
+  if (normalized === 'AMBOS') return 'Híbrido / ambos';
+  return 'Presencial';
 };
 
 type AvailableClassesSectionProps = {
@@ -56,6 +50,8 @@ const AvailableClassesSection: React.FC<AvailableClassesSectionProps> = ({ searc
   const [classes, setClasses] = useState<TeacherClassPreview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [aiText, setAiText] = useState<string | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -65,7 +61,7 @@ const AvailableClassesSection: React.FC<AvailableClassesSectionProps> = ({ searc
     const query = {
       q: appliedFilters.subject.trim() || undefined,
       city: appliedFilters.location.trim() || undefined,
-      modality: appliedFilters.online ? 'online' : undefined,
+      modality: appliedFilters.online ? 'ONLINE' : undefined,
       take: 12,
     };
 
@@ -99,6 +95,24 @@ const AvailableClassesSection: React.FC<AvailableClassesSectionProps> = ({ searc
     );
   }, [appliedFilters.nearby, appliedFilters.online, subjectLabel.length, locationLabel.length]);
 
+  const handleAiSuggest = async () => {
+    setIsAiLoading(true);
+    setAiText(null);
+    try {
+      const suggestion = await requestAiSuggestion({
+        subject: subjectLabel || 'reforço escolar',
+        city: locationLabel || 'sua região',
+        modality: appliedFilters.online ? 'ONLINE' : appliedFilters.nearby ? 'PRESENCIAL' : 'ONLINE',
+      });
+      setAiText(suggestion);
+    } catch (err) {
+      console.error('Erro ao pedir sugestão IA (home):', err);
+      setAiText('Não foi possível gerar uma sugestão agora.');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
   return (
     <LinearGradient {...GRADIENTS.availableBackground} style={availableStyles.container} onLayout={onLayout}>
       <Text style={availableStyles.title}>
@@ -130,6 +144,23 @@ const AvailableClassesSection: React.FC<AvailableClassesSectionProps> = ({ searc
           ) : null}
         </View>
       ) : null}
+
+      <TouchableOpacity
+        style={availableStyles.aiButton}
+        onPress={handleAiSuggest}
+        activeOpacity={0.9}
+        disabled={isAiLoading}
+      >
+        {isAiLoading ? (
+          <ActivityIndicator color={COLORS.accentPrimary} />
+        ) : (
+          <View style={availableStyles.aiButtonContent}>
+            <Sparkles size={16} color={COLORS.accentPrimary} />
+            <Text style={availableStyles.aiButtonText}>Sugestão rápida com IA</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+      {aiText ? <Text style={availableStyles.aiText}>{aiText}</Text> : null}
 
       {isLoading ? (
         <View style={availableStyles.loadingWrapper}>
@@ -190,8 +221,8 @@ const TeacherCard: React.FC<{
         </View>
       ) : null}
       <View style={availableStyles.metaTags}>
-        <View style={[availableStyles.metaTag, teacher.modality === 'online' && availableStyles.metaTagOnline]}>
-          {teacher.modality === 'online' ? (
+        <View style={[availableStyles.metaTag, teacher.modality.toUpperCase() === 'ONLINE' && availableStyles.metaTagOnline]}>
+          {teacher.modality.toUpperCase() === 'ONLINE' ? (
             <Wifi size={12} color={COLORS.white} />
           ) : (
             <MapPin size={12} color={COLORS.accentPrimary} />
@@ -199,10 +230,10 @@ const TeacherCard: React.FC<{
           <Text
             style={[
               availableStyles.metaTagText,
-              teacher.modality === 'online' ? availableStyles.metaTagTextInverted : undefined,
+              teacher.modality.toUpperCase() === 'ONLINE' ? availableStyles.metaTagTextInverted : undefined,
             ]}
           >
-            {teacher.modality === 'online' ? 'Online' : 'Presencial'}
+            {teacher.modality.toUpperCase() === 'ONLINE' ? 'Online' : 'Presencial'}
           </Text>
         </View>
       </View>
@@ -212,7 +243,9 @@ const TeacherCard: React.FC<{
       <View>
         {teacher.teacherName ? <Text style={availableStyles.teacherName}>Prof. {teacher.teacherName}</Text> : null}
         <Text style={availableStyles.teacherPrice}>
-          {teacher.price !== null && teacher.price !== undefined
+          {teacher.priceCents !== null && teacher.priceCents !== undefined
+            ? `R$ ${(teacher.priceCents / 100).toFixed(2)}`
+            : teacher.price !== null && teacher.price !== undefined
             ? `R$ ${Number(teacher.price).toFixed(2)}`
             : 'Valor a combinar'}
         </Text>

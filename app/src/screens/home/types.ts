@@ -8,6 +8,7 @@ export type TeacherClassPreview = {
   description?: string | null;
   modality: string;
   price?: number | null;
+  priceCents?: number | null;
   teacherName?: string | null;
   city?: string | null;
 };

@@ -1,19 +1,13 @@
 import { Router } from "express";
-import {
-  registerTeacher,
-  listTeachers,
-  getTeacher,
-  loginTeacher,
-  meFromToken,
-  getTeacherPublic,
-} from "../controller/professorController";
+import { registerTeacher, listTeachers, getTeacher, meFromToken, getTeacherPublic } from "../controller/professorController";
+import { login as loginUnified } from "../controller/authController";
 import { authenticate } from "../middlewares/authMiddleware";
 
 const router = Router();
 
 // Público
 router.post("/register", registerTeacher);
-router.post("/login", loginTeacher);
+router.post("/login", loginUnified);
 router.get("/public/:id", getTeacherPublic);
 
 // Debug/Perfil via token

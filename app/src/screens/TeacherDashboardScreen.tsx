@@ -18,7 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { PlusCircle, CalendarDays, Users, MapPin, Clock } from 'lucide-react-native';
+import { PlusCircle, CalendarDays, Users, MapPin, Clock, EyeOff } from 'lucide-react-native';
 import Navbar from '../components/Navbar';
 import { GRADIENTS } from '../theme/gradients';
 import { COLORS } from '../theme/colors';
@@ -28,9 +28,11 @@ import {
   createTeacherClass,
   fetchTeacherClasses,
   fetchTeacherSchedules,
+  updateTeacherClass,
   type TeacherClass,
   type TeacherSchedule,
 } from '../services/teacherClassService';
+import { ApiError } from '../services/apiClient';
 
 type Navigation = NativeStackNavigationProp<RootStackParamList>;
 
@@ -41,28 +43,28 @@ type FormState = {
   durationMinutes: string;
   price: string;
   description: string;
+  location: string;
 };
 
 const MODALITY_OPTIONS = [
-  { value: 'online', label: 'Online' },
-  { value: 'home', label: 'Minha casa' },
-  { value: 'travel', label: 'Vou ao aluno' },
-  { value: 'presencial', label: 'Presencial combinado' },
-  { value: 'hybrid', label: 'Híbrido' },
+  { value: 'ONLINE', label: 'Online' },
+  { value: 'PRESENCIAL', label: 'Presencial' },
+  { value: 'AMBOS', label: 'Híbrido / ambos' },
 ] as const;
 
 const DEFAULT_FORM: FormState = {
   title: '',
   subject: '',
-  modality: 'online',
+  modality: 'ONLINE',
   durationMinutes: '60',
   price: '',
   description: '',
+  location: '',
 };
 
 const TeacherDashboardScreen: React.FC = () => {
   const navigation = useNavigation<Navigation>();
-  const { token, profile, isRestoring } = useAuth();
+  const { token, profile, isRestoring, signOut } = useAuth();
   const [teacherClasses, setTeacherClasses] = useState<TeacherClass[]>([]);
   const [schedules, setSchedules] = useState<TeacherSchedule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -104,18 +106,26 @@ const TeacherDashboardScreen: React.FC = () => {
         );
         setSchedules(
           schedulesResponse?.slice().sort(
-            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+            (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
           ) ?? [],
         );
       } catch (error) {
         console.error('Erro ao carregar dados do painel:', error);
+        if (error instanceof ApiError && error.status === 401) {
+          setErrorMessage('Sessão expirada. Entre novamente.');
+          await signOut();
+          navigation.replace('Login');
+          setIsLoading(false);
+          setIsRefreshing(false);
+          return;
+        }
         setErrorMessage('Não foi possível carregar seus dados agora. Tente novamente em instantes.');
       } finally {
         setIsLoading(false);
         setIsRefreshing(false);
       }
     },
-    [token],
+    [navigation, signOut, token],
   );
 
   useFocusEffect(
@@ -156,14 +166,14 @@ const TeacherDashboardScreen: React.FC = () => {
       return;
     }
 
-    let priceNumber: number | undefined;
+    let priceCents: number | undefined;
     if (form.price.trim()) {
       const parsed = Number(form.price.replace(',', '.'));
       if (!Number.isFinite(parsed) || parsed < 0) {
         setErrorMessage('Valor informado é inválido.');
         return;
       }
-      priceNumber = Number(parsed.toFixed(2));
+      priceCents = Math.round(parsed * 100);
     }
 
     setIsSubmitting(true);
@@ -177,7 +187,9 @@ const TeacherDashboardScreen: React.FC = () => {
         description: form.description.trim() || undefined,
         modality: form.modality,
         durationMinutes: Math.round(durationNumber),
-        price: priceNumber,
+        priceCents,
+        location: form.location.trim() || undefined,
+        active: true,
       };
 
       const created = await createTeacherClass(token, payload);
@@ -206,8 +218,26 @@ const TeacherDashboardScreen: React.FC = () => {
 
   const upcomingSchedules = useMemo(() => {
     const now = Date.now();
-    return schedules.filter(item => new Date(item.date).getTime() >= now);
+    return schedules.filter(item => new Date(item.startTime).getTime() >= now && item.status !== 'CANCELLED');
   }, [schedules]);
+
+  const toggleActive = useCallback(
+    async (klass: TeacherClass) => {
+      if (!token) return;
+      try {
+        const updated = await updateTeacherClass(token, klass.id, { active: !klass.active });
+        setTeacherClasses(prev =>
+          prev.map(item => (item.id === updated.id ? updated : item)).sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          ),
+        );
+      } catch (error) {
+        console.error('Erro ao alternar status da oferta:', error);
+        setErrorMessage('Não foi possível alterar o status da oferta.');
+      }
+    },
+    [token],
+  );
 
   const renderTeacherClasses = () => {
     if (isLoading) {
@@ -224,15 +254,24 @@ const TeacherDashboardScreen: React.FC = () => {
 
     return teacherClasses.map(item => {
       const createdDate = new Date(item.createdAt);
+      const priceValue =
+        item.priceCents !== null && item.priceCents !== undefined
+          ? item.priceCents / 100
+          : item.price !== null && item.price !== undefined && item.price !== ''
+          ? Number(item.price)
+          : null;
       const priceLabel =
-        item.price !== null && item.price !== undefined && item.price !== ''
-          ? `R$ ${Number(item.price).toFixed(2)}`
-          : 'Valor não informado';
+        priceValue !== null && priceValue !== undefined ? `R$ ${priceValue.toFixed(2)}` : 'Valor não informado';
       return (
         <View key={item.id} style={styles.classCard}>
           <View style={styles.classHeader}>
             <Text style={styles.classTitle}>{item.title}</Text>
-            <Text style={styles.classModality}>{item.modality.toUpperCase()}</Text>
+            <View style={styles.badgesRow}>
+              <Text style={[styles.classModality, !item.active && styles.badgeInactive]}>
+                {item.modality.toUpperCase()}
+              </Text>
+              {!item.active ? <Text style={[styles.classModality, styles.badgeInactive]}>INATIVA</Text> : null}
+            </View>
           </View>
           {item.subject ? (
             <Text style={styles.classSubject}>Disciplina: {item.subject}</Text>
@@ -247,12 +286,23 @@ const TeacherDashboardScreen: React.FC = () => {
               <Text style={styles.classMetaText}>{priceLabel}</Text>
             </View>
           </View>
+          {item.location ? <Text style={styles.classDescription}>Local: {item.location}</Text> : null}
           {item.description ? (
             <Text style={styles.classDescription}>{item.description}</Text>
           ) : null}
           <Text style={styles.classFootnote}>
             Cadastrada em {createdDate.toLocaleDateString('pt-BR')}
           </Text>
+          <TouchableOpacity
+            onPress={() => toggleActive(item)}
+            style={[styles.toggleButton, !item.active && styles.toggleButtonInactive]}
+            activeOpacity={0.85}
+          >
+            <EyeOff size={16} color={item.active ? COLORS.accentPrimary : COLORS.neutral700} />
+            <Text style={styles.toggleButtonText}>
+              {item.active ? 'Pausar oferta' : 'Reativar oferta'}
+            </Text>
+          </TouchableOpacity>
         </View>
       );
     });
@@ -272,8 +322,9 @@ const TeacherDashboardScreen: React.FC = () => {
     }
 
     return upcomingSchedules.map(item => {
-      const date = new Date(item.date);
+      const date = new Date(item.startTime);
       const studentName = item.student?.name ?? 'Aluno não identificado';
+      const offerTitle = item.offer?.title ?? 'Aula';
       return (
         <View key={item.id} style={styles.scheduleCard}>
           <View style={styles.scheduleHeader}>
@@ -300,9 +351,11 @@ const TeacherDashboardScreen: React.FC = () => {
               <Users size={16} color={COLORS.accentPrimary} />
               <Text style={styles.scheduleMetaText}>{studentName}</Text>
             </View>
+            <Text style={styles.scheduleMetaText}>{offerTitle}</Text>
             {item.student?.email ? (
               <Text style={styles.scheduleEmail}>{item.student.email}</Text>
             ) : null}
+            <Text style={styles.statusBadge}>{(item.status || 'PENDING').toUpperCase()}</Text>
           </View>
         </View>
       );
@@ -426,6 +479,17 @@ const TeacherDashboardScreen: React.FC = () => {
                   keyboardType="decimal-pad"
                   onChangeText={value => handleChange('price', value)}
                   placeholder="Ex.: 80,00"
+                  placeholderTextColor="#94a3b8"
+                />
+              </View>
+
+              <View style={[styles.formGroup, styles.formGroupHalf]}>
+                <Text style={styles.label}>Local (opcional)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={form.location}
+                  onChangeText={value => handleChange('location', value)}
+                  placeholder="Cidade ou link da sala online"
                   placeholderTextColor="#94a3b8"
                 />
               </View>
@@ -670,6 +734,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.accentPrimary,
   },
+  badgeInactive: {
+    color: COLORS.neutral700,
+    backgroundColor: '#e2e8f0',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  badgesRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
   classSubject: {
     fontSize: 13,
     color: COLORS.neutral700,
@@ -697,6 +772,24 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: COLORS.neutral500,
     marginTop: 4,
+  },
+  toggleButton: {
+    marginTop: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(106, 64, 180, 0.2)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  toggleButtonInactive: {
+    backgroundColor: '#f1f5f9',
+  },
+  toggleButtonText: {
+    color: COLORS.accentPrimary,
+    fontWeight: '700',
   },
   scheduleCard: {
     borderWidth: 1,
@@ -731,6 +824,17 @@ const styles = StyleSheet.create({
   scheduleEmail: {
     fontSize: 12,
     color: COLORS.neutral600,
+  },
+  statusBadge: {
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    backgroundColor: '#eef2ff',
+    color: COLORS.accentPrimary,
+    fontSize: 11,
+    fontWeight: '700',
   },
 });
 

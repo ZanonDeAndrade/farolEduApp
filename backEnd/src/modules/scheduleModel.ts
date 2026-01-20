@@ -1,20 +1,8 @@
-import { prisma } from "../config/db";
+import { createBooking, listBookingsByUser } from "./bookingModel";
 
-export const createSchedule = (data: { studentId: number; teacherId: number; date: Date }) => {
-  return prisma.schedule.create({ data });
-};
+// Legacy shim to preserve old imports/names
+export const createSchedule = (data: { studentId: number; offerId: number; startTime: Date; notes?: string | null }) =>
+  createBooking({ studentId: data.studentId, offerId: data.offerId, startTime: data.startTime, notes: data.notes });
 
-export const getSchedulesByUser = (userId: number, role: string) => {
-  if (role === "student") {
-    return prisma.schedule.findMany({
-      where: { studentId: userId },
-      include: { teacher: { select: { id: true, name: true, email: true } } },
-    });
-  } else if (role === "teacher") {
-    return prisma.schedule.findMany({
-      where: { teacherId: userId },
-      include: { student: { select: { id: true, name: true, email: true } } },
-    });
-  }
-  return [];
-};
+export const getSchedulesByUser = (userId: number, role: string, range?: { from?: Date; to?: Date }) =>
+  listBookingsByUser(userId, role, range);

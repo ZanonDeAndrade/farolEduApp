@@ -27,13 +27,13 @@ type Navigation = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'Schedule'>;
 
 const scheduleSchema = z.object({
-  date: z.string().min(1, 'Informe a data e horário (ISO ou 2025-12-01 14:00)'),
+  startTime: z.string().min(1, 'Informe a data e horÇ­rio (ISO ou 2025-12-01 14:00)'),
 });
 
 const ScheduleScreen: React.FC = () => {
   const navigation = useNavigation<Navigation>();
   const route = useRoute<Route>();
-  const { teacherId, teacherName } = route.params;
+  const { teacherId, teacherName, offerId, offerTitle, durationMinutes } = route.params;
   const { token } = useAuth();
   const [date, setDate] = useState(() => {
     const now = new Date();
@@ -52,15 +52,15 @@ const ScheduleScreen: React.FC = () => {
       navigation.navigate('Login');
       return;
     }
-    const parsed = scheduleSchema.safeParse({ date });
+    const parsed = scheduleSchema.safeParse({ startTime: date });
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? 'Data inválida');
+      setError(parsed.error.issues[0]?.message ?? 'Data invÇ­lida');
       return;
     }
 
-    const normalizedDate = new Date(parsed.data.date.replace(' ', 'T'));
+    const normalizedDate = new Date(parsed.data.startTime.replace(' ', 'T'));
     if (Number.isNaN(normalizedDate.getTime())) {
-      setError('Formato de data inválido. Use AAAA-MM-DD HH:mm');
+      setError('Formato de data invÇ­lido. Use AAAA-MM-DD HH:mm');
       return;
     }
 
@@ -69,23 +69,23 @@ const ScheduleScreen: React.FC = () => {
     setSuccess(null);
     try {
       await createSchedule(token, {
-        teacherId,
-        date: normalizedDate.toISOString(),
+        offerId,
+        startTime: normalizedDate.toISOString(),
       });
       setSuccess('Aula agendada com sucesso!');
     } catch (err) {
       console.error('Erro ao agendar:', err);
-      setError('Não foi possível agendar. Tente novamente.');
+      setError('NÇœo foi possÇðvel agendar. Tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
-  }, [date, navigation, teacherId, token]);
+  }, [date, navigation, offerId, token]);
 
   return (
     <LinearGradient {...GRADIENTS.screenBackground} style={styles.gradient}>
       <Navbar
         links={[
-          { label: 'Início', onPress: () => navigation.navigate('Home') },
+          { label: 'InÇðcio', onPress: () => navigation.navigate('Home') },
           { label: 'Encontrar aulas', onPress: () => navigation.navigate('SearchProfessors') },
         ]}
         onLoginPress={() => navigation.navigate('Login')}
@@ -104,7 +104,9 @@ const ScheduleScreen: React.FC = () => {
               </View>
               <View>
                 <Text style={styles.title}>Agendar aula</Text>
-                <Text style={styles.subtitle}>com {formattedTeacher}</Text>
+                <Text style={styles.subtitle}>
+                  {offerTitle ? `${offerTitle} · ` : ''}com {formattedTeacher}
+                </Text>
               </View>
             </View>
 
@@ -116,10 +118,13 @@ const ScheduleScreen: React.FC = () => {
                 onChangeText={setDate}
                 placeholder="2025-12-01 14:00"
                 placeholderTextColor={COLORS.textSubtle}
-                accessibilityLabel="Data e horário no formato AAAA-MM-DD HH:mm"
+                accessibilityLabel="Data e horÇ­rio no formato AAAA-MM-DD HH:mm"
               />
             </View>
             <Text style={styles.helper}>Use o formato AAAA-MM-DD HH:mm (hora local).</Text>
+            {durationMinutes ? (
+              <Text style={styles.helper}>DuraÇõÇœo prevista: {durationMinutes} min.</Text>
+            ) : null}
 
             {error ? <Text style={styles.error}>{error}</Text> : null}
             {success ? <Text style={styles.success}>{success}</Text> : null}

@@ -133,7 +133,7 @@ const LoginScreen: React.FC = () => {
           ? String((session.profile as { role?: string }).role ?? '').toLowerCase() === 'teacher'
           : false;
 
-      const targetRoute: keyof RootStackParamList = isTeacherProfile ? 'TeacherDashboard' : 'Home';
+      const targetRoute: keyof RootStackParamList = isTeacherProfile ? 'TeacherDashboard' : 'StudentHome';
 
       setPopup({
         type: 'success',

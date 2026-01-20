@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -21,6 +21,16 @@ import { useAuth } from '../context/AuthContext';
 
 type Navigation = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'ProfessorDetail'>;
+
+const formatPrice = (price?: number | null, priceCents?: number | null) => {
+  if (priceCents !== null && priceCents !== undefined) {
+    return `R$ ${(priceCents / 100).toFixed(2)}`;
+  }
+  if (price !== null && price !== undefined) {
+    return `R$ ${Number(price).toFixed(2)}`;
+  }
+  return 'Valor a combinar';
+};
 
 const ProfessorDetailScreen: React.FC = () => {
   const navigation = useNavigation<Navigation>();
@@ -57,6 +67,25 @@ const ProfessorDetailScreen: React.FC = () => {
     if (!teacher?.teacherProfile) return 'Local não informado';
     return teacher.teacherProfile.city || teacher.teacherProfile.region || 'Local não informado';
   }, [teacher]);
+
+  const primaryClass = useMemo(() => {
+    if (!teacher?.classes || teacher.classes.length === 0) return null;
+    return teacher.classes.find(cls => cls.active !== false) ?? teacher.classes[0];
+  }, [teacher]);
+
+  const handleSchedule = useCallback(
+    (offerId?: number, offerTitle?: string, durationMinutes?: number) => {
+      if (!offerId) return;
+      navigation.navigate('Schedule', {
+        offerId,
+        teacherId,
+        teacherName: teacher?.name,
+        offerTitle,
+        durationMinutes,
+      });
+    },
+    [navigation, teacher?.name, teacherId],
+  );
 
   return (
     <LinearGradient {...GRADIENTS.screenBackground} style={styles.gradient}>
@@ -100,16 +129,19 @@ const ProfessorDetailScreen: React.FC = () => {
             </View>
 
             <TouchableOpacity
-              style={styles.cta}
+              style={[styles.cta, !primaryClass && styles.ctaDisabled]}
               onPress={() =>
                 token
-                  ? navigation.navigate('Schedule', { teacherId, teacherName: teacher.name })
+                  ? handleSchedule(primaryClass?.id, primaryClass?.title, primaryClass?.durationMinutes)
                   : navigation.navigate('Login')
               }
               activeOpacity={0.9}
               accessibilityRole="button"
+              disabled={!primaryClass}
             >
-              <Text style={styles.ctaText}>Agendar aula com {teacher.name.split(' ')[0]}</Text>
+              <Text style={styles.ctaText}>
+                {primaryClass ? `Agendar ${primaryClass.title}` : 'Cadastre uma aula para agendar'}
+              </Text>
             </TouchableOpacity>
 
             <View style={styles.section}>
@@ -129,12 +161,21 @@ const ProfessorDetailScreen: React.FC = () => {
                     ) : null}
                     <View style={styles.classFooter}>
                       <Text style={styles.classDuration}>{cls.durationMinutes} min</Text>
-                      <Text style={styles.classPrice}>
-                        {cls.price !== null && cls.price !== undefined
-                          ? `R$ ${Number(cls.price).toFixed(2)}`
-                          : 'Valor a combinar'}
-                      </Text>
+                      <Text style={styles.classPrice}>{formatPrice(cls.price, cls.priceCents)}</Text>
                     </View>
+                    {cls.location ? <Text style={styles.classLocation}>Local: {cls.location}</Text> : null}
+                    <TouchableOpacity
+                      style={styles.classCta}
+                      onPress={() =>
+                        token
+                          ? handleSchedule(cls.id, cls.title, cls.durationMinutes)
+                          : navigation.navigate('Login')
+                      }
+                      accessibilityRole="button"
+                    >
+                      <Sparkles size={14} color={COLORS.accentPrimary} />
+                      <Text style={styles.classCtaText}>Agendar esta aula</Text>
+                    </TouchableOpacity>
                   </View>
                 ))
               ) : (
@@ -182,6 +223,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
   },
+  ctaDisabled: {
+    opacity: 0.6,
+  },
   ctaText: { color: COLORS.white, fontWeight: '700', fontSize: 15 },
   section: {
     backgroundColor: '#fff',
@@ -211,6 +255,15 @@ const styles = StyleSheet.create({
   classFooter: { flexDirection: 'row', justifyContent: 'space-between' },
   classDuration: { color: COLORS.text, fontWeight: '600' },
   classPrice: { color: COLORS.accentPrimary, fontWeight: '700' },
+  classLocation: { color: COLORS.textSubtle, fontSize: 12 },
+  classCta: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+  },
+  classCtaText: { color: COLORS.accentPrimary, fontWeight: '700' },
   muted: { color: COLORS.textSubtle },
 });
 

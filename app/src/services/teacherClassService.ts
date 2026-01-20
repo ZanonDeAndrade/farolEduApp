@@ -9,6 +9,9 @@ export type TeacherClass = {
   modality: string;
   durationMinutes: number;
   price?: string | null;
+  priceCents?: number | null;
+  location?: string | null;
+  active?: boolean;
   startTime?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -18,8 +21,11 @@ export type TeacherSchedule = {
   id: number;
   studentId: number;
   teacherId: number;
-  date: string;
+  startTime: string;
+  endTime: string;
   createdAt: string;
+  status: string;
+  notes?: string | null;
   student?: {
     id: number;
     name: string;
@@ -36,6 +42,9 @@ export type PublicTeacherClass = {
   modality: string;
   durationMinutes: number;
   price?: number | null;
+  priceCents?: number | null;
+  location?: string | null;
+  active?: boolean;
   createdAt: string;
   updatedAt: string;
   teacher: {
@@ -58,7 +67,12 @@ export type CreateTeacherClassPayload = {
   modality?: string;
   durationMinutes?: number;
   price?: number;
+  priceCents?: number;
+  location?: string;
+  active?: boolean;
 };
+
+export type UpdateTeacherClassPayload = Partial<CreateTeacherClassPayload>;
 
 export type PublicTeacherClassQuery = {
   q?: string;
@@ -66,19 +80,28 @@ export type PublicTeacherClassQuery = {
   modality?: string;
   take?: number;
   teacherId?: number;
+  teacherName?: string;
 };
 
 export const fetchTeacherClasses = async (token: string) => {
-  return apiRequest<TeacherClass[]>('/api/teacher-classes', { token });
+  return apiRequest<TeacherClass[]>('/api/offers', { token });
 };
 
 export const fetchTeacherSchedules = async (token: string) => {
-  return apiRequest<TeacherSchedule[]>('/api/schedules', { token });
+  return apiRequest<TeacherSchedule[]>('/api/bookings/me', { token });
 };
 
 export const createTeacherClass = async (token: string, payload: CreateTeacherClassPayload) => {
-  return apiRequest<TeacherClass>('/api/teacher-classes', {
+  return apiRequest<TeacherClass>('/api/offers', {
     method: 'POST',
+    token,
+    body: payload,
+  });
+};
+
+export const updateTeacherClass = async (token: string, id: number, payload: UpdateTeacherClassPayload) => {
+  return apiRequest<TeacherClass>(`/api/offers/${id}`, {
+    method: 'PATCH',
     token,
     body: payload,
   });
@@ -91,6 +114,7 @@ export const fetchPublicTeacherClasses = async (query?: PublicTeacherClassQuery)
   if (query?.modality) params.set('modality', query.modality);
   if (query?.take) params.set('take', String(query.take));
   if (query?.teacherId) params.set('teacherId', String(query.teacherId));
+  if (query?.teacherName) params.set('teacherName', query.teacherName);
   const suffix = params.toString() ? `?${params.toString()}` : '';
-  return apiRequest<PublicTeacherClass[]>(`/api/teacher-classes/public${suffix}`);
+  return apiRequest<PublicTeacherClass[]>(`/api/offers/public${suffix}`);
 };

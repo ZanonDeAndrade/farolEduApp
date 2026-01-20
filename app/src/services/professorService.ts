@@ -71,6 +71,9 @@ export type PublicTeacher = {
     modality: string;
     price?: number | null;
     durationMinutes: number;
+    priceCents?: number | null;
+    active?: boolean;
+    location?: string | null;
   }[];
 };
 

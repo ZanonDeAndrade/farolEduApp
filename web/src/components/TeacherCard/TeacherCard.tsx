@@ -3,6 +3,7 @@ import './TeacherCard.css';
 
 export type TeacherClassCard = {
   id: number;
+  teacherId?: number | null;
   title: string;
   subject?: string | null;
   description?: string | null;
@@ -15,18 +16,20 @@ export type TeacherClassCard = {
 
 type TeacherCardProps = {
   data: TeacherClassCard;
+  onView?: (data: TeacherClassCard) => void;
 };
 
-const TeacherCard: React.FC<TeacherCardProps> = ({ data }) => {
+const TeacherCard: React.FC<TeacherCardProps> = ({ data, onView }) => {
   const initial = (data.subject || data.title || 'A').trim().charAt(0).toUpperCase();
+  const modalityNormalized = (data.modality || '').toLowerCase();
   const modalityLabel =
-    data.modality === 'online'
+    modalityNormalized === 'online'
       ? 'Aulas online'
-      : data.modality === 'home'
+      : modalityNormalized === 'home'
       ? 'Na casa do professor'
-      : data.modality === 'travel'
+      : modalityNormalized === 'travel'
       ? 'Professor vai até você'
-      : data.modality === 'hybrid'
+      : modalityNormalized === 'hybrid' || modalityNormalized === 'ambos'
       ? 'Modelo híbrido'
       : 'Aulas presenciais';
 
@@ -66,6 +69,11 @@ const TeacherCard: React.FC<TeacherCardProps> = ({ data }) => {
           </div>
         </div>
         <button className="btn btn-secondary">Ver Aula</button>
+        {onView ? (
+          <button className="btn btn-primary teacher-card-cta" onClick={() => onView(data)}>
+            Ver detalhes e agendar
+          </button>
+        ) : null}
       </div>
     </div>
   );

@@ -231,4 +231,26 @@ export const availableStyles = StyleSheet.create({
     color: COLORS.textSubtle,
     lineHeight: 20,
   },
+  aiButton: {
+    alignSelf: 'flex-start',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: COLORS.borderSoft,
+    backgroundColor: COLORS.surfaceSoft,
+  },
+  aiButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  aiButtonText: {
+    color: COLORS.accentPrimary,
+    fontWeight: '700',
+  },
+  aiText: {
+    color: COLORS.text,
+    fontSize: 14,
+  },
 });

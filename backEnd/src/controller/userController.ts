@@ -1,34 +1,29 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { prisma } from "../config/db";
 import { JWT_SECRET } from "../config/env";
+import { createUser, findUserByEmail, findUserById, getAllUsers } from "../modules/userModel";
 
 // Cadastro de estudante
 export const registerStudent = async (req: Request, res: Response) => {
   try {
     const { name, email, password } = req.body ?? {};
 
-    // ⚠️ Apenas o que o backend precisa!
     if (!name?.trim() || !email?.trim() || !password?.trim()) {
       return res.status(400).json({ message: "Dados incompletos" });
     }
 
     const hashed = await bcrypt.hash(password, 10);
 
-    const user = await prisma.user.create({
-      data: {
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        password: hashed,
-        role: "student",
-      },
-      select: { id: true, name: true, email: true, role: true },
+    const user = await createUser({
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      password: hashed,
+      role: "student",
     });
 
-    return res.status(201).json(user);
+    return res.status(201).json({ id: user.id, name: user.name, email: user.email, role: user.role });
   } catch (err: any) {
-    // P2002 = email duplicado
     if (err?.code === "P2002") {
       return res.status(409).json({ message: "E-mail já cadastrado" });
     }
@@ -46,15 +41,9 @@ export const loginStudent = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Email e senha obrigatórios" });
     }
 
-    const student = await prisma.user.findFirst({
-      where: {
-        email: { equals: email.trim().toLowerCase(), mode: "insensitive" },
-        role: { equals: "student", mode: "insensitive" },
-      },
-      select: { id: true, name: true, email: true, role: true, password: true },
-    });
+    const student = await findUserByEmail(email.trim().toLowerCase());
 
-    if (!student) {
+    if (!student || (student.role || "").toLowerCase() !== "student") {
       return res.status(401).json({ message: "Estudante não encontrado" });
     }
 
@@ -77,17 +66,13 @@ export const loginStudent = async (req: Request, res: Response) => {
 // Listar estudantes
 export const listStudents = async (_req: Request, res: Response) => {
   try {
-    const students = await prisma.user.findMany({
-      where: { role: { equals: "student", mode: "insensitive" } },
-      select: { id: true, name: true, email: true, role: true },
-      orderBy: { id: "asc" },
-    });
-
+    const students = await getAllUsers();
     if (!students.length) {
       return res.status(404).json({ message: "Nenhum estudante encontrado" });
     }
 
-    return res.json(students);
+    const payload = students.map(s => ({ id: s.id, name: s.name, email: s.email, role: s.role }));
+    return res.json(payload);
   } catch (err) {
     console.error("Erro ao listar estudantes:", err);
     return res.status(500).json({ message: "Erro interno no servidor" });
@@ -100,14 +85,12 @@ export const getStudent = async (req: Request, res: Response) => {
     const id = Number(req.params.id);
     if (!Number.isFinite(id)) return res.status(400).json({ message: "ID inválido" });
 
-    const student = await prisma.user.findFirst({
-      where: { id, role: { equals: "student", mode: "insensitive" } },
-      select: { id: true, name: true, email: true, role: true },
-    });
+    const student = await findUserById(id);
+    if (!student || (student.role || "").toLowerCase() !== "student") {
+      return res.status(404).json({ message: "Estudante não encontrado" });
+    }
 
-    if (!student) return res.status(404).json({ message: "Estudante não encontrado" });
-
-    return res.json(student);
+    return res.json({ id: student.id, name: student.name, email: student.email, role: student.role });
   } catch (err) {
     console.error("Erro ao buscar estudante:", err);
     return res.status(500).json({ message: "Erro interno no servidor" });

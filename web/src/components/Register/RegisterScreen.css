@@ -274,31 +274,41 @@
   }
 
   .register-file-input {
-    padding: var(--spacing-3) var(--spacing-4);
+    width: 100%;
+    padding: 0.9rem 1.1rem;
     cursor: pointer;
+    border-radius: 14px;
+    border: 1px solid #d9e2ec;
+    background: linear-gradient(135deg, #f9fbff 0%, #f2f5ff 100%);
+    color: #1f2937;
+    font-weight: var(--font-weight-semibold);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
 
   .register-file-input::file-selector-button {
-    padding: var(--spacing-2) var(--spacing-5);
+    padding: 0.65rem 1.25rem;
     margin-right: var(--spacing-4);
     border: none;
-    border-radius: var(--border-radius);
-    background: var(--primary-blue);
+    border-radius: 12px;
+    background: linear-gradient(135deg, #7b4ce4, #5d2db3);
     color: var(--white);
-    font-weight: var(--font-weight-semibold);
+    font-weight: var(--font-weight-bold);
     font-family: inherit;
     font-size: var(--font-size-sm);
     cursor: pointer;
-    transition: var(--transition);
+    box-shadow: 0 10px 20px rgba(93, 45, 179, 0.25);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
 
   .register-file-input:hover::file-selector-button,
   .register-file-input:focus-visible::file-selector-button {
-    background: #5a37a4;
+    transform: translateY(-1px);
+    box-shadow: 0 14px 24px rgba(93, 45, 179, 0.32);
   }
 
   .register-file-input:active::file-selector-button {
-    transform: translateY(1px);
+    transform: translateY(0);
+    box-shadow: 0 8px 14px rgba(93, 45, 179, 0.18);
   }
   
   .register-currency-input {
@@ -916,18 +926,21 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-2);
-    padding: var(--spacing-2) var(--spacing-3);
-    border: 1px solid rgba(106, 64, 180, 0.18);
-    border-radius: var(--border-radius);
+    padding: var(--spacing-3);
+    border: 1px solid rgba(106, 64, 180, 0.22);
+    border-radius: 14px;
     cursor: pointer;
     transition: var(--transition);
     font-size: var(--font-size-sm);
-    background: rgba(255, 255, 255, 0.92);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(245, 240, 255, 0.95));
     user-select: none;
+    box-shadow: 0 10px 26px rgba(106, 64, 180, 0.06);
   }
   
   .register-subject-checkbox:hover {
-    background: rgba(106, 64, 180, 0.1);
+    background: rgba(106, 64, 180, 0.08);
+    transform: translateY(-1px);
+    box-shadow: 0 12px 24px rgba(106, 64, 180, 0.09);
   }
   
   .register-subject-checkbox input[type="checkbox"] {

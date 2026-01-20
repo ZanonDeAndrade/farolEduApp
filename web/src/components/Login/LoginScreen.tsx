@@ -1,26 +1,23 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { User, GraduationCap, Mail, Lock, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import './LoginScreen.css';
-import LogoImage from '../../assets/Logo.png';
+import React, { useEffect, useRef, useState } from "react";
+import { Mail, Lock, Eye, EyeOff, CheckCircle, XCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import "./LoginScreen.css";
+import LogoImage from "../../assets/Logo.png";
+import { login } from "../../services/auth";
 
-interface LoginData {
-  email: string;
-  password: string;
-  userType: 'student' | 'teacher' | null;
+interface PopupState {
+  type: "success" | "error";
+  message: string;
 }
 
 const LoginScreen: React.FC = () => {
   const navigate = useNavigate();
 
-  const [loginData, setLoginData] = useState<LoginData>({
-    email: '',
-    password: '',
-    userType: null,
-  });
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [popup, setPopup] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [popup, setPopup] = useState<PopupState | null>(null);
   const redirectTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -31,26 +28,9 @@ const LoginScreen: React.FC = () => {
     };
   }, []);
 
-  const handleUserTypeSelect = (type: 'student' | 'teacher') => {
-    setLoginData(prev => ({ ...prev, userType: type }));
-  };
-
-  const handleInputChange = (field: keyof Pick<LoginData, 'email' | 'password'>, value: string) => {
-    setLoginData(prev => ({ ...prev, [field]: value }));
-  };
-
   const handleSubmit = async () => {
-    if (!loginData.userType) return;
-
-    const email = loginData.email.trim().toLowerCase();
-    const password = loginData.password;
-
-    const isFormValid =
-      email.length > 0 &&
-      password.length > 0 &&
-      (loginData.userType === 'student' || loginData.userType === 'teacher');
-
-    if (!isFormValid) return;
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !password) return;
 
     setIsLoading(true);
     setPopup(null);
@@ -58,64 +38,31 @@ const LoginScreen: React.FC = () => {
       window.clearTimeout(redirectTimeoutRef.current);
       redirectTimeoutRef.current = null;
     }
+
     try {
-      const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-      const path =
-        loginData.userType === 'teacher'
-          ? '/api/professors/login'
-          : '/api/users/login';
+      const data = await login({ email: normalizedEmail, password });
+      setPopup({ type: "success", message: "Login realizado com sucesso! Redirecionando..." });
 
-      const resp = await fetch(`${baseURL}${path}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }), // não enviar userType no body
-      });
-
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        throw new Error(err?.message || 'Email ou senha inválidos');
-      }
-
-      const data = await resp.json();
-
-      // Guarda token e perfil
-      localStorage.setItem('token', data.token);
-      const profile: { role?: string } = data.teacher || data.user || data.student || {};
-      localStorage.setItem('profile', JSON.stringify(profile));
-      window.dispatchEvent(new Event('faroledu-auth-change'));
-      setPopup({ type: 'success', message: 'Login realizado com sucesso! Redirecionando...' });
-
-      const roleLower = (profile?.role ?? '').toLowerCase();
-      const targetRoute =
-        roleLower === 'teacher'
-          ? '/dashboard'
-          : '/';
+      const roleLower = (data.user?.role ?? "").toLowerCase();
+      const targetRoute = roleLower === "teacher" || roleLower === "professor" ? "/dashboard" : "/student";
 
       redirectTimeoutRef.current = window.setTimeout(() => {
-        if (roleLower === 'teacher') {
-          const dashboardUrl = `${window.location.origin.replace(/\/$/, '')}/dashboard`;
-          window.location.replace(dashboardUrl);
-        } else {
-          navigate(targetRoute);
-        }
+        navigate(targetRoute, { replace: true });
         redirectTimeoutRef.current = null;
-      }, 1200);
+      }, 900);
     } catch (err: any) {
-      console.error('Erro no login:', err);
-      setPopup({ type: 'error', message: err?.message || 'Erro ao fazer login' });
+      console.error("Erro no login:", err);
+      setPopup({ type: "error", message: err?.message || "Erro ao fazer login" });
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleCreateAccount = () => {
-    navigate('/register');
+    navigate("/register");
   };
 
-  const isFormValid =
-    loginData.email.trim().length > 0 &&
-    loginData.password.length > 0 &&
-    !!loginData.userType;
+  const isFormValid = email.trim().length > 0 && password.length > 0;
 
   const handleClosePopup = () => {
     if (redirectTimeoutRef.current) {
@@ -129,20 +76,10 @@ const LoginScreen: React.FC = () => {
     <div className="login-screen-container">
       {popup && (
         <div className="login-popup-overlay" role="alert">
-          <div
-            className={`login-popup-card ${
-              popup.type === 'success' ? 'login-popup-success' : 'login-popup-error'
-            }`}
-          >
+          <div className={`login-popup-card ${popup.type === "success" ? "login-popup-success" : "login-popup-error"}`}>
             <div className="login-popup-header">
-              {popup.type === 'success' ? (
-                <CheckCircle className="login-popup-icon" />
-              ) : (
-                <XCircle className="login-popup-icon" />
-              )}
-              <strong className="login-popup-title">
-                {popup.type === 'success' ? 'Sucesso' : 'Algo deu errado'}
-              </strong>
+              {popup.type === "success" ? <CheckCircle className="login-popup-icon" /> : <XCircle className="login-popup-icon" />}
+              <strong className="login-popup-title">{popup.type === "success" ? "Sucesso" : "Algo deu errado"}</strong>
             </div>
             <p className="login-popup-message">{popup.message}</p>
             <button type="button" className="login-popup-close" onClick={handleClosePopup}>
@@ -152,7 +89,6 @@ const LoginScreen: React.FC = () => {
         </div>
       )}
       <div className="login-screen-card">
-        {/* Header */}
         <div className="login-screen-header">
           <div className="login-logo-container">
             <img src={LogoImage} alt="FarolEdu" className="login-logo-icon" />
@@ -161,147 +97,62 @@ const LoginScreen: React.FC = () => {
           <p className="login-app-subtitle">Conectando estudantes e professores</p>
         </div>
 
-        {/* Formulário */}
         <div className="login-form-container">
           <div className="login-form">
-            {!loginData.userType ? (
-              <div className="login-user-type-selection">
-                <h2 className="login-selection-title">Como você quer entrar?</h2>
+            <div className="login-form-group">
+              <label className="login-form-label">Email</label>
+              <div className="login-input-wrapper">
+                <Mail className="login-input-icon" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  className="login-form-input"
+                  placeholder="seu@email.com"
+                />
+              </div>
+            </div>
 
-                <button
-                  onClick={() => handleUserTypeSelect('student')}
-                  className="login-user-type-card login-student-card"
-                >
-                  <div className="login-card-content">
-                    <div className="login-icon-wrapper">
-                      <div className="login-student-icon-bg">
-                        <User className="login-card-icon" />
-                      </div>
-                    </div>
-                    <div className="login-card-text">
-                      <h3 className="login-card-title">Sou Estudante</h3>
-                      <p className="login-card-description">Quero encontrar professores particulares</p>
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => handleUserTypeSelect('teacher')}
-                  className="login-user-type-card login-teacher-card"
-                >
-                  <div className="login-card-content">
-                    <div className="login-icon-wrapper">
-                      <div className="login-teacher-icon-bg">
-                        <GraduationCap className="login-card-icon" />
-                      </div>
-                    </div>
-                    <div className="login-card-text">
-                      <h3 className="login-card-title">Sou Professor</h3>
-                      <p className="login-card-description">Quero oferecer aulas particulares</p>
-                    </div>
-                  </div>
+            <div className="login-form-group">
+              <label className="login-form-label">Senha</label>
+              <div className="login-input-wrapper">
+                <Lock className="login-input-icon" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="login-form-input"
+                  placeholder="••••••••"
+                />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="login-password-toggle">
+                  {showPassword ? <EyeOff className="login-toggle-icon" /> : <Eye className="login-toggle-icon" />}
                 </button>
               </div>
-            ) : (
-              <>
-                {/* Tipo de usuário selecionado */}
-                <div className="login-selected-type-indicator">
-                  <div className="login-type-display">
-                    <div
-                      className={`login-type-icon ${
-                        loginData.userType === 'student' ? 'login-student-bg' : 'login-teacher-bg'
-                      }`}
-                    >
-                      {loginData.userType === 'student' ? (
-                        <User className="login-small-icon" />
-                      ) : (
-                        <GraduationCap className="login-small-icon" />
-                      )}
-                    </div>
-                    <span className="login-type-label">
-                      {loginData.userType === 'student' ? 'Estudante' : 'Professor'}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => setLoginData(prev => ({ ...prev, userType: null }))}
-                    className="login-change-type-btn"
-                  >
-                    Alterar
-                  </button>
-                </div>
+            </div>
 
-                {/* Inputs */}
-                <div className="login-form-group">
-                  <label className="login-form-label">Email</label>
-                  <div className="login-input-wrapper">
-                    <Mail className="login-input-icon" />
-                    <input
-                      type="email"
-                      value={loginData.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      className="login-form-input"
-                      placeholder="seu@email.com"
-                    />
-                  </div>
-                </div>
+            <div className="login-forgot-password">
+              <button className="login-forgot-password-btn">Esqueceu a senha?</button>
+            </div>
 
-                <div className="login-form-group">
-                  <label className="login-form-label">Senha</label>
-                  <div className="login-input-wrapper">
-                    <Lock className="login-input-icon" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={loginData.password}
-                      onChange={(e) => handleInputChange('password', e.target.value)}
-                      className="login-form-input"
-                      placeholder="••••••••"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="login-password-toggle"
-                    >
-                      {showPassword ? <EyeOff className="login-toggle-icon" /> : <Eye className="login-toggle-icon" />}
-                    </button>
-                  </div>
+            <button
+              onClick={handleSubmit}
+              disabled={!isFormValid || isLoading}
+              className={`login-submit-btn ${isFormValid && !isLoading ? "login-btn-student" : "login-btn-disabled"}`}
+            >
+              {isLoading ? (
+                <div className="login-loading-content">
+                  <div className="login-spinner"></div>
+                  Entrando...
                 </div>
-
-                {/* Esqueceu a senha */}
-                <div className="login-forgot-password">
-                  <button className="login-forgot-password-btn">
-                    Esqueceu a senha?
-                  </button>
-                </div>
-
-                {/* Botão Entrar */}
-                <button
-                  onClick={handleSubmit}
-                  disabled={!isFormValid || isLoading}
-                  className={`login-submit-btn ${
-                    isFormValid && !isLoading
-                      ? loginData.userType === 'student'
-                        ? 'login-btn-student'
-                        : 'login-btn-teacher'
-                      : 'login-btn-disabled'
-                  }`}
-                >
-                  {isLoading ? (
-                    <div className="login-loading-content">
-                      <div className="login-spinner"></div>
-                      Entrando...
-                    </div>
-                  ) : (
-                    'Entrar'
-                  )}
-                </button>
-              </>
-            )}
+              ) : (
+                "Entrar"
+              )}
+            </button>
           </div>
 
-          {/* Link para criar conta */}
           <div className="login-signup-section">
             <p className="login-signup-text">
-              Não tem uma conta?{' '}
+              Não tem uma conta?{" "}
               <button className="login-signup-btn" onClick={handleCreateAccount}>
                 Criar Conta
               </button>
@@ -309,7 +160,6 @@ const LoginScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="login-footer">
           <p className="login-footer-text">© 2025 FarolEdu. Todos os direitos reservados.</p>
         </div>
@@ -319,3 +169,4 @@ const LoginScreen: React.FC = () => {
 };
 
 export default LoginScreen;
+

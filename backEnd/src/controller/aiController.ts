@@ -1,39 +1,39 @@
 import { Request, Response } from "express";
-import OpenAI from "openai";
-import { OPENAI_API_KEY } from "../config/env";
-
-const openaiClient = OPENAI_API_KEY ? new OpenAI({ apiKey: OPENAI_API_KEY }) : null;
+import { getPublicTeacherClasses } from "../modules/teacherClassModel";
 
 export const suggestTeacherHandler = async (req: Request, res: Response) => {
   try {
-    if (!openaiClient) {
-      return res.status(501).json({ message: "API de IA não configurada. Defina OPENAI_API_KEY." });
-    }
-
     const { subject = "reforço escolar", city = "sua cidade", modality = "online" } = req.body ?? {};
-    const cleanSubject = String(subject || "reforço escolar").slice(0, 60);
-    const cleanCity = String(city || "sua região").slice(0, 60);
-    const cleanModality = String(modality || "online").slice(0, 20);
+    const cleanSubject = String(subject || "reforço escolar").trim();
+    const cleanCity = String(city || "").trim();
+    const cleanModality = String(modality || "online").trim().toUpperCase();
 
-    const completion = await openaiClient.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content:
-            "Você é um assistente curto e prático. Sugira um pequeno plano de aulas e dicas de como encontrar um professor, em até 3 frases.",
-        },
-        {
-          role: "user",
-          content: `Quero ajuda para achar aulas de ${cleanSubject} em ${cleanCity}, preferencialmente no formato ${cleanModality}. Resuma sugestões rápidas.`,
-        },
-      ],
-      max_tokens: 120,
-      temperature: 0.7,
+    const classes = await getPublicTeacherClasses({
+      query: cleanSubject || undefined,
+      city: cleanCity || undefined,
+      modality: cleanModality || undefined,
+      take: 5,
     });
 
-    const suggestion =
-      completion.choices[0]?.message?.content?.trim() ?? "Experimente buscar por professores próximos.";
+    if (!classes.length) {
+      return res.json({
+        suggestion:
+          "Não encontramos aulas com esse filtro agora. Tente outro assunto ou cidade para ver opções disponíveis.",
+      });
+    }
+
+    const shortlist = classes.slice(0, 3);
+    const parts = shortlist.map(cls => {
+      const teacherName = cls.teacher?.name ? `com ${cls.teacher.name}` : "";
+      const cityLabel = cls.teacher?.teacherProfile?.city || cls.teacher?.teacherProfile?.region;
+      const cityText = cityLabel ? ` · ${cityLabel}` : "";
+      return `${cls.title}${teacherName ? ` ${teacherName}` : ""}${cityText ? cityText : ""}`;
+    });
+
+    const header = `Aqui estão ${classes.length > 1 ? "algumas" : "uma"} aula(s) de ${
+      cleanSubject || "reforço escolar"
+    }`;
+    const suggestion = `${header}: ${parts.join(" | ")}. Toque em "Ver aula" para agendar.`;
 
     return res.json({ suggestion });
   } catch (error) {

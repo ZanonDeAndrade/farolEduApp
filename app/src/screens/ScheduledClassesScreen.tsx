@@ -7,12 +7,13 @@ import type { RootStackParamList } from '../navigation/types';
 import { COLORS } from '../theme/colors';
 import { fetchSchedules, type Schedule } from '../services/scheduleService';
 import { useAuth } from '../context/AuthContext';
+import { ApiError } from '../services/apiClient';
 
 type Navigation = NativeStackNavigationProp<RootStackParamList>;
 
 const ScheduledClassesScreen: React.FC = () => {
   const navigation = useNavigation<Navigation>();
-  const { token } = useAuth();
+  const { token, signOut } = useAuth();
   const [items, setItems] = useState<Schedule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,13 +31,18 @@ const ScheduledClassesScreen: React.FC = () => {
         if (!mounted) return;
         setItems(
           (data ?? []).sort(
-            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+            (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
           ),
         );
       })
       .catch(err => {
         console.error('Erro ao buscar agenda:', err);
         if (!mounted) return;
+        if (err instanceof ApiError && err.status === 401) {
+          setError('Sessão expirada. Entre novamente.');
+          signOut().finally(() => navigation.navigate('Login'));
+          return;
+        }
         setError('Não foi possível carregar seus agendamentos.');
       })
       .finally(() => mounted && setIsLoading(false));
@@ -44,7 +50,7 @@ const ScheduledClassesScreen: React.FC = () => {
     return () => {
       mounted = false;
     };
-  }, [navigation, token]);
+  }, [navigation, signOut, token]);
 
   return (
     <View style={styles.container}>
@@ -73,20 +79,23 @@ const ScheduledClassesScreen: React.FC = () => {
           </View>
         ) : (
           items.map(item => {
-            const date = new Date(item.date);
+            const start = new Date(item.startTime);
             const partner = item.student ?? item.teacher;
+            const label = item.offer?.title ?? 'Aula agendada';
             return (
               <View key={item.id} style={styles.card}>
+                <Text style={styles.badge}>{(item.status || 'PENDING').toUpperCase()}</Text>
                 <Text style={styles.cardTitle}>
-                  {date.toLocaleDateString('pt-BR', {
+                  {start.toLocaleDateString('pt-BR', {
                     weekday: 'long',
                     day: 'numeric',
                     month: 'long',
                   })}
                 </Text>
                 <Text style={styles.time}>
-                  {date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  {start.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                 </Text>
+                <Text style={styles.subject}>{label}</Text>
                 {partner ? <Text style={styles.partner}>{partner.name}</Text> : null}
                 {partner?.email ? <Text style={styles.email}>{partner.email}</Text> : null}
               </View>
@@ -113,8 +122,20 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
     gap: 4,
   },
+  badge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: '#eef2ff',
+    color: COLORS.accentPrimary,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
   cardTitle: { fontSize: 16, fontWeight: '700', color: COLORS.heading },
   time: { color: COLORS.text, fontWeight: '600' },
+  subject: { color: COLORS.text, fontWeight: '600' },
   partner: { color: COLORS.text },
   email: { color: COLORS.textSubtle, fontSize: 12 },
 });

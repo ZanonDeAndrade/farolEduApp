@@ -8,7 +8,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MapPin, Search, Sparkles, Wifi } from 'lucide-react-native';
@@ -24,6 +25,7 @@ import { requestAiSuggestion } from '../services/aiService';
 import { useAuth } from '../context/AuthContext';
 
 type Navigation = NativeStackNavigationProp<RootStackParamList>;
+type SearchRoute = RouteProp<RootStackParamList, 'SearchProfessors'>;
 
 type Filters = {
   subject: string;
@@ -37,10 +39,30 @@ const DEFAULT_FILTERS: Filters = {
   modality: 'online',
 };
 
+const mapModality = (value: string) => {
+  if (value === 'online') return 'ONLINE';
+  if (value === 'hybrid') return 'AMBOS';
+  return 'PRESENCIAL';
+};
+
+const mapPrice = (item: PublicTeacherClass) => {
+  if (item.priceCents !== null && item.priceCents !== undefined) {
+    return item.priceCents / 100;
+  }
+  if (item.price !== null && item.price !== undefined) {
+    return Number(item.price);
+  }
+  return null;
+};
+
 const SearchProfessorsScreen: React.FC = () => {
   const navigation = useNavigation<Navigation>();
+  const route = useRoute<SearchRoute>();
   const { token } = useAuth();
-  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState<Filters>({
+    ...DEFAULT_FILTERS,
+    subject: route.params?.q ?? DEFAULT_FILTERS.subject,
+  });
   const [results, setResults] = useState<PublicTeacherClass[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +76,7 @@ const SearchProfessorsScreen: React.FC = () => {
       const data = await fetchPublicTeacherClasses({
         q: filters.subject.trim() || undefined,
         city: filters.city.trim() || undefined,
-        modality: filters.modality || undefined,
+        modality: mapModality(filters.modality),
         take: 20,
       });
       setResults(data);
@@ -67,8 +89,14 @@ const SearchProfessorsScreen: React.FC = () => {
   }, [filters.city, filters.modality, filters.subject]);
 
   useEffect(() => {
+    if (route.params?.q !== undefined) {
+      setFilters(prev => ({ ...prev, subject: route.params?.q ?? '' }));
+    }
+  }, [route.params?.q]);
+
+  useEffect(() => {
     loadClasses();
-  }, [loadClasses]);
+  }, [loadClasses, filters.subject, filters.city, filters.modality]);
 
   const handleChange = useCallback(<K extends keyof Filters>(field: K, value: Filters[K]) => {
     setFilters(prev => ({ ...prev, [field]: value }));
@@ -81,7 +109,7 @@ const SearchProfessorsScreen: React.FC = () => {
       const suggestion = await requestAiSuggestion({
         subject: filters.subject.trim() || 'reforço escolar',
         city: filters.city.trim() || 'sua cidade',
-        modality: filters.modality,
+        modality: mapModality(filters.modality),
       });
       setAiText(suggestion);
     } catch (err) {
@@ -143,7 +171,7 @@ const SearchProfessorsScreen: React.FC = () => {
           </View>
 
           <View style={styles.modalityRow}>
-            {['online', 'home', 'travel', 'presencial'].map(value => {
+            {['online', 'home', 'travel', 'presencial', 'hybrid'].map(value => {
               const isActive = filters.modality === value;
               return (
                 <TouchableOpacity
@@ -165,6 +193,8 @@ const SearchProfessorsScreen: React.FC = () => {
                       ? 'Vou ao aluno'
                       : value === 'presencial'
                       ? 'Presencial'
+                      : value === 'hybrid'
+                      ? 'Híbrido'
                       : 'Online'}
                   </Text>
                 </TouchableOpacity>
@@ -216,54 +246,67 @@ const SearchProfessorsScreen: React.FC = () => {
               </Text>
             </View>
           ) : (
-            results.map(item => (
-              <TouchableOpacity
-                key={item.id}
-                style={styles.card}
-                onPress={() => {
-                  if (!item.teacherId) return;
-                  navigation.navigate('ProfessorDetail', { teacherId: item.teacherId });
-                }}
-                activeOpacity={0.85}
-              >
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle}>{item.title}</Text>
-                  <Text style={styles.modality}>{item.modality}</Text>
-                </View>
-                {item.subject ? <Text style={styles.cardSubtitle}>{item.subject}</Text> : null}
-                {item.description ? (
-                  <Text style={styles.cardDescription} numberOfLines={3}>
-                    {item.description}
-                  </Text>
-                ) : null}
-                <View style={styles.cardFooter}>
-                  <View>
-                    <Text style={styles.teacherName}>{item.teacher?.name ?? 'Professor(a)'}</Text>
-                    <Text style={styles.location}>
-                      {item.teacher?.teacherProfile?.city || item.teacher?.teacherProfile?.region || 'Local não informado'}
-                    </Text>
+            results.map(item => {
+              const priceValue = mapPrice(item);
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.card}
+                  onPress={() => {
+                    if (!item.teacherId) return;
+                    navigation.navigate('ProfessorDetail', { teacherId: item.teacherId });
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.cardTitle}>{item.title}</Text>
+                    <Text style={styles.modality}>{item.modality}</Text>
                   </View>
-                  <TouchableOpacity
-                    style={styles.scheduleButton}
-                    onPress={() => {
-                      if (!item.teacherId) {
-                        return;
-                      }
-                      if (!token) {
-                        navigation.navigate('Login');
-                        return;
-                      }
-                      navigation.navigate('Schedule', {
-                        teacherId: item.teacherId,
-                        teacherName: item.teacher?.name ?? 'Professor',
-                      });
-                    }}
-                  >
-                    <Text style={styles.scheduleText}>{token ? 'Agendar' : 'Entrar p/ agendar'}</Text>
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
-            ))
+                  {item.subject ? <Text style={styles.cardSubtitle}>{item.subject}</Text> : null}
+                  {item.description ? (
+                    <Text style={styles.cardDescription} numberOfLines={3}>
+                      {item.description}
+                    </Text>
+                  ) : null}
+                  <View style={styles.cardFooter}>
+                    <View>
+                      <Text style={styles.teacherName}>{item.teacher?.name ?? 'Professor(a)'}</Text>
+                      <Text style={styles.location}>
+                        {item.teacher?.teacherProfile?.city ||
+                          item.teacher?.teacherProfile?.region ||
+                          'Local não informado'}
+                      </Text>
+                      <Text style={styles.location}>
+                        {priceValue !== null && priceValue !== undefined
+                          ? `R$ ${priceValue.toFixed(2)}`
+                          : 'Valor a combinar'}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.scheduleButton}
+                      onPress={() => {
+                        if (!item.teacherId || !item.id) {
+                          return;
+                        }
+                        if (!token) {
+                          navigation.navigate('Login');
+                          return;
+                        }
+                        navigation.navigate('Schedule', {
+                          offerId: item.id,
+                          teacherId: item.teacherId,
+                          teacherName: item.teacher?.name ?? 'Professor',
+                          offerTitle: item.title,
+                          durationMinutes: item.durationMinutes,
+                        });
+                      }}
+                    >
+                      <Text style={styles.scheduleText}>{token ? 'Agendar' : 'Entrar p/ agendar'}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
+              );
+            })
           )}
         </View>
       </ScrollView>

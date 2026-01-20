@@ -1,11 +1,8 @@
 // src/test.ts
-import { prisma } from "./config/db";
+import { memoryDb } from "./config/db";
 
 async function main() {
-  const users = await prisma.user.findMany();
-  console.log(users);
+  console.log("Users in memory:", memoryDb.users);
 }
 
-main()
-  .catch((e) => console.error(e))
-  .finally(async () => await prisma.$disconnect());
+main().catch((e) => console.error(e));
