@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import TeacherCard, { type TeacherClassCard } from '../TeacherCard/TeacherCard';
 import {
   fetchPublicTeacherClasses,
@@ -11,19 +12,30 @@ type AvailableClassesProps = {
   filters: SearchFilters;
 };
 
-const mapToCard = (item: PublicTeacherClassResponse): TeacherClassCard => ({
-  id: item.id,
-  title: item.title,
-  subject: item.subject,
-  description: item.description,
-  modality: item.modality,
-  price: item.price !== null && item.price !== undefined ? Number(item.price) : null,
-  teacherName: item.teacher?.name ?? null,
-  teacherEmail: item.teacher?.email ?? null,
-  city: item.teacher?.profile?.city ?? item.teacher?.profile?.region ?? null,
-});
+const mapToCard = (item: PublicTeacherClassResponse): TeacherClassCard => {
+  const price =
+    item.priceCents !== null && item.priceCents !== undefined
+      ? item.priceCents / 100
+      : item.price !== null && item.price !== undefined
+      ? Number(item.price)
+      : null;
+
+  return {
+    id: item.id,
+    title: item.title,
+    subject: item.subject,
+    description: item.description,
+    modality: item.modality,
+    price,
+    teacherName: item.teacher?.name ?? null,
+    teacherEmail: item.teacher?.email ?? null,
+    city: item.teacher?.profile?.city ?? item.teacher?.profile?.region ?? null,
+    teacherId: item.teacher?.id ?? null,
+  };
+};
 
 const AvailableClasses: React.FC<AvailableClassesProps> = ({ filters }) => {
+  const navigate = useNavigate();
   const [classes, setClasses] = useState<TeacherClassCard[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +45,7 @@ const AvailableClasses: React.FC<AvailableClassesProps> = ({ filters }) => {
     const query = {
       q: filters.subject.trim() || undefined,
       city: filters.location.trim() || undefined,
-      modality: filters.online ? 'online' : undefined,
+      modality: filters.online ? 'ONLINE' : undefined,
       take: 12,
     };
 
@@ -100,7 +112,14 @@ const AvailableClasses: React.FC<AvailableClassesProps> = ({ filters }) => {
         ) : (
           <div className="teacher-grid">
             {classes.map(item => (
-              <TeacherCard key={item.id} data={item} />
+              <TeacherCard
+                key={item.id}
+                data={item}
+                onView={() => {
+                  if (!item.teacherId) return;
+                  navigate(`/teachers/${item.teacherId}?offerId=${item.id}`);
+                }}
+              />
             ))}
           </div>
         )}

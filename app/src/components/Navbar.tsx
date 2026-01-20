@@ -56,7 +56,8 @@ const Navbar: React.FC<NavbarProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { width } = useWindowDimensions();
   const isCompact = width < 640;
-  const { token, profile } = useAuth();
+  const { token, profile, signOut } = useAuth();
+  const hasSession = Boolean(token);
 
   const isTeacher = useMemo(() => {
     if (!profile || typeof profile !== 'object') return false;
@@ -65,9 +66,17 @@ const Navbar: React.FC<NavbarProps> = ({
     return role.toLowerCase() === 'teacher';
   }, [profile]);
 
+  const isStudent = useMemo(() => {
+    if (!profile || typeof profile !== 'object') return false;
+    const role = (profile as { role?: string }).role;
+    if (!role) return false;
+    return role.toLowerCase() === 'student';
+  }, [profile]);
+  const homeRoute: AppRouteName = (isStudent ? 'StudentHome' : 'Home') as AppRouteName;
+
   const derivedLinks = useMemo<NavbarLink[]>(() => {
     if (links && links.length > 0) {
-      const base = [...links];
+      const base = [...links].filter(link => !(isStudent && link.label.toLowerCase().includes('oferecer aula')));
       if (isTeacher && !base.some(link => link.label === 'Painel')) {
         base.push({
           label: 'Painel',
@@ -75,11 +84,18 @@ const Navbar: React.FC<NavbarProps> = ({
           isActive: route.name === 'TeacherDashboard',
         });
       }
+      if (hasSession && !base.some(link => link.label === 'Agenda')) {
+        base.push({
+          label: 'Agenda',
+          onPress: () => navigation.navigate('Calendar'),
+          isActive: route.name === 'ScheduledClasses' || route.name === 'Calendar',
+        });
+      }
       return base;
     }
 
-    if (route.name === 'Home' && onNavigateSection) {
-      const mapped = DEFAULT_LINKS.map(item => ({
+    if ((route.name === 'Home' || route.name === 'StudentHome') && onNavigateSection) {
+      const mapped = DEFAULT_LINKS.filter(item => !(isStudent && item.key === 'oferecer-aula')).map(item => ({
         label: item.label,
         onPress: () => item.key && onNavigateSection(item.key),
       }));
@@ -90,14 +106,26 @@ const Navbar: React.FC<NavbarProps> = ({
           isActive: route.name === 'TeacherDashboard',
         });
       }
+      if (hasSession) {
+        mapped.push({
+          label: 'Agenda',
+          onPress: () => navigation.navigate('Calendar'),
+          isActive: route.name === 'ScheduledClasses' || route.name === 'Calendar',
+        });
+      }
       return mapped;
     }
 
     const baseLinks: NavbarLink[] = [
       {
         label: 'Início',
-        isActive: route.name === 'Home',
-        onPress: () => navigation.navigate('Home'),
+        isActive: route.name === 'Home' || route.name === 'StudentHome',
+        onPress: () => navigation.navigate(homeRoute),
+      },
+      {
+        label: 'Encontrar aulas',
+        isActive: route.name === 'SearchProfessors',
+        onPress: () => navigation.navigate('SearchProfessors'),
       },
     ];
 
@@ -108,13 +136,20 @@ const Navbar: React.FC<NavbarProps> = ({
         onPress: () => navigation.navigate('TeacherDashboard'),
       });
     }
+    if (hasSession) {
+      baseLinks.push({
+        label: 'Agenda',
+        isActive: route.name === 'ScheduledClasses' || route.name === 'Calendar',
+        onPress: () => navigation.navigate('Calendar'),
+      });
+    }
 
     return baseLinks;
-  }, [isTeacher, links, navigation, onNavigateSection, route.name]);
+  }, [hasSession, isTeacher, isStudent, links, navigation, onNavigateSection, route.name, homeRoute]);
 
   const handleLogoPress = () => {
-    if (route.name !== 'Home') {
-      navigation.navigate('Home');
+    if (route.name !== homeRoute) {
+      navigation.navigate(homeRoute);
       return;
     }
 
@@ -143,10 +178,22 @@ const Navbar: React.FC<NavbarProps> = ({
     closeMenu();
   }, [closeMenu, route.name]);
 
-  const hasSession = Boolean(token);
   const renderInlineActions = showAuthButtons && !hasSession && !isCompact;
+  const renderInlineLogout = hasSession && !isCompact;
   const renderMenuAuthActions = showAuthButtons && !hasSession && isCompact;
   const shouldRenderMenuButton = derivedLinks.length > 0 || renderMenuAuthActions;
+
+  const firstName = useMemo(() => {
+    if (!profile || typeof profile !== 'object') return '';
+    const raw = (profile as { name?: string }).name ?? '';
+    return raw.trim().split(' ')[0] ?? '';
+  }, [profile]);
+
+  const handleLogout = useCallback(async () => {
+    closeMenu();
+    await signOut();
+    navigation.navigate('Home');
+  }, [closeMenu, navigation, signOut]);
 
   return (
     <LinearGradient {...GRADIENTS.header} style={styles.container}>
@@ -187,6 +234,19 @@ const Navbar: React.FC<NavbarProps> = ({
               >
                 <Text style={styles.registerButtonText}>Cadastrar</Text>
               </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {renderInlineLogout && (
+          <View style={styles.sessionActions}>
+            {firstName ? <Text style={styles.sessionText}>Olá, {firstName}</Text> : null}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={handleLogout}
+              style={styles.logoutButton}
+            >
+              <Text style={styles.logoutButtonText}>Sair</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -254,6 +314,19 @@ const Navbar: React.FC<NavbarProps> = ({
                     </TouchableOpacity>
                   </View>
                 )}
+
+                {hasSession && (
+                  <View style={styles.menuActions}>
+                    {firstName ? <Text style={styles.menuSessionText}>Olá, {firstName}</Text> : null}
+                    <TouchableOpacity
+                      activeOpacity={0.85}
+                      onPress={handleLogout}
+                      style={[styles.menuActionButton, styles.menuActionPrimary]}
+                    >
+                      <Text style={[styles.menuActionText, styles.menuActionPrimaryText]}>Sair</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </LinearGradient>
             </TouchableWithoutFeedback>
           </View>
@@ -317,6 +390,28 @@ const styles = StyleSheet.create({
     gap: 12,
     flex: 1,
     justifyContent: 'center',
+  },
+  sessionActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginLeft: 'auto',
+  },
+  sessionText: {
+    color: COLORS.heading,
+    fontWeight: '600',
+  },
+  logoutButton: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(106, 64, 180, 0.22)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(106, 64, 180, 0.08)',
+  },
+  logoutButtonText: {
+    color: COLORS.accentPrimary,
+    fontWeight: '700',
   },
   loginButton: {
     minWidth: 90,
@@ -397,6 +492,11 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: 'rgba(106, 64, 180, 0.16)',
     gap: 10,
+  },
+  menuSessionText: {
+    fontSize: 14,
+    color: COLORS.heading,
+    fontWeight: '600',
   },
   menuActionButton: {
     borderRadius: 16,

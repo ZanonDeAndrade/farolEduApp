@@ -1,8 +1,12 @@
 import { Request, Response } from "express";
-import { createTeacherClass, getPublicTeacherClasses, getTeacherClassesByTeacher } from "../modules/teacherClassModel";
-import { Prisma } from "@prisma/client";
-
-const ALLOWED_MODALITIES = new Set(["online", "home", "travel", "hybrid", "presencial"]);
+import {
+  createTeacherClass,
+  deleteTeacherClassByTeacher,
+  getPublicTeacherClasses,
+  getTeacherClassesByTeacher,
+  updateTeacherClassByTeacher,
+} from "../modules/teacherClassModel";
+import { teacherClassInputSchema, teacherClassUpdateSchema } from "../utils/validators";
 
 export const createTeacherClassHandler = async (req: Request, res: Response) => {
   try {
@@ -11,58 +15,32 @@ export const createTeacherClassHandler = async (req: Request, res: Response) => 
       return res.status(403).json({ message: "Apenas professores podem cadastrar aulas" });
     }
 
-    const {
-      title,
-      description,
-      subject,
-      modality,
-      durationMinutes,
-      price,
-      startTime,
-    } = req.body ?? {};
-
-    const normalizedTitle = String(title ?? "").trim();
-    if (!normalizedTitle) {
-      return res.status(400).json({ message: "Informe um título para a aula" });
+    const parsed = teacherClassInputSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.issues[0]?.message ?? "Dados inválidos" });
     }
+    const payload = parsed.data;
 
     let parsedDate: Date | null = null;
-    if (startTime !== undefined && startTime !== null && String(startTime).trim() !== "") {
-      parsedDate = new Date(startTime);
+    if (payload.startTime) {
+      parsedDate = new Date(payload.startTime);
       if (Number.isNaN(parsedDate.getTime())) {
         return res.status(400).json({ message: "Data e hora da aula inválidas" });
       }
     }
 
-    let normalizedModality = String(modality ?? "").trim().toLowerCase();
-    if (!ALLOWED_MODALITIES.has(normalizedModality)) {
-      normalizedModality = "online";
-    }
-
-    let normalizedDuration = Number(durationMinutes);
-    if (!Number.isFinite(normalizedDuration) || normalizedDuration <= 0) {
-      normalizedDuration = 60;
-    }
-    normalizedDuration = Math.min(Math.max(Math.round(normalizedDuration), 15), 600);
-
-    let normalizedPrice: number | null = null;
-    if (price !== undefined && price !== null && String(price).trim() !== "") {
-      const numericPrice = Number(String(price).replace(",", "."));
-      if (!Number.isFinite(numericPrice) || numericPrice < 0) {
-        return res.status(400).json({ message: "Preço inválido" });
-      }
-      normalizedPrice = Number(numericPrice.toFixed(2));
-    }
-
     const teacherClass = await createTeacherClass({
       teacherId: Number(authUser.id),
-      title: normalizedTitle,
-      description: typeof description === "string" ? description : undefined,
-      subject: typeof subject === "string" ? subject : undefined,
-      modality: normalizedModality,
+      title: payload.title,
+      description: payload.description,
+      subject: payload.subject,
+      modality: payload.modality,
       startTime: parsedDate ?? null,
-      durationMinutes: normalizedDuration,
-      price: normalizedPrice,
+      durationMinutes: payload.durationMinutes,
+      price: payload.price ?? null,
+      priceCents: payload.priceCents ?? undefined,
+      location: payload.location ?? null,
+      active: payload.active ?? true,
     });
 
     return res.status(201).json(teacherClass);
@@ -87,26 +65,94 @@ export const listTeacherClassesHandler = async (req: Request, res: Response) => 
   }
 };
 
-const serializePrice = (price: Prisma.Decimal | number | null | undefined) => {
+export const updateTeacherClassHandler = async (req: Request, res: Response) => {
+  try {
+    const authUser = (req as any).user;
+    if (!authUser || (authUser.role || "").toLowerCase() !== "teacher") {
+      return res.status(403).json({ message: "Apenas professores podem editar aulas" });
+    }
+
+    const classId = Number(req.params.id);
+    if (!Number.isFinite(classId)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const parsed = teacherClassUpdateSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.issues[0]?.message ?? "Dados inválidos" });
+    }
+
+    let startTime: Date | null | undefined = undefined;
+    if (parsed.data.startTime !== undefined) {
+      startTime = parsed.data.startTime ? new Date(parsed.data.startTime) : null;
+      if (startTime && Number.isNaN(startTime.getTime())) {
+        return res.status(400).json({ message: "Data e hora da aula inválidas" });
+      }
+    }
+
+    const updated = await updateTeacherClassByTeacher(Number(authUser.id), classId, {
+      ...parsed.data,
+      startTime,
+    });
+
+    if (!updated) {
+      return res.status(404).json({ message: "Aula não encontrada" });
+    }
+    return res.json(updated);
+  } catch (error) {
+    console.error("Erro ao atualizar aula:", error);
+    return res.status(500).json({ message: "Erro interno ao atualizar aula" });
+  }
+};
+
+export const deleteTeacherClassHandler = async (req: Request, res: Response) => {
+  try {
+    const authUser = (req as any).user;
+    if (!authUser || (authUser.role || "").toLowerCase() !== "teacher") {
+      return res.status(403).json({ message: "Apenas professores podem excluir aulas" });
+    }
+
+    const classId = Number(req.params.id);
+    if (!Number.isFinite(classId)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const removed = await deleteTeacherClassByTeacher(Number(authUser.id), classId);
+    if (!removed) {
+      return res.status(404).json({ message: "Aula não encontrada" });
+    }
+    return res.status(204).send();
+  } catch (error) {
+    console.error("Erro ao remover aula:", error);
+    return res.status(500).json({ message: "Erro interno ao remover aula" });
+  }
+};
+
+const serializePrice = (price: number | string | null | undefined) => {
   if (price === null || price === undefined) return null;
-  if (price instanceof Prisma.Decimal) {
-    return Number(price.toString());
-  }
-  if (typeof price === "string") {
-    const numeric = Number(price);
-    return Number.isFinite(numeric) ? numeric : null;
-  }
-  return Number(price);
+  const numeric = Number(price);
+  return Number.isFinite(numeric) ? numeric : null;
 };
 
 export const listPublicTeacherClassesHandler = async (req: Request, res: Response) => {
   try {
-    const { q, modality, city, take } = req.query ?? {};
+    const { q, modality, city, take, teacherId, teacherName } = req.query ?? {};
+
+    let teacherFilter: number | undefined = undefined;
+    if (typeof teacherId === "string" && teacherId.trim()) {
+      const parsed = Number(teacherId);
+      if (!Number.isFinite(parsed)) {
+        return res.status(400).json({ message: "teacherId inválido" });
+      }
+      teacherFilter = parsed;
+    }
 
     const classes = await getPublicTeacherClasses({
       query: typeof q === "string" ? q : undefined,
       modality: typeof modality === "string" ? modality : undefined,
       city: typeof city === "string" ? city : undefined,
+      teacherId: teacherFilter,
+      teacherName: typeof teacherName === "string" ? teacherName : undefined,
       take: typeof take === "string" && take.trim() ? Number(take) : undefined,
     });
 
@@ -119,6 +165,9 @@ export const listPublicTeacherClassesHandler = async (req: Request, res: Respons
       modality: item.modality,
       durationMinutes: item.durationMinutes,
       price: serializePrice(item.price),
+      priceCents: item.priceCents ?? null,
+      location: item.location ?? null,
+      active: item.active,
       startTime: item.startTime,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
@@ -132,6 +181,7 @@ export const listPublicTeacherClassesHandler = async (req: Request, res: Respons
               region: item.teacher.teacherProfile.region,
               experience: item.teacher.teacherProfile.experience,
               profilePhoto: item.teacher.teacherProfile.profilePhoto,
+              phone: item.teacher.teacherProfile.phone,
             }
           : null,
       },

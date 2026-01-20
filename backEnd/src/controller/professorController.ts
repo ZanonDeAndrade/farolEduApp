@@ -5,9 +5,10 @@ import {
   createTeacherWithProfile,
   getAllTeachers,
   getTeacherById,
+  getTeacherWithClasses,
   getUserByEmailWithPassword,
 } from "../modules/professorModel";
-import { prisma } from "../config/db";
+import { findUserById } from "../modules/userModel";
 import { JWT_SECRET } from "../config/env";
 
 const ALLOWED_AUTH_PROVIDERS = new Set(["EMAIL", "GOOGLE", "FACEBOOK"]);
@@ -40,14 +41,10 @@ export const registerTeacher = async (req: Request, res: Response) => {
     }
 
     if (!password?.trim()) {
-      return res
-        .status(400)
-        .json({ message: "Defina uma senha para proteger sua conta" });
+      return res.status(400).json({ message: "Defina uma senha para proteger sua conta" });
     }
     if (password.trim().length < 6) {
-      return res
-        .status(400)
-        .json({ message: "A senha deve ter pelo menos 6 caracteres" });
+      return res.status(400).json({ message: "A senha deve ter pelo menos 6 caracteres" });
     }
 
     const trimmedPhone = String(phone ?? "").trim();
@@ -62,9 +59,7 @@ export const registerTeacher = async (req: Request, res: Response) => {
     const trimmedExperience = String(experience ?? "").trim();
 
     const sanitizedProfilePhoto =
-      typeof profilePhoto === "string" && profilePhoto.trim()
-        ? profilePhoto.trim()
-        : null;
+      typeof profilePhoto === "string" && profilePhoto.trim() ? profilePhoto.trim() : null;
     if (sanitizedProfilePhoto && sanitizedProfilePhoto.length > MAX_PROFILE_PHOTO_CHARS) {
       return res.status(413).json({
         message:
@@ -78,7 +73,7 @@ export const registerTeacher = async (req: Request, res: Response) => {
       name: name.trim(),
       email: email.trim().toLowerCase(),
       password: hashedPassword,
-      authProvider: normalizedProvider,
+      authProvider: normalizedProvider as any,
       authProviderId: typeof authProviderId === "string" ? authProviderId : null,
       profile: {
         phone: trimmedPhone,
@@ -95,7 +90,7 @@ export const registerTeacher = async (req: Request, res: Response) => {
       teacher,
     });
   } catch (error: any) {
-    if (error?.message === "EMAIL_ALREADY_TAKEN") {
+    if (error?.message === "EMAIL_ALREADY_TAKEN" || error?.code === "P2002") {
       return res.status(409).json({ message: "E-mail já cadastrado" });
     }
     console.error("Erro ao cadastrar professor:", error);
@@ -117,7 +112,9 @@ export const loginTeacher = async (req: Request, res: Response) => {
     if (!user) return res.status(401).json({ message: "Usuário não encontrado" });
 
     if ((user.role || "").trim().toLowerCase() !== "teacher") {
-      return res.status(403).json({ message: "Conta não é de professor", details: { roleEncontrado: user.role } });
+      return res
+        .status(403)
+        .json({ message: "Conta não é de professor", details: { roleEncontrado: user.role } });
     }
 
     const ok = await bcrypt.compare(password, user.password);
@@ -133,7 +130,7 @@ export const loginTeacher = async (req: Request, res: Response) => {
         email: user.email,
         role: user.role,
         authProvider: user.authProvider,
-        teacherProfile: user.teacherProfile,
+        teacherProfile: (user as any).teacherProfile ?? null,
       },
     });
   } catch (error) {
@@ -172,38 +169,60 @@ export const getTeacher = async (req: Request, res: Response) => {
   }
 };
 
+// Perfil público do professor + aulas
+export const getTeacherPublic = async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "ID inválido" });
+
+    const teacher = await getTeacherWithClasses(id);
+    if (!teacher) return res.status(404).json({ message: "Professor não encontrado" });
+
+    const classes = (teacher.teacherClasses ?? []).map(cls => ({
+      id: cls.id,
+      title: cls.title,
+      subject: cls.subject,
+      description: cls.description,
+      modality: cls.modality,
+      price: cls.price,
+      durationMinutes: cls.durationMinutes,
+      priceCents: cls.priceCents,
+      active: cls.active,
+      location: cls.location,
+    }));
+
+    return res.json({
+      id: teacher.id,
+      name: teacher.name,
+      email: teacher.email,
+      role: teacher.role,
+      teacherProfile: teacher.teacherProfile
+        ? {
+            city: teacher.teacherProfile.city,
+            region: teacher.teacherProfile.region,
+            experience: teacher.teacherProfile.experience,
+            phone: (teacher.teacherProfile as any).phone,
+          }
+        : null,
+      teacherClasses: classes,
+    });
+  } catch (error) {
+    console.error("Erro ao buscar professor público:", error);
+    return res.status(500).json({ message: "Erro interno ao buscar professor" });
+  }
+};
+
 // (Opcional) endpoint de debug para conferir o usuário do token
 export const meFromToken = async (req: Request, res: Response) => {
   try {
     const { id } = (req as any).user || {};
     if (!id) return res.status(401).json({ message: "Sem usuário no token" });
 
-    const me = await prisma.user.findUnique({
-      where: { id: Number(id) },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        authProvider: true,
-        teacherProfile: {
-          select: {
-            id: true,
-            phone: true,
-            city: true,
-            region: true,
-            experience: true,
-            profilePhoto: true,
-            advertisesFromHome: true,
-            advertisesTravel: true,
-            advertisesOnline: true,
-            wantsToAdvertise: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        },
-      },
-    });
+    const me = await findUserById(Number(id));
+    if (me && (me.role || "").toLowerCase() === "teacher") {
+      const teacher = await getTeacherWithClasses(Number(id));
+      (me as any).teacherProfile = teacher?.teacherProfile ?? null;
+    }
 
     if (!me) return res.status(404).json({ message: "Usuário do token não encontrado" });
     return res.json({ tokenUser: (req as any).user, dbUser: me });

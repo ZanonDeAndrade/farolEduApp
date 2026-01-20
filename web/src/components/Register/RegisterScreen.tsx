@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { User, GraduationCap, Mail, Lock, Eye, EyeOff, ArrowLeft, Phone, MapPin, CheckCircle, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './RegisterScreen.css';
-import { registerTeacher, loginTeacher, registerStudent, loginStudent, AuthProvider } from "../../services/auth";
+import { registerTeacher, registerStudent, login, AuthProvider } from "../../services/auth";
 import LogoImage from '../../assets/Logo.png';
 
 
@@ -163,10 +163,10 @@ const RegisterScreen = () => {
         };
 
         await registerTeacher(teacherPayload);
-        await loginTeacher({ email: basePayload.email, password: basePayload.password });
+        await login({ email: basePayload.email, password: basePayload.password });
       } else {
         await registerStudent(basePayload);
-        await loginStudent({ email: basePayload.email, password: basePayload.password });
+        await login({ email: basePayload.email, password: basePayload.password });
       }
 
       setLastSubmittedType(registerData.userType);
@@ -203,7 +203,7 @@ const RegisterScreen = () => {
       const dashboardUrl = `${window.location.origin.replace(/\/$/, '')}/dashboard`;
       window.location.replace(dashboardUrl);
     } else {
-      navigate('/');
+      navigate('/student');
     }
   };
 

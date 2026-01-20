@@ -2,11 +2,13 @@ export type SectionKey = 'inicio' | 'aulas' | 'sobre' | 'oferecer-aula' | 'rodap
 
 export type TeacherClassPreview = {
   id: number;
+  teacherId?: number | null;
   title: string;
   subject?: string | null;
   description?: string | null;
   modality: string;
   price?: number | null;
+  priceCents?: number | null;
   teacherName?: string | null;
   city?: string | null;
 };

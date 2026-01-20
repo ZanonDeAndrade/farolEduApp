@@ -204,6 +204,29 @@
   font-weight: var(--font-weight-medium);
 }
 
+.teacher-dashboard-chip-row {
+  display: inline-flex;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+}
+
+.teacher-dashboard-chip.is-inactive {
+  background: var(--gray-200);
+  color: var(--gray-600);
+}
+
+.teacher-dashboard-toggle {
+  align-self: flex-start;
+  margin-top: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(106, 64, 180, 0.3);
+  background: #fff;
+  color: var(--primary-blue);
+  cursor: pointer;
+  font-weight: var(--font-weight-semibold);
+}
+
 .teacher-dashboard-class-meta {
   display: flex;
   flex-wrap: wrap;
@@ -383,6 +406,51 @@
 .teacher-dashboard-calendar-item span {
   font-size: var(--font-size-sm);
   color: var(--primary-blue);
+}
+
+.teacher-dashboard-calendar-tags {
+  display: flex;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.teacher-dashboard-actions {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.teacher-dashboard-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 0.35rem 0.85rem;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+  color: #fff;
+}
+
+.teacher-dashboard-btn.accept {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  box-shadow: 0 10px 18px rgba(22, 163, 74, 0.2);
+}
+
+.teacher-dashboard-btn.reject {
+  background: linear-gradient(135deg, #ef4444, #f97316);
+  box-shadow: 0 10px 18px rgba(239, 68, 68, 0.2);
+}
+
+.teacher-dashboard-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.teacher-dashboard-btn:not(:disabled):hover {
+  transform: translateY(-1px);
 }
 
 .teacher-dashboard-loading {

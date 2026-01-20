@@ -119,6 +119,10 @@
   font-size: 0.98rem;
 }
 
+.teacher-card-cta {
+  margin-left: 0.5rem;
+}
+
 @media (max-width: 768px) {
   .teacher-card {
     padding: 1.6rem 1.75rem;

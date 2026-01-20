@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, LayoutChangeEvent, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MapPin, Wifi } from 'lucide-react-native';
+import { MapPin, Sparkles, Wifi } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { availableStyles } from '../styles/availableStyles';
 import { DEFAULT_SEARCH_FILTERS } from '../constants';
 import type { SearchFilters, TeacherClassPreview } from '../types';
@@ -11,31 +13,27 @@ import {
   fetchPublicTeacherClasses,
   type PublicTeacherClass,
 } from '../../../services/teacherClassService';
+import type { RootStackParamList } from '../../../navigation/types';
+import { requestAiSuggestion } from '../../../services/aiService';
 
 const mapToPreview = (entry: PublicTeacherClass): TeacherClassPreview => ({
   id: entry.id,
+  teacherId: entry.teacherId,
   title: entry.title,
   subject: entry.subject ?? undefined,
   description: entry.description ?? undefined,
   modality: entry.modality,
   price: entry.price ?? null,
+  priceCents: entry.priceCents ?? null,
   teacherName: entry.teacher?.name ?? undefined,
   city: entry.teacher?.profile?.city ?? entry.teacher?.profile?.region ?? undefined,
 });
 
 const formatModality = (value: string) => {
-  switch (value) {
-    case 'online':
-      return 'Online';
-    case 'home':
-      return 'Na casa do professor';
-    case 'travel':
-      return 'Professor vai até você';
-    case 'hybrid':
-      return 'Modelo híbrido';
-    default:
-      return 'Presencial';
-  }
+  const normalized = value.trim().toUpperCase();
+  if (normalized === 'ONLINE') return 'Online';
+  if (normalized === 'AMBOS') return 'Híbrido / ambos';
+  return 'Presencial';
 };
 
 type AvailableClassesSectionProps = {
@@ -44,6 +42,7 @@ type AvailableClassesSectionProps = {
 };
 
 const AvailableClassesSection: React.FC<AvailableClassesSectionProps> = ({ search, onLayout }) => {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const appliedFilters = search ?? DEFAULT_SEARCH_FILTERS;
   const subjectLabel = appliedFilters.subject.trim();
   const locationLabel = appliedFilters.location.trim();
@@ -51,6 +50,8 @@ const AvailableClassesSection: React.FC<AvailableClassesSectionProps> = ({ searc
   const [classes, setClasses] = useState<TeacherClassPreview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [aiText, setAiText] = useState<string | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -60,7 +61,7 @@ const AvailableClassesSection: React.FC<AvailableClassesSectionProps> = ({ searc
     const query = {
       q: appliedFilters.subject.trim() || undefined,
       city: appliedFilters.location.trim() || undefined,
-      modality: appliedFilters.online ? 'online' : undefined,
+      modality: appliedFilters.online ? 'ONLINE' : undefined,
       take: 12,
     };
 
@@ -94,6 +95,24 @@ const AvailableClassesSection: React.FC<AvailableClassesSectionProps> = ({ searc
     );
   }, [appliedFilters.nearby, appliedFilters.online, subjectLabel.length, locationLabel.length]);
 
+  const handleAiSuggest = async () => {
+    setIsAiLoading(true);
+    setAiText(null);
+    try {
+      const suggestion = await requestAiSuggestion({
+        subject: subjectLabel || 'reforço escolar',
+        city: locationLabel || 'sua região',
+        modality: appliedFilters.online ? 'ONLINE' : appliedFilters.nearby ? 'PRESENCIAL' : 'ONLINE',
+      });
+      setAiText(suggestion);
+    } catch (err) {
+      console.error('Erro ao pedir sugestão IA (home):', err);
+      setAiText('Não foi possível gerar uma sugestão agora.');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
   return (
     <LinearGradient {...GRADIENTS.availableBackground} style={availableStyles.container} onLayout={onLayout}>
       <Text style={availableStyles.title}>
@@ -126,6 +145,23 @@ const AvailableClassesSection: React.FC<AvailableClassesSectionProps> = ({ searc
         </View>
       ) : null}
 
+      <TouchableOpacity
+        style={availableStyles.aiButton}
+        onPress={handleAiSuggest}
+        activeOpacity={0.9}
+        disabled={isAiLoading}
+      >
+        {isAiLoading ? (
+          <ActivityIndicator color={COLORS.accentPrimary} />
+        ) : (
+          <View style={availableStyles.aiButtonContent}>
+            <Sparkles size={16} color={COLORS.accentPrimary} />
+            <Text style={availableStyles.aiButtonText}>Sugestão rápida com IA</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+      {aiText ? <Text style={availableStyles.aiText}>{aiText}</Text> : null}
+
       {isLoading ? (
         <View style={availableStyles.loadingWrapper}>
           <ActivityIndicator color={COLORS.accentPrimary} size="small" />
@@ -145,7 +181,15 @@ const AvailableClassesSection: React.FC<AvailableClassesSectionProps> = ({ searc
       ) : (
         <View style={availableStyles.list}>
           {classes.map(item => (
-            <TeacherCard key={item.id} teacher={item} />
+            <TeacherCard
+              key={item.id}
+              teacher={item}
+              onPress={() => {
+                if (item.teacherId) {
+                  navigation.navigate('ProfessorDetail', { teacherId: item.teacherId });
+                }
+              }}
+            />
           ))}
         </View>
       )}
@@ -153,7 +197,10 @@ const AvailableClassesSection: React.FC<AvailableClassesSectionProps> = ({ searc
   );
 };
 
-const TeacherCard: React.FC<{ teacher: TeacherClassPreview }> = ({ teacher }) => (
+const TeacherCard: React.FC<{
+  teacher: TeacherClassPreview;
+  onPress?: () => void;
+}> = ({ teacher, onPress }) => (
   <LinearGradient {...GRADIENTS.availableCard} style={availableStyles.card}>
     <View style={availableStyles.cardHeader}>
       <LinearGradient {...GRADIENTS.teacherAvatar} style={availableStyles.avatar}>
@@ -174,8 +221,8 @@ const TeacherCard: React.FC<{ teacher: TeacherClassPreview }> = ({ teacher }) =>
         </View>
       ) : null}
       <View style={availableStyles.metaTags}>
-        <View style={[availableStyles.metaTag, teacher.modality === 'online' && availableStyles.metaTagOnline]}>
-          {teacher.modality === 'online' ? (
+        <View style={[availableStyles.metaTag, teacher.modality.toUpperCase() === 'ONLINE' && availableStyles.metaTagOnline]}>
+          {teacher.modality.toUpperCase() === 'ONLINE' ? (
             <Wifi size={12} color={COLORS.white} />
           ) : (
             <MapPin size={12} color={COLORS.accentPrimary} />
@@ -183,10 +230,10 @@ const TeacherCard: React.FC<{ teacher: TeacherClassPreview }> = ({ teacher }) =>
           <Text
             style={[
               availableStyles.metaTagText,
-              teacher.modality === 'online' ? availableStyles.metaTagTextInverted : undefined,
+              teacher.modality.toUpperCase() === 'ONLINE' ? availableStyles.metaTagTextInverted : undefined,
             ]}
           >
-            {teacher.modality === 'online' ? 'Online' : 'Presencial'}
+            {teacher.modality.toUpperCase() === 'ONLINE' ? 'Online' : 'Presencial'}
           </Text>
         </View>
       </View>
@@ -196,12 +243,20 @@ const TeacherCard: React.FC<{ teacher: TeacherClassPreview }> = ({ teacher }) =>
       <View>
         {teacher.teacherName ? <Text style={availableStyles.teacherName}>Prof. {teacher.teacherName}</Text> : null}
         <Text style={availableStyles.teacherPrice}>
-          {teacher.price !== null && teacher.price !== undefined
+          {teacher.priceCents !== null && teacher.priceCents !== undefined
+            ? `R$ ${(teacher.priceCents / 100).toFixed(2)}`
+            : teacher.price !== null && teacher.price !== undefined
             ? `R$ ${Number(teacher.price).toFixed(2)}`
             : 'Valor a combinar'}
         </Text>
       </View>
-      <TouchableOpacity style={availableStyles.actionWrapper}>
+      <TouchableOpacity
+        style={availableStyles.actionWrapper}
+        onPress={onPress}
+        disabled={!onPress}
+        accessibilityRole="button"
+        accessibilityLabel="Ver detalhes do professor e aula"
+      >
         <LinearGradient {...GRADIENTS.buttonSecondary} style={availableStyles.action}>
           <Text style={availableStyles.actionText}>Ver aula</Text>
         </LinearGradient>

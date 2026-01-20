@@ -78,27 +78,33 @@ export const AuthProvider: React.FC<PropsWithChildren> = ({ children }) => {
   const [isRestoring, setIsRestoring] = useState(true);
 
   useEffect(() => {
-    try {
-      const storedToken = getPersistedValue('token');
-      const storedProfile = getPersistedValue('profile');
+    const restore = async () => {
+      try {
+        const [storedToken, storedProfile] = await Promise.all([
+          getPersistedValue('token'),
+          getPersistedValue('profile'),
+        ]);
 
-      if (storedToken) {
-        setToken(storedToken);
-      }
-
-      if (storedProfile) {
-        try {
-          const parsed = JSON.parse(storedProfile) as AuthProfile;
-          if (parsed && typeof parsed === 'object') {
-            setProfile(parsed);
-          }
-        } catch (error) {
-          console.warn('Não foi possível carregar o perfil salvo:', error);
+        if (storedToken) {
+          setToken(storedToken);
         }
+
+        if (storedProfile) {
+          try {
+            const parsed = JSON.parse(storedProfile) as AuthProfile;
+            if (parsed && typeof parsed === 'object') {
+              setProfile(parsed);
+            }
+          } catch (error) {
+            console.warn('Não foi possível carregar o perfil salvo:', error);
+          }
+        }
+      } finally {
+        setIsRestoring(false);
       }
-    } finally {
-      setIsRestoring(false);
-    }
+    };
+
+    restore();
   }, []);
 
   const persistAuth = useCallback(async (auth: PersistedAuth | null) => {

@@ -80,21 +80,30 @@ const Navbar: React.FC = () => {
 
   const profileTarget = useMemo(() => {
     if (!profile) return '/';
-    return (profile.role ?? '').toLowerCase() === 'teacher' ? '/dashboard' : '/';
+    const role = (profile.role ?? '').toLowerCase();
+    if (role === 'teacher') return '/dashboard';
+    if (role === 'student') return '/student';
+    return '/';
   }, [profile]);
 
   const isAuthenticated = Boolean(displayName);
   const isTeacher = (profile?.role ?? '').toLowerCase() === 'teacher';
+  const isStudent = (profile?.role ?? '').toLowerCase() === 'student';
 
   useEffect(() => {
-    if (isTeacher && location.pathname !== '/dashboard' && !hasRedirectedToDashboard) {
+    const isRoot = location.pathname === '/';
+    if (isRoot && isTeacher && !hasRedirectedToDashboard) {
       setHasRedirectedToDashboard(true);
       navigate('/dashboard');
     }
-    if (!isTeacher && hasRedirectedToDashboard) {
+    if (isRoot && isStudent && !hasRedirectedToDashboard) {
+      setHasRedirectedToDashboard(true);
+      navigate('/student');
+    }
+    if (!isRoot && hasRedirectedToDashboard) {
       setHasRedirectedToDashboard(false);
     }
-  }, [isTeacher, location.pathname, navigate, hasRedirectedToDashboard]);
+  }, [isTeacher, isStudent, location.pathname, navigate, hasRedirectedToDashboard]);
 
   const handleLogout = useCallback(() => {
     setIsMenuOpen(false);
@@ -154,6 +163,13 @@ const Navbar: React.FC = () => {
   const handleLogoClick = useCallback(() => {
     closeMenu();
 
+    if (isStudent) {
+      if (location.pathname !== '/student') {
+        navigate('/student', { replace: false });
+      }
+      return;
+    }
+
     if (location.pathname !== '/') {
       navigate('/', { replace: false });
       return;
@@ -176,7 +192,7 @@ const Navbar: React.FC = () => {
           </button>
 
           <ul className={`navbar__links ${isMenuOpen ? 'is-open' : ''}`} id="primary-navigation">
-            {NAV_ITEMS.map(item => (
+            {(isStudent ? NAV_ITEMS.filter(item => item.hash !== '#oferecer-aula') : NAV_ITEMS).map(item => (
               <li key={item.hash}>
                 <button
                   type="button"

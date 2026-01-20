@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { LayoutChangeEvent, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { Sparkles, NotebookPen, CalendarRange, MonitorPlay, ShieldCheck } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { teacherStyles } from '../styles/teacherStyles';
 import { COLORS } from '../../../theme/colors';
 import { GRADIENTS } from '../../../theme/gradients';
+import { useAuth } from '../../../context/AuthContext';
 
 export type TeacherSectionProps = {
   onLayout: (event: LayoutChangeEvent) => void;
@@ -14,6 +15,13 @@ export type TeacherSectionProps = {
 const TeacherSection: React.FC<TeacherSectionProps> = ({ onLayout, onRegisterPress }) => {
   const { width } = useWindowDimensions();
   const isCompact = width < 520;
+  const { profile } = useAuth();
+
+  const isStudent = useMemo(() => {
+    if (!profile || typeof profile !== 'object') return false;
+    const role = (profile as { role?: string }).role;
+    return (role || '').toLowerCase() === 'student';
+  }, [profile]);
 
   return (
     <LinearGradient
@@ -52,17 +60,19 @@ const TeacherSection: React.FC<TeacherSectionProps> = ({ onLayout, onRegisterPre
           />
         </View>
 
-        <TouchableOpacity
-          style={[teacherStyles.ctaWrapper, isCompact && teacherStyles.ctaWrapperCompact]}
-          onPress={onRegisterPress}
-        >
-          <LinearGradient
-            {...GRADIENTS.heroButton}
-            style={[teacherStyles.cta, isCompact && teacherStyles.ctaCompact]}
+        {!isStudent && (
+          <TouchableOpacity
+            style={[teacherStyles.ctaWrapper, isCompact && teacherStyles.ctaWrapperCompact]}
+            onPress={onRegisterPress}
           >
-            <Text style={teacherStyles.ctaText}>Cadastrar minha aula</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+            <LinearGradient
+              {...GRADIENTS.heroButton}
+              style={[teacherStyles.cta, isCompact && teacherStyles.ctaCompact]}
+            >
+              <Text style={teacherStyles.ctaText}>Cadastrar minha aula</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
       </View>
 
       <LinearGradient
