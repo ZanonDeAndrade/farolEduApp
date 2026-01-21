@@ -12,10 +12,27 @@ import calendarRoutes from "./routes/calendarRoutes";
 import authRoutes from "./routes/authRoutes";
 import appointmentRoutes from "./routes/appointmentRoutes";
 import { legacyMigrateSchedule } from "./modules/bookingModel";
+import { FRONTEND_ORIGINS } from "./config/env";
 
 export const app = express();
 
-app.use(cors());
+const allowedOrigins = FRONTEND_ORIGINS.split(",")
+  .map(origin => origin.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.length === 0) {
+        return callback(null, true);
+      }
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
+  }),
+);
 app.use(express.json());
 
 const authLimiter = rateLimit({

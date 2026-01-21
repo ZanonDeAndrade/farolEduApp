@@ -6,3 +6,4 @@ dotenv.config();
 export const JWT_SECRET = process.env.JWT_SECRET || "secret_key";
 export const PORT = parseInt(process.env.PORT || "5000", 10);
 export const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
+export const FRONTEND_ORIGINS = process.env.FRONTEND_ORIGINS || "";
