@@ -35,7 +35,11 @@ const ProfessorDetail: React.FC = () => {
       .finally(() => setIsLoading(false));
   }, [id]);
 
-  const classList = teacher?.classes ?? (teacher as any)?.teacherClasses ?? [];
+  const classList: PublicTeacherClass[] = useMemo(() => {
+    if (teacher?.classes) return teacher.classes;
+    const legacyClasses = (teacher as { teacherClasses?: PublicTeacherClass[] } | null)?.teacherClasses;
+    return legacyClasses ?? [];
+  }, [teacher]);
 
   const location = useMemo(() => {
     if (!teacher?.teacherProfile) return "Local não informado";
@@ -45,7 +49,7 @@ const ProfessorDetail: React.FC = () => {
   const initialOfferId = useMemo(() => {
     const fromSearch = search.get("offerId");
     if (fromSearch) return Number(fromSearch);
-    return classList.find((cls) => cls.active !== false)?.id ?? classList[0]?.id;
+    return classList.find((cls: PublicTeacherClass) => cls.active !== false)?.id ?? classList[0]?.id;
   }, [search, classList]);
 
   const handleSchedule = (klass: PublicTeacherClass) => {
@@ -106,7 +110,7 @@ const ProfessorDetail: React.FC = () => {
           className="btn btn-primary"
           disabled={!initialOfferId}
           onClick={() => {
-            const klass = classList.find((c) => c.id === initialOfferId);
+            const klass = classList.find((c: PublicTeacherClass) => c.id === initialOfferId);
             if (klass) handleSchedule(klass);
           }}
         >
@@ -117,7 +121,7 @@ const ProfessorDetail: React.FC = () => {
       <section className="professor-classes">
         <h2>Aulas oferecidas</h2>
         {classList.length ? (
-          classList.map((klass) => {
+          classList.map((klass: PublicTeacherClass) => {
             const priceLabel = formatPrice(klass.price, klass.priceCents);
             return (
               <div key={klass.id} className="professor-class-card">
@@ -161,4 +165,3 @@ const ProfessorDetail: React.FC = () => {
 };
 
 export default ProfessorDetail;
-
