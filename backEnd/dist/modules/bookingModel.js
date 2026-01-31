@@ -1,0 +1,17 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.legacyMigrateSchedule = exports.updateBookingStatusByTeacher = exports.findPendingByTeacher = exports.cancelBookingByActor = exports.listBookingsByUser = exports.createBooking = void 0;
+const bookingRepository_1 = require("../repositories/firestore/bookingRepository");
+const repo = new bookingRepository_1.FirestoreBookingRepository();
+const createBooking = (input) => repo.createBooking(input);
+exports.createBooking = createBooking;
+const listBookingsByUser = (userId, role, range) => repo.listBookingsByUser(userId, role, range);
+exports.listBookingsByUser = listBookingsByUser;
+const cancelBookingByActor = (bookingId, actorId) => repo.cancelBookingByActor(bookingId, actorId);
+exports.cancelBookingByActor = cancelBookingByActor;
+const findPendingByTeacher = (teacherId) => repo.findPendingByTeacher(teacherId);
+exports.findPendingByTeacher = findPendingByTeacher;
+const updateBookingStatusByTeacher = (bookingId, teacherId, status) => repo.updateStatusByTeacher(bookingId, teacherId, status);
+exports.updateBookingStatusByTeacher = updateBookingStatusByTeacher;
+const legacyMigrateSchedule = () => repo.legacyMigrateSchedule();
+exports.legacyMigrateSchedule = legacyMigrateSchedule;

@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const teacherClassController_1 = require("../controller/teacherClassController");
+const authMiddleware_1 = require("../middlewares/authMiddleware");
+const router = (0, express_1.Router)();
+router.get("/public", teacherClassController_1.listPublicTeacherClassesHandler);
+router.post("/", authMiddleware_1.authenticate, (0, authMiddleware_1.requireRole)("teacher"), teacherClassController_1.createTeacherClassHandler);
+router.get("/", authMiddleware_1.authenticate, (0, authMiddleware_1.requireRole)("teacher"), teacherClassController_1.listTeacherClassesHandler);
+router.put("/:id", authMiddleware_1.authenticate, (0, authMiddleware_1.requireRole)("teacher"), teacherClassController_1.updateTeacherClassHandler);
+router.patch("/:id", authMiddleware_1.authenticate, (0, authMiddleware_1.requireRole)("teacher"), teacherClassController_1.updateTeacherClassHandler);
+router.delete("/:id", authMiddleware_1.authenticate, (0, authMiddleware_1.requireRole)("teacher"), teacherClassController_1.deleteTeacherClassHandler);
+exports.default = router;

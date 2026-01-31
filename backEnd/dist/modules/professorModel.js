@@ -1,0 +1,15 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getTeacherWithClasses = exports.getUserByEmailWithPassword = exports.getTeacherById = exports.getAllTeachers = exports.createTeacherWithProfile = void 0;
+const professorRepository_1 = require("../repositories/firestore/professorRepository");
+const repo = new professorRepository_1.FirestoreProfessorRepository();
+const createTeacherWithProfile = (data) => repo.createTeacherWithProfile(data);
+exports.createTeacherWithProfile = createTeacherWithProfile;
+const getAllTeachers = () => repo.getAllTeachers();
+exports.getAllTeachers = getAllTeachers;
+const getTeacherById = (id) => repo.getTeacherById(id);
+exports.getTeacherById = getTeacherById;
+const getUserByEmailWithPassword = (email) => repo.getUserByEmailWithPassword(email);
+exports.getUserByEmailWithPassword = getUserByEmailWithPassword;
+const getTeacherWithClasses = (id) => repo.getTeacherWithClasses(id);
+exports.getTeacherWithClasses = getTeacherWithClasses;

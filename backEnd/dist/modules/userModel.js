@@ -1,0 +1,20 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.updateUserLastLogin = exports.linkGoogleAccount = exports.createUserFromGoogle = exports.getAllUsers = exports.findUserById = exports.findUserByEmail = exports.createUser = void 0;
+const userRepository_1 = require("../repositories/firestore/userRepository");
+const repo = new userRepository_1.FirestoreUserRepository();
+const createUser = (data) => repo.createUser(data);
+exports.createUser = createUser;
+const findUserByEmail = (email) => repo.findUserByEmail(email);
+exports.findUserByEmail = findUserByEmail;
+const findUserById = (id) => repo.findUserById(id);
+exports.findUserById = findUserById;
+// Retorna todos os estudantes SEM incluir relações
+const getAllUsers = () => repo.getAllStudents();
+exports.getAllUsers = getAllUsers;
+const createUserFromGoogle = (data) => repo.createFromGoogle(data);
+exports.createUserFromGoogle = createUserFromGoogle;
+const linkGoogleAccount = (userId, googleUid) => repo.linkGoogleAccount(userId, googleUid);
+exports.linkGoogleAccount = linkGoogleAccount;
+const updateUserLastLogin = (userId) => repo.updateLastLogin(userId);
+exports.updateUserLastLogin = updateUserLastLogin;

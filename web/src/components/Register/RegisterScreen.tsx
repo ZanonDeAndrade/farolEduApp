@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { User, GraduationCap, Mail, Lock, Eye, EyeOff, ArrowLeft, Phone, MapPin, CheckCircle, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './RegisterScreen.css';
-import { registerTeacher, registerStudent, login, AuthProvider } from "../../services/auth";
+import { registerTeacher, registerStudent, login, AuthProvider, loginWithGoogleToken } from "../../services/auth";
+import GoogleSignInButton from "../auth/GoogleSignInButton";
 import LogoImage from '../../assets/Logo.png';
 
 
@@ -179,15 +180,10 @@ const RegisterScreen = () => {
             : 'Conta criada com sucesso! Personalize seu perfil para aproveitar todos os recursos.',
       });
     } catch (err: any) {
-      const status = err?.response?.status;
-      const messageFromServer = err?.response?.data?.message;
-      const fallbackMessage = !err?.response && err?.message ? err.message : "Erro ao criar conta";
-      const message = messageFromServer || fallbackMessage;
-      if (status === 409) {
-        setPopup({ type: 'error', message: 'Usuário já cadastrado. Tente fazer login ou recuperar a senha.' });
-      } else {
-        setPopup({ type: 'error', message });
-      }
+      const status = err?.response?.status as number | undefined;
+      const messageFromServer = err?.response?.data?.message as string | undefined;
+      const message = mapRegisterErrorMessage(status, messageFromServer, err?.message);
+      setPopup({ type: 'error', message });
     } finally {
       setIsLoading(false);
     }
@@ -438,6 +434,46 @@ const RegisterScreen = () => {
                         </button>
 
                       </div>
+                      {registerData.authMethod === 'google' && (
+                        <div style={{ marginTop: '12px' }}>
+                          <GoogleSignInButton
+                            fullWidth
+                            text="continue_with"
+                            disabled={isLoading}
+                            onCredential={async credential => {
+                              setIsLoading(true);
+                              setPopup(null);
+                              try {
+                                const data = await loginWithGoogleToken(credential);
+                                setPopup({ type: 'success', message: 'Login realizado com Google! Redirecionando...' });
+                                const roleLower = (data.user?.role ?? '').toLowerCase();
+                                const targetRoute =
+                                  roleLower === 'teacher' || roleLower === 'professor' ? '/dashboard' : '/student';
+                                setTimeout(() => {
+                                  navigate(targetRoute, { replace: true });
+                                }, 700);
+                              } catch (err: any) {
+                                console.error('Erro no login Google:', err);
+                                setPopup({
+                                  type: 'error',
+                                  message: err?.message || 'Não foi possível entrar com Google',
+                                });
+                              } finally {
+                                setIsLoading(false);
+                              }
+                            }}
+                            onError={error => {
+                              console.error('Erro ao carregar/usar Google GIS:', error);
+                              const msg =
+                                error.message?.toLowerCase().includes('popup') ||
+                                error.message?.toLowerCase().includes('block')
+                                  ? 'O navegador bloqueou a janela de login. Permita popups e tente novamente.'
+                                  : 'Não foi possível carregar o login do Google. Tente novamente.';
+                              setPopup({ type: 'error', message: msg });
+                            }}
+                          />
+                        </div>
+                      )}
 
                       <p className="register-auth-hint">
                         Nós confirmaremos suas informações pessoais para garantir a segurança da conta e completar o seu perfil.
@@ -750,3 +786,12 @@ const RegisterScreen = () => {
 };
 
 export default RegisterScreen;
+
+const mapRegisterErrorMessage = (status?: number, backendMessage?: string, fallback?: string) => {
+  if (status === 413) return "Imagem muito grande. Envie uma menor.";
+  if (status === 409) return "Email já cadastrado.";
+  if (status === 400) return backendMessage || "Dados inválidos. Revise o formulário.";
+  if (status === 429) return "Muitas tentativas. Aguarde e tente novamente.";
+  if (status === 500) return "Não foi possível criar a conta. Tente novamente.";
+  return backendMessage || fallback || "Não foi possível criar a conta. Tente novamente.";
+};

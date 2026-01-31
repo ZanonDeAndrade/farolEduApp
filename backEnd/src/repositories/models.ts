@@ -19,6 +19,9 @@ export interface User {
   role: string;
   authProvider: string;
   authProviderId: string | null;
+  providers?: string[];
+  googleUid?: string | null;
+  lastLoginAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -30,4 +30,7 @@ const getApp = () => {
   });
 };
 
-export const firestore = getApp().firestore();
+const app = getApp();
+
+export const firestore = app.firestore();
+export const firebaseAuth = app.auth();

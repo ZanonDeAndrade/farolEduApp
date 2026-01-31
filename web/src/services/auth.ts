@@ -1,5 +1,6 @@
 // src/services/auth.ts
 import api from "./api";
+import { maskSecret } from "../utils/googleDebug";
 
 export type AuthProvider = "EMAIL" | "GOOGLE" | "FACEBOOK";
 
@@ -65,5 +66,30 @@ export async function login(p: { email: string; password: string }) {
   localStorage.setItem("profile", JSON.stringify(profile));
   window.dispatchEvent(new Event("faroledu-auth-change"));
   console.log("LOGIN_OK", { id: profile?.id, role: profile?.role });
+  return { ...data, user: profile };
+}
+
+export async function loginWithGoogleToken(idToken: string) {
+  const body = { idToken };
+
+  if (import.meta.env.DEV) {
+    console.debug("[GOOGLE_DEBUG][FRONT] POST /api/auth/google", {
+      url: "/api/auth/google",
+      bodyKeys: Object.keys(body),
+      idToken: maskSecret(idToken),
+    });
+  }
+
+  const { data } = await api.post("/api/auth/google", body, {
+    headers: { "Content-Type": "application/json" },
+  });
+  const profileRaw = data.user || data.teacher || data.student || {};
+  const roleLower = (profileRaw.roleRaw ?? profileRaw.role ?? "").toLowerCase();
+  const profile = { ...profileRaw, role: roleLower };
+
+  localStorage.setItem("token", data.token);
+  localStorage.setItem("profile", JSON.stringify(profile));
+  window.dispatchEvent(new Event("faroledu-auth-change"));
+  console.log("LOGIN_GOOGLE_OK", { id: profile?.id, role: profile?.role });
   return { ...data, user: profile };
 }
