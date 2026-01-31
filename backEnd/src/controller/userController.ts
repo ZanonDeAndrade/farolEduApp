@@ -10,7 +10,19 @@ export const registerStudent = async (req: Request, res: Response) => {
     const { name, email, password } = req.body ?? {};
 
     if (!name?.trim() || !email?.trim() || !password?.trim()) {
-      return res.status(400).json({ message: "Dados incompletos" });
+      logRegisterWarning(req, "REGISTER_STUDENT_VALIDATION", {
+        email,
+        reason: "missing_fields",
+      });
+      return res.status(400).json({ message: "Nome, email e senha são obrigatórios." });
+    }
+    if (password.trim().length < 6) {
+      logRegisterWarning(req, "REGISTER_STUDENT_VALIDATION", {
+        email,
+        reason: "weak_password",
+        passwordLength: password.trim().length,
+      });
+      return res.status(400).json({ message: "A senha deve ter pelo menos 6 caracteres." });
     }
 
     const hashed = await bcrypt.hash(password, 10);
@@ -25,10 +37,15 @@ export const registerStudent = async (req: Request, res: Response) => {
     return res.status(201).json({ id: user.id, name: user.name, email: user.email, role: user.role });
   } catch (err: any) {
     if (err?.code === "P2002") {
+      logRegisterWarning(req, "REGISTER_STUDENT_DUPLICATE", {
+        email: req.body?.email,
+        errCode: err?.code,
+        errMessage: err?.message,
+      });
       return res.status(409).json({ message: "E-mail já cadastrado" });
     }
-    console.error("Erro ao cadastrar estudante:", err);
-    return res.status(500).json({ message: "Erro interno no servidor" });
+    logRegisterError(req, err, "REGISTER_STUDENT_ERROR");
+    return res.status(500).json({ message: "Não foi possível criar a conta. Tente novamente." });
   }
 };
 
@@ -95,4 +112,48 @@ export const getStudent = async (req: Request, res: Response) => {
     console.error("Erro ao buscar estudante:", err);
     return res.status(500).json({ message: "Erro interno no servidor" });
   }
+};
+
+type RegisterLogExtra = {
+  email?: string;
+  reason?: string;
+  passwordLength?: number;
+  errCode?: unknown;
+  errMessage?: unknown;
+};
+
+const buildRegisterLogBase = (req: Request, extra: RegisterLogExtra = {}) => {
+  const contentLength = req.headers["content-length"];
+  const email = (req.body?.email as string | undefined) ?? extra.email;
+
+  return {
+    method: req.method,
+    url: req.originalUrl || req.url,
+    email,
+    contentLength,
+    passwordLength: extra.passwordLength,
+    reason: extra.reason,
+    errCode: extra.errCode,
+    errMessage: extra.errMessage,
+  };
+};
+
+const logRegisterWarning = (req: Request, label: string, extra: RegisterLogExtra = {}) => {
+  console.warn(label, buildRegisterLogBase(req, extra));
+};
+
+const logRegisterError = (req: Request, err: any, label: string) => {
+  const photoLength =
+    typeof (req.body as any)?.profilePhoto === "string" ? (req.body as any).profilePhoto.length : undefined;
+
+  const payload = {
+    ...buildRegisterLogBase(req, {
+      errCode: err?.code,
+      errMessage: err?.message,
+    }),
+    errName: err?.name,
+    photoLength,
+  };
+
+  console.error(label, payload);
 };

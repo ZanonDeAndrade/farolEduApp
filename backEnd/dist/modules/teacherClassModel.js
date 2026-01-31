@@ -1,0 +1,15 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getPublicTeacherClasses = exports.getTeacherClassesByTeacher = exports.deleteTeacherClassByTeacher = exports.updateTeacherClassByTeacher = exports.createTeacherClass = void 0;
+const teacherClassRepository_1 = require("../repositories/firestore/teacherClassRepository");
+const repo = new teacherClassRepository_1.FirestoreTeacherClassRepository();
+const createTeacherClass = (input) => repo.createTeacherClass(input);
+exports.createTeacherClass = createTeacherClass;
+const updateTeacherClassByTeacher = (teacherId, classId, data) => repo.updateTeacherClassByTeacher(teacherId, classId, data);
+exports.updateTeacherClassByTeacher = updateTeacherClassByTeacher;
+const deleteTeacherClassByTeacher = (teacherId, classId) => repo.deleteTeacherClassByTeacher(teacherId, classId);
+exports.deleteTeacherClassByTeacher = deleteTeacherClassByTeacher;
+const getTeacherClassesByTeacher = (teacherId) => repo.getTeacherClassesByTeacher(teacherId);
+exports.getTeacherClassesByTeacher = getTeacherClassesByTeacher;
+const getPublicTeacherClasses = (filters) => repo.getPublicTeacherClasses(filters);
+exports.getPublicTeacherClasses = getPublicTeacherClasses;

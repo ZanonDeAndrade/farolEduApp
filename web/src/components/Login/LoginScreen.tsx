@@ -3,7 +3,8 @@ import { Mail, Lock, Eye, EyeOff, CheckCircle, XCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import "./LoginScreen.css";
 import LogoImage from "../../assets/Logo.png";
-import { login } from "../../services/auth";
+import { login, loginWithGoogleToken } from "../../services/auth";
+import GoogleSignInButton from "../auth/GoogleSignInButton";
 
 interface PopupState {
   type: "success" | "error";
@@ -148,6 +149,43 @@ const LoginScreen: React.FC = () => {
                 "Entrar"
               )}
             </button>
+
+            <div className="login-divider">
+              <span>ou</span>
+            </div>
+
+            <GoogleSignInButton
+              fullWidth
+              disabled={isLoading}
+              onCredential={async credential => {
+                setIsLoading(true);
+                setPopup(null);
+                try {
+                  const data = await loginWithGoogleToken(credential);
+                  setPopup({ type: "success", message: "Login realizado com sucesso! Redirecionando..." });
+                  const roleLower = (data.user?.role ?? "").toLowerCase();
+                  const targetRoute =
+                    roleLower === "teacher" || roleLower === "professor" ? "/dashboard" : "/student";
+                  redirectTimeoutRef.current = window.setTimeout(() => {
+                    navigate(targetRoute, { replace: true });
+                    redirectTimeoutRef.current = null;
+                  }, 900);
+                } catch (err: any) {
+                  console.error("Erro no login Google:", err);
+                  setPopup({ type: "error", message: err?.message || "Não foi possível entrar com Google" });
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+              onError={error => {
+                console.error("Erro ao carregar/usar Google GIS:", error);
+                const msg =
+                  error.message?.toLowerCase().includes("popup") || error.message?.toLowerCase().includes("block")
+                    ? "O navegador bloqueou a janela de login. Permita popups e tente novamente."
+                    : "Não foi possível carregar o login do Google. Tente novamente.";
+                setPopup({ type: "error", message: msg });
+              }}
+            />
           </div>
 
           <div className="login-signup-section">

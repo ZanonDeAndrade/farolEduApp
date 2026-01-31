@@ -32,27 +32,41 @@ export const registerTeacher = async (req: Request, res: Response) => {
     } = req.body ?? {};
 
     if (!name?.trim() || !email?.trim()) {
+      logRegisterWarning(req, "REGISTER_TEACHER_VALIDATION", { email, reason: "missing_fields" });
       return res.status(400).json({ message: "Nome e e-mail são obrigatórios" });
     }
 
     const normalizedProvider = String(authProvider ?? "EMAIL").trim().toUpperCase();
     if (!ALLOWED_AUTH_PROVIDERS.has(normalizedProvider)) {
+      logRegisterWarning(req, "REGISTER_TEACHER_VALIDATION", {
+        email,
+        reason: "invalid_provider",
+        provider: normalizedProvider,
+      });
       return res.status(400).json({ message: "Provedor de autenticação inválido" });
     }
 
     if (!password?.trim()) {
+      logRegisterWarning(req, "REGISTER_TEACHER_VALIDATION", { email, reason: "password_missing" });
       return res.status(400).json({ message: "Defina uma senha para proteger sua conta" });
     }
     if (password.trim().length < 6) {
+      logRegisterWarning(req, "REGISTER_TEACHER_VALIDATION", {
+        email,
+        reason: "weak_password",
+        passwordLength: password.trim().length,
+      });
       return res.status(400).json({ message: "A senha deve ter pelo menos 6 caracteres" });
     }
 
     const trimmedPhone = String(phone ?? "").trim();
     const trimmedCity = String(city ?? "").trim();
     if (!trimmedPhone) {
+      logRegisterWarning(req, "REGISTER_TEACHER_VALIDATION", { email, reason: "missing_phone" });
       return res.status(400).json({ message: "Informe um telefone para contato" });
     }
     if (!trimmedCity) {
+      logRegisterWarning(req, "REGISTER_TEACHER_VALIDATION", { email, reason: "missing_city" });
       return res.status(400).json({ message: "Informe sua cidade ou região" });
     }
 
@@ -61,6 +75,11 @@ export const registerTeacher = async (req: Request, res: Response) => {
     const sanitizedProfilePhoto =
       typeof profilePhoto === "string" && profilePhoto.trim() ? profilePhoto.trim() : null;
     if (sanitizedProfilePhoto && sanitizedProfilePhoto.length > MAX_PROFILE_PHOTO_CHARS) {
+      logRegisterWarning(req, "REGISTER_TEACHER_VALIDATION", {
+        email,
+        reason: "profile_photo_too_large",
+        photoLength: sanitizedProfilePhoto.length,
+      });
       return res.status(413).json({
         message:
           "A foto de perfil deve ter até 1.8MB. Reduza o tamanho ou utilize uma imagem mais leve.",
@@ -91,9 +110,15 @@ export const registerTeacher = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     if (error?.message === "EMAIL_ALREADY_TAKEN" || error?.code === "P2002") {
+      logRegisterWarning(req, "REGISTER_TEACHER_DUPLICATE", {
+        email: req.body?.email,
+        errCode: error?.code,
+        errMessage: error?.message,
+        photoLength: typeof req.body?.profilePhoto === "string" ? req.body.profilePhoto.length : undefined,
+      });
       return res.status(409).json({ message: "E-mail já cadastrado" });
     }
-    console.error("Erro ao cadastrar professor:", error);
+    logRegisterError(req, error, "REGISTER_TEACHER_ERROR");
     return res.status(500).json({ message: "Erro interno no servidor" });
   }
 };
@@ -230,4 +255,50 @@ export const meFromToken = async (req: Request, res: Response) => {
     console.error(e);
     return res.status(500).json({ message: "Erro interno" });
   }
+};
+
+type RegisterTeacherLog = {
+  email?: string;
+  reason?: string;
+  passwordLength?: number;
+  provider?: string;
+  photoLength?: number;
+  errCode?: unknown;
+  errMessage?: unknown;
+};
+
+const buildRegisterTeacherLog = (req: Request, extra: RegisterTeacherLog = {}) => {
+  const contentLength = req.headers["content-length"];
+  const email = (req.body?.email as string | undefined) ?? extra.email;
+  const photoLength =
+    extra.photoLength ??
+    (typeof (req.body as any)?.profilePhoto === "string" ? (req.body as any).profilePhoto.length : undefined);
+
+  return {
+    method: req.method,
+    url: req.originalUrl || req.url,
+    email,
+    contentLength,
+    passwordLength: extra.passwordLength,
+    provider: extra.provider,
+    photoLength,
+    errCode: extra.errCode,
+    errMessage: extra.errMessage,
+  };
+};
+
+const logRegisterWarning = (req: Request, label: string, extra: RegisterTeacherLog = {}) => {
+  console.warn(label, buildRegisterTeacherLog(req, extra));
+};
+
+const logRegisterError = (req: Request, err: any, label: string) => {
+  const payload = {
+    ...buildRegisterTeacherLog(req, {
+      errCode: err?.code,
+      errMessage: err?.message,
+    }),
+    errName: err?.name,
+  };
+
+  console.error(label, payload);
 };
