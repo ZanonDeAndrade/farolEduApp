@@ -165,6 +165,7 @@ class FirestoreTeacherClassRepository {
                 id: data.id,
                 name: data.name,
                 email: data.email,
+                photoUrl: data.photoUrl ?? null,
                 teacherProfile: null,
             });
         }

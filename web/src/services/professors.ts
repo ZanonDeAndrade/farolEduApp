@@ -25,6 +25,7 @@ export interface PublicTeacherResponse {
   id: number;
   name: string;
   email?: string | null;
+  photoUrl?: string | null;
   teacherProfile?: PublicTeacherProfile | null;
   teacherClasses?: PublicTeacherClass[]; // API pode retornar teacherClasses
   classes?: PublicTeacherClass[];

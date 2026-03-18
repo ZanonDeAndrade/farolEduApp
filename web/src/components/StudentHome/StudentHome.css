@@ -253,6 +253,28 @@
   color: #1f2547;
 }
 
+.student-offer-teacher {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.student-offer-teacher-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.student-offer-teacher-name {
+  font-weight: 700;
+  color: #1f2547;
+}
+
+.student-offer-teacher-city {
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
 .student-offer-subject {
   color: #56608c;
   margin: 0.1rem 0 0;

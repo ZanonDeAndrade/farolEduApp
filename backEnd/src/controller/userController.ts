@@ -2,7 +2,8 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config/env";
-import { createUser, findUserByEmail, findUserById, getAllUsers } from "../modules/userModel";
+import { createUser, findUserByEmail, findUserById, getAllUsers, updateUserPhoto } from "../modules/userModel";
+import { bucket } from "../utils/firebaseAdmin";
 
 // Cadastro de estudante
 export const registerStudent = async (req: Request, res: Response) => {
@@ -156,4 +157,98 @@ const logRegisterError = (req: Request, err: any, label: string) => {
   };
 
   console.error(label, payload);
+};
+
+const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
+const ALLOWED_PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const MIME_EXTENSION: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
+export const getMe = async (req: Request, res: Response) => {
+  const authUser = (req as any).user;
+  if (!authUser?.id) {
+    return res.status(401).json({ message: "NÃ£o autenticado" });
+  }
+
+  const me = await findUserById(Number(authUser.id));
+  if (!me) {
+    return res.status(404).json({ message: "UsuÃ¡rio nÃ£o encontrado" });
+  }
+
+  return res.json({
+    id: me.id,
+    name: me.name,
+    email: me.email,
+    role: me.role,
+    photoUrl: me.photoUrl ?? null,
+  });
+};
+
+export const updateMyPhoto = async (req: Request, res: Response) => {
+  const authUser = (req as any).user;
+  if (!authUser?.id) {
+    return res.status(401).json({ message: "NÃ£o autenticado" });
+  }
+
+  const file = (req as any).file as Express.Multer.File | undefined;
+  if (!file) {
+    return res.status(400).json({ message: "Arquivo de foto nÃ£o enviado." });
+  }
+
+  if (!ALLOWED_PHOTO_TYPES.has(file.mimetype)) {
+    return res.status(400).json({ message: "Formato invÃ¡lido. Use JPG, PNG ou WEBP." });
+  }
+
+  if (file.size > MAX_PHOTO_BYTES) {
+    return res.status(413).json({ message: "Imagem muito grande. MÃ¡x 2MB." });
+  }
+
+  const extension = MIME_EXTENSION[file.mimetype] ?? "bin";
+  const objectPath = `avatars/${authUser.id}/${Date.now()}.${extension}`;
+
+  if (process.env.NODE_ENV !== "production") {
+    console.info(`[PHOTO_UPLOAD] userId=${authUser.id} size=${file.size} mime=${file.mimetype}`);
+  }
+
+  try {
+    const storageFile = bucket.file(objectPath);
+    await storageFile.save(file.buffer, {
+      metadata: {
+        contentType: file.mimetype,
+        cacheControl: "public, max-age=31536000, immutable",
+      },
+      resumable: false,
+      validation: "crc32c",
+      public: false,
+    });
+
+    let publicUrl: string;
+    try {
+      await storageFile.makePublic();
+      publicUrl = storageFile.publicUrl();
+    } catch (err) {
+      const [signedUrl] = await storageFile.getSignedUrl({
+        action: "read",
+        expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      });
+      publicUrl = signedUrl;
+    }
+
+    const updated = await updateUserPhoto(Number(authUser.id), publicUrl);
+    if (!updated) {
+      return res.status(404).json({ message: "UsuÃ¡rio nÃ£o encontrado" });
+    }
+
+    return res.json({ photoUrl: publicUrl });
+  } catch (error: any) {
+    console.error("Erro ao salvar foto de perfil:", {
+      name: error?.name,
+      message: error?.message,
+      code: error?.code,
+    });
+    return res.status(500).json({ message: "Erro interno ao salvar foto." });
+  }
 };

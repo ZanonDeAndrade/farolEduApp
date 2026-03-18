@@ -18,3 +18,5 @@ export const createUserFromGoogle = (data: { name: string; email: string; google
 export const linkGoogleAccount = (userId: number, googleUid: string) => repo.linkGoogleAccount(userId, googleUid);
 
 export const updateUserLastLogin = (userId: number) => repo.updateLastLogin(userId);
+
+export const updateUserPhoto = (userId: number, photoUrl: string) => repo.updateUserPhoto(userId, photoUrl);

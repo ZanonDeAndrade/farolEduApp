@@ -8,4 +8,5 @@ export interface IUserRepository {
   createFromGoogle(data: { name: string; email: string; googleUid: string; role: string }): Promise<User>;
   linkGoogleAccount(userId: number, googleUid: string): Promise<void>;
   updateLastLogin(userId: number): Promise<void>;
+  updateUserPhoto(userId: number, photoUrl: string): Promise<User | null>;
 }

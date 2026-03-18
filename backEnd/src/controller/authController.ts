@@ -37,6 +37,7 @@ const buildLoginResponse = async (user: User) => {
       email: user.email,
       role: roleOut,
       roleRaw: roleNormalized,
+      photoUrl: user.photoUrl ?? null,
       teacherProfile,
     },
   };

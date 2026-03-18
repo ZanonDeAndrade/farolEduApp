@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { MapPin, Phone, Sparkles } from "lucide-react";
 import "./ProfessorDetail.css";
 import { fetchPublicTeacher, type PublicTeacherClass, type PublicTeacherResponse } from "../../services/professors";
+import Avatar from "../common/Avatar";
 
 const formatPrice = (price?: number | null, priceCents?: number | null) => {
   if (priceCents !== null && priceCents !== undefined) {
@@ -76,12 +77,12 @@ const ProfessorDetail: React.FC = () => {
     return <div className="professor-detail-state">Professor não encontrado.</div>;
   }
 
+  const teacherPhoto = teacher.photoUrl ?? teacher.teacherProfile?.profilePhoto ?? null;
+
   return (
     <div className="professor-detail">
       <section className="professor-header">
-        <div className="professor-avatar">
-          <span>{teacher.name?.charAt(0) ?? "P"}</span>
-        </div>
+        <Avatar name={teacher.name} photoUrl={teacherPhoto} size={76} className="professor-avatar" />
         <div className="professor-head-copy">
           <h1>{teacher.name}</h1>
           <p className="professor-subtitle">{teacher.teacherProfile?.experience || "Professor"}</p>
@@ -120,15 +121,19 @@ const ProfessorDetail: React.FC = () => {
 
       <section className="professor-classes">
         <h2>Aulas oferecidas</h2>
-        {classList.length ? (
+          {classList.length ? (
           classList.map((klass: PublicTeacherClass) => {
             const priceLabel = formatPrice(klass.price, klass.priceCents);
             return (
               <div key={klass.id} className="professor-class-card">
                 <div className="professor-class-head">
-                  <div>
+                  <div className="professor-class-title">
                     <h3>{klass.title}</h3>
                     {klass.subject ? <p className="professor-class-subject">{klass.subject}</p> : null}
+                    <div className="professor-class-teacher">
+                      <Avatar name={teacher.name} photoUrl={teacherPhoto} size={36} />
+                      <span>{teacher.name}</span>
+                    </div>
                   </div>
                   <span className={`professor-class-modality ${klass.active === false ? "is-inactive" : ""}`}>
                     {klass.modality}

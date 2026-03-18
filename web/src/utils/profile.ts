@@ -4,6 +4,7 @@ export interface StoredProfile {
   fullName?: string;
   email?: string;
   role?: string;
+  photoUrl?: string | null;
 }
 
 export const getStoredProfile = (): StoredProfile | null => {
@@ -18,4 +19,15 @@ export const getStoredProfile = (): StoredProfile | null => {
     console.warn("Não foi possível ler o perfil salvo:", error);
     return null;
   }
+};
+
+export const saveProfile = (profile: StoredProfile) => {
+  localStorage.setItem("profile", JSON.stringify(profile));
+  window.dispatchEvent(new Event("faroledu-auth-change"));
+  return profile;
+};
+
+export const mergeAndSaveProfile = (partial: StoredProfile) => {
+  const current = getStoredProfile() ?? {};
+  return saveProfile({ ...current, ...partial });
 };

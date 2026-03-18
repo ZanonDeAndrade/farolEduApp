@@ -144,6 +144,30 @@
   font-size: 14px;
 }
 
+.search-card-teacher {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.search-card-teacher-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.search-card-teacher-name {
+  margin: 0;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.search-card-teacher-city {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
 .search-card-modality {
   background: #eef2ff;
   color: #6a40b4;

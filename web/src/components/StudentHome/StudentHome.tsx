@@ -5,6 +5,7 @@ import './StudentHome.css';
 import { fetchMyBookings, type Booking } from '../../services/bookings';
 import { fetchPublicTeacherClasses, type PublicTeacherClassResponse } from '../../services/teacherClasses';
 import type { SearchFilters } from '../../types/search';
+import Avatar from '../common/Avatar';
 
 type StudentHomeProps = {
   profileRole: string | null;
@@ -156,6 +157,19 @@ const StudentHome: React.FC<StudentHomeProps> = ({ profileRole }) => {
             </div>
             <span className="student-offer-modality">{item.modality}</span>
           </div>
+          {item.teacher?.name ? (
+            <div className="student-offer-teacher">
+              <Avatar
+                name={item.teacher.name}
+                photoUrl={item.teacher.photoUrl ?? item.teacher.profile?.profilePhoto ?? null}
+                size={36}
+              />
+              <div className="student-offer-teacher-meta">
+                <span className="student-offer-teacher-name">{item.teacher.name}</span>
+                <span className="student-offer-teacher-city">{city}</span>
+              </div>
+            </div>
+          ) : null}
           {item.description ? <p className="student-offer-desc">{item.description}</p> : null}
           <div className="student-offer-meta">
             <span>

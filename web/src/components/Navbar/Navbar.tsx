@@ -1,8 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
-import LogoImage from '../../assets/Logo.png';
-import './Navbar.css';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Menu, X } from "lucide-react";
+import LogoImage from "../../assets/Logo.png";
+import { getMe } from "../../services/user";
+import { getStoredProfile, saveProfile, type StoredProfile } from "../../utils/profile";
+import ProfileMenu from "./ProfileMenu";
+import "./Navbar.css";
 
 type NavItem = {
   label: string;
@@ -19,7 +22,7 @@ const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<{ name?: string; email?: string; role?: string } | null>(null);
+  const [profile, setProfile] = useState<StoredProfile | null>(null);
   const [hasRedirectedToDashboard, setHasRedirectedToDashboard] = useState(false);
 
   const activeHash = useMemo(() => {
@@ -30,31 +33,30 @@ const Navbar: React.FC = () => {
   }, [location.hash, location.pathname]);
 
   const readProfile = useCallback(() => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setProfile(null);
-        return;
-      }
-      const rawProfile = localStorage.getItem('profile');
-      if (!rawProfile) {
-        setProfile(null);
-        return;
-      }
-      const parsed = JSON.parse(rawProfile);
-      if (parsed && typeof parsed === 'object') {
-        setProfile(parsed);
-      } else {
-        setProfile(null);
-      }
-    } catch (error) {
-      console.warn('Não foi possível carregar o perfil salvo.', error);
+    const token = localStorage.getItem("token");
+    if (!token) {
       setProfile(null);
+      return;
+    }
+    setProfile(getStoredProfile());
+  }, []);
+
+  const syncProfileFromApi = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    try {
+      const data = await getMe();
+      const normalized: StoredProfile = { ...data, role: (data.role ?? "").toLowerCase() };
+      saveProfile(normalized);
+      setProfile(normalized);
+    } catch (_err) {
+      // mantém perfil salvo se token estiver inválido; próximos fluxos limparão o storage
     }
   }, []);
 
   useEffect(() => {
     readProfile();
+    syncProfileFromApi();
 
     const handleStorageChange = () => readProfile();
     window.addEventListener('storage', handleStorageChange);
@@ -64,11 +66,11 @@ const Navbar: React.FC = () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('faroledu-auth-change', handleStorageChange as EventListener);
     };
-  }, [readProfile]);
+  }, [readProfile, syncProfileFromApi]);
 
   const displayName = useMemo(() => {
     if (!profile) return null;
-    const name = profile.name?.trim();
+    const name = profile.name?.trim() || profile.fullName?.trim();
     if (name) return name;
     const email = profile.email?.trim();
     if (email) {
@@ -89,6 +91,7 @@ const Navbar: React.FC = () => {
   const isAuthenticated = Boolean(displayName);
   const isTeacher = (profile?.role ?? '').toLowerCase() === 'teacher';
   const isStudent = (profile?.role ?? '').toLowerCase() === 'student';
+  const profileMenuActionLabel = isTeacher ? 'Abrir painel' : 'Ver agenda completa';
 
   useEffect(() => {
     const isRoot = location.pathname === '/';
@@ -119,6 +122,30 @@ const Navbar: React.FC = () => {
     setIsMenuOpen(false);
     navigate(profileTarget, { replace: false });
   }, [navigate, profileTarget]);
+
+  const handleProfileMenuPrimaryAction = useCallback(() => {
+    setIsMenuOpen(false);
+    if (isTeacher) {
+      navigate('/dashboard', { replace: false });
+      return;
+    }
+    if (isStudent) {
+      navigate('/calendar', { replace: false });
+      return;
+    }
+    navigate(profileTarget, { replace: false });
+  }, [isStudent, isTeacher, navigate, profileTarget]);
+
+  const handlePhotoUploaded = useCallback(
+    (url: string) => {
+      setProfile(prev => {
+        const next = { ...(prev ?? {}), photoUrl: url };
+        saveProfile(next);
+        return next;
+      });
+    },
+    [],
+  );
 
   useEffect(() => {
     setIsMenuOpen(false);
@@ -208,13 +235,24 @@ const Navbar: React.FC = () => {
             <li className="navbar__mobile-actions">
               {isAuthenticated ? (
                 <div className="navbar__mobile-profile">
-                  <button
-                    type="button"
-                    className="navbar__mobile-action navbar__mobile-profile-button"
-                    onClick={handleProfileClick}
-                  >
-                    {displayName}
-                  </button>
+                  <div className="navbar__mobile-profile-top">
+                    {profile && displayName ? (
+                      <ProfileMenu
+                        profile={profile}
+                        displayName={displayName}
+                        onPhotoUploaded={handlePhotoUploaded}
+                        primaryActionLabel={profileMenuActionLabel}
+                        onPrimaryAction={handleProfileMenuPrimaryAction}
+                      />
+                    ) : null}
+                    <button
+                      type="button"
+                      className="navbar__mobile-action navbar__mobile-profile-button"
+                      onClick={handleProfileClick}
+                    >
+                      {displayName}
+                    </button>
+                  </div>
                   <button
                     type="button"
                     className="navbar__mobile-action navbar__mobile-action--secondary"
@@ -243,7 +281,16 @@ const Navbar: React.FC = () => {
           <div className="navbar__actions">
             {isAuthenticated ? (
               <div className="navbar__profile">
-                <button type="button" className="navbar__profile-pill" onClick={handleProfileClick}>
+                {profile && displayName ? (
+                  <ProfileMenu
+                    profile={profile}
+                    displayName={displayName}
+                    onPhotoUploaded={handlePhotoUploaded}
+                    primaryActionLabel={profileMenuActionLabel}
+                    onPrimaryAction={handleProfileMenuPrimaryAction}
+                  />
+                ) : null}
+                <button type="button" className="navbar__profile-name" onClick={handleProfileClick}>
                   {displayName}
                 </button>
                 <button type="button" className="navbar__logout" onClick={handleLogout}>

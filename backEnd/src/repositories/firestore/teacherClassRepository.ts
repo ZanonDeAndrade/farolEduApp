@@ -152,7 +152,7 @@ export class FirestoreTeacherClassRepository implements ITeacherClassRepository 
   }
 
   async getPublicTeacherClasses(filters: PublicTeacherClassFilters): Promise<Array<TeacherClass & {
-    teacher?: { id: number; name: string; email: string; teacherProfile?: any | null } | null;
+    teacher?: { id: number; name: string; email: string; photoUrl?: string | null; teacherProfile?: any | null } | null;
   }>> {
     const { teacherId, modality, take, city, teacherName, query } = filters ?? {};
     const normalizedTake = Number.isFinite(take) ? Math.min(Math.max(Number(take), 1), 50) : 12;
@@ -190,13 +190,17 @@ export class FirestoreTeacherClassRepository implements ITeacherClassRepository 
           .catch(() => ({ empty: true, docs: [] as any[] }))
       : { empty: true, docs: [] as any[] };
 
-    const teacherMap = new Map<number, { id: number; name: string; email: string; teacherProfile?: any | null }>();
+    const teacherMap = new Map<
+      number,
+      { id: number; name: string; email: string; photoUrl?: string | null; teacherProfile?: any | null }
+    >();
     for (const doc of teacherDocs.docs ?? []) {
       const data = doc.data();
       teacherMap.set(Number(doc.id), {
         id: data.id,
         name: data.name,
         email: data.email,
+        photoUrl: data.photoUrl ?? null,
         teacherProfile: null,
       });
     }
