@@ -26,29 +26,21 @@
 
 .card-header {
   position: relative;
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: flex-start;
+  gap: 1.1rem;
   margin-bottom: 1.4rem;
   z-index: 1;
 }
 
-.teacher-avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 20px;
-  background: linear-gradient(140deg, var(--primary-blue), #8357d9);
-  color: white;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.35rem;
-  font-weight: 700;
-  box-shadow: 0 16px 32px rgba(106, 64, 180, 0.28);
+.teacher-card__avatar {
+  box-shadow: 0 16px 32px rgba(106, 64, 180, 0.22);
 }
 
 .subject-info {
   flex: 1;
+  min-width: 0;
 }
 
 .subject {
@@ -61,6 +53,41 @@
 .level {
   font-size: 0.95rem;
   color: #56608c;
+}
+
+.modality-pill {
+  padding: 0.45rem 0.85rem;
+  border-radius: 12px;
+  background: #eef2ff;
+  color: #5b309d;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.teacher-card__teacher {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.35rem;
+  color: #56608c;
+  font-size: 0.92rem;
+}
+
+.teacher-card__teacher-name {
+  color: #1f2547;
+  font-weight: 700;
+}
+
+.teacher-card__teacher-modality {
+  padding: 0.2rem 0.55rem;
+  background: rgba(106, 64, 180, 0.12);
+  color: #5b309d;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.85rem;
 }
 
 .description {
@@ -91,6 +118,12 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+}
+
+.meta-teacher .meta-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .meta-label {
@@ -129,13 +162,7 @@
   }
 
   .card-header {
-    gap: 1rem;
-  }
-
-  .teacher-avatar {
-    width: 56px;
-    height: 56px;
-    border-radius: 18px;
+    gap: 0.9rem;
   }
 
   .card-body {
@@ -156,14 +183,9 @@
   }
 
   .card-header {
-    flex-direction: column;
-    align-items: flex-start;
+    grid-template-columns: 1fr;
+    align-items: center;
     gap: 0.75rem;
-  }
-
-  .teacher-avatar {
-    width: 52px;
-    height: 52px;
   }
 
   .card-body {

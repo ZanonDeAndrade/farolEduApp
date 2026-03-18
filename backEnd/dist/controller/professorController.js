@@ -126,6 +126,7 @@ const loginTeacher = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                photoUrl: user.photoUrl ?? null,
                 authProvider: user.authProvider,
                 teacherProfile: user.teacherProfile ?? null,
             },
@@ -195,6 +196,7 @@ const getTeacherPublic = async (req, res) => {
             name: teacher.name,
             email: teacher.email,
             role: teacher.role,
+            photoUrl: teacher.photoUrl ?? null,
             teacherProfile: teacher.teacherProfile
                 ? {
                     city: teacher.teacherProfile.city,

@@ -1,0 +1,42 @@
+.avatar-uploader {
+  position: relative;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.avatar-uploader__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 46px;
+  padding: 0.85rem 1rem;
+  border: 1px dashed rgba(106, 64, 180, 0.28);
+  border-radius: 16px;
+  background: rgba(247, 244, 255, 0.92);
+  color: #5b309d;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.avatar-uploader__button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(106, 64, 180, 0.42);
+  background: rgba(242, 236, 255, 0.98);
+}
+
+.avatar-uploader__button:disabled {
+  cursor: wait;
+  opacity: 0.8;
+}
+
+.avatar-uploader__input {
+  display: none;
+}
+
+.avatar-uploader__error {
+  color: #b91c1c;
+  font-size: 0.78rem;
+  max-width: 100%;
+}

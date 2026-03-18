@@ -10,6 +10,7 @@ const mapUser = (data, id) => ({
     email: data.email,
     password: data.password ?? data.passwordHash ?? "",
     role: data.role,
+    photoUrl: data.photoUrl ?? null,
     authProvider: data.authProvider ?? "EMAIL",
     authProviderId: data.authProviderId ?? null,
     providers: data.providers ?? (data.authProvider ? [String(data.authProvider).toLowerCase()] : ["local"]),
@@ -38,6 +39,7 @@ class FirestoreUserRepository {
             email: normalizedEmail,
             password: data.password,
             role: data.role,
+            photoUrl: null,
             authProvider: "EMAIL",
             authProviderId: null,
             providers: ["local"],
@@ -83,6 +85,7 @@ class FirestoreUserRepository {
             email: normalizedEmail,
             password: "",
             role: data.role,
+            photoUrl: null,
             authProvider: "GOOGLE",
             authProviderId: data.googleUid,
             googleUid: data.googleUid,
@@ -117,6 +120,26 @@ class FirestoreUserRepository {
             lastLoginAt: new Date(),
             updatedAt: new Date(),
         });
+    }
+    async updateUserPhoto(userId, photoUrl) {
+        if (!Number.isFinite(userId)) {
+            throw new Error("INVALID_USER_ID");
+        }
+        const docRef = firebase_1.firestore.collection(USERS_COLLECTION).doc(String(userId));
+        const snap = await docRef.get();
+        if (!snap.exists)
+            return null;
+        const updatedAt = new Date();
+        await docRef.update({
+            photoUrl,
+            updatedAt,
+        });
+        const data = snap.data() || {};
+        return mapUser({
+            ...data,
+            photoUrl,
+            updatedAt,
+        }, Number(snap.id));
     }
 }
 exports.FirestoreUserRepository = FirestoreUserRepository;

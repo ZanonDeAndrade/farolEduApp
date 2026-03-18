@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateUserLastLogin = exports.linkGoogleAccount = exports.createUserFromGoogle = exports.getAllUsers = exports.findUserById = exports.findUserByEmail = exports.createUser = void 0;
+exports.updateUserPhoto = exports.updateUserLastLogin = exports.linkGoogleAccount = exports.createUserFromGoogle = exports.getAllUsers = exports.findUserById = exports.findUserByEmail = exports.createUser = void 0;
 const userRepository_1 = require("../repositories/firestore/userRepository");
 const repo = new userRepository_1.FirestoreUserRepository();
 const createUser = (data) => repo.createUser(data);
@@ -18,3 +18,5 @@ const linkGoogleAccount = (userId, googleUid) => repo.linkGoogleAccount(userId, 
 exports.linkGoogleAccount = linkGoogleAccount;
 const updateUserLastLogin = (userId) => repo.updateLastLogin(userId);
 exports.updateUserLastLogin = updateUserLastLogin;
+const updateUserPhoto = (userId, photoUrl) => repo.updateUserPhoto(userId, photoUrl);
+exports.updateUserPhoto = updateUserPhoto;

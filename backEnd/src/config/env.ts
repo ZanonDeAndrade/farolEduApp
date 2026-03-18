@@ -8,6 +8,7 @@ export const PORT = parseInt(process.env.PORT || "5000", 10);
 export const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 export const FRONTEND_ORIGINS = process.env.FRONTEND_ORIGINS || "";
 export const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
+export const FIREBASE_STORAGE_BUCKET = process.env.FIREBASE_STORAGE_BUCKET || "";
 const defaultTrustProxy = 1;
 
 export const TRUST_PROXY = (() => {

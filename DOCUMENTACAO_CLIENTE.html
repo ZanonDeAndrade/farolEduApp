@@ -1,0 +1,138 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>FarolEdu - Dossiê Completo</title>
+  <style>
+    :root { --primary:#5b309d; --text:#0f172a; --muted:#475569; --bg:#f8fafc; }
+    *{box-sizing:border-box;} body{font-family:"Segoe UI","Inter",system-ui,-apple-system,sans-serif;margin:0;padding:32px 40px 48px;color:var(--text);background:white;line-height:1.55;}
+    @page { margin: 18mm 16mm; }
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;page-break-inside: avoid;}
+    h1{margin:0 0 6px;font-size:26px;color:var(--primary);} h2{margin:20px 0 8px;color:var(--primary);font-size:18px;page-break-after: avoid;} h3{margin:14px 0 6px;color:var(--text);font-size:15px;} p{margin:4px 0;}
+    .tag{display:inline-block;padding:4px 10px;border-radius:999px;background:#eef2ff;color:var(--primary);font-weight:700;font-size:12px;letter-spacing:0.02em;}
+    ul{margin:6px 0 8px 20px;padding:0;} li{margin:4px 0;}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;page-break-inside: avoid;}
+    .card{border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px;background:#fff;box-shadow:0 6px 16px rgba(15,23,42,0.08);page-break-inside: avoid;}
+    .muted{color:var(--muted);} .kbd{font-family:ui-monospace,SFMono-Regular,Consolas,"Roboto Mono",monospace;background:#f1f5f9;padding:2px 6px;border-radius:6px;}
+    .list-tight li{margin:2px 0;}
+    section{page-break-inside: avoid;}
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>FarolEdu — Dossiê Completo</h1>
+      <div class="muted">Atualizado em 31/01/2026</div>
+    </div>
+    <span class="tag">Status: Em evolução</span>
+  </header>
+
+  <section>
+    <h2>Visão geral</h2>
+    <p>Marketplace de aulas particulares (web + mobile) com autenticação JWT, ofertas públicas, busca, agendamentos com prevenção de conflito, agenda/calendário e upload de avatar/foto. Documento consolidado para cliente.</p>
+  </section>
+
+  <section>
+    <h2>Linha do tempo</h2>
+    <ul>
+      <li><strong>Nov/2025 – MVP Postgres/Prisma:</strong> cadastro/login professor & estudante, ofertas, busca pública, agendamento, agenda com bloqueio de conflito, painel do professor.</li>
+      <li><strong>Jan/2026 – Migração Firestore:</strong> repositórios tipados para users/profiles/classes/schedules, contador de IDs numéricos, transações para conflitos.</li>
+      <li><strong>Jan/2026 (final) – Upload de avatar:</strong> endpoint PATCH /api/users/me/photo (multipart 2MB jpg/png/webp), grava photoUrl, upload no Firebase Storage, UI com AvatarUploader em header/cards.</li>
+      <li><strong>Google Login:</strong> endpoint /api/auth/google integrado ao CLIENT_ID; pendente publicação/consent screen para produção.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Escopo atual</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Autenticação & Perfis</h3>
+        <ul class="list-tight">
+          <li>Login/registro email (professor/estudante) com JWT.</li>
+          <li>Login Google para estudante; resposta inclui <span class="kbd">photoUrl</span> e <span class="kbd">teacherProfile</span> quando aplicável.</li>
+          <li>Middleware de role protege rotas.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Ofertas & Busca</h3>
+        <ul class="list-tight">
+          <li>CRUD de ofertas (ONLINE/PRESENCIAL/AMBOS), preço em price/priceCents, flag <span class="kbd">active</span>.</li>
+          <li>Busca pública <span class="kbd">GET /api/offers/public</span> com filtros (q, city, modality, teacherId, teacherName, take).</li>
+          <li>Respostas incluem dados do professor + <span class="kbd">photoUrl</span>.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Agenda & Conflitos</h3>
+        <ul class="list-tight">
+          <li>Booking pelo estudante calcula <span class="kbd">endTime</span> pela duração da oferta.</li>
+          <li>Conflito bloqueia professor e estudante com HTTP 409.</li>
+          <li>Cancelamento permitido a quem está vinculado; alias <span class="kbd">/api/calendar</span>.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Avatar/Fotos</h3>
+        <ul class="list-tight">
+          <li>Upload multipart (campo <span class="kbd">photo</span>) até 2MB, tipos jpg/png/webp.</li>
+          <li>Storage: <span class="kbd">avatars/{userId}/{timestamp}.{ext}</span> com <span class="kbd">cacheControl</span> e <span class="kbd">contentType</span>.</li>
+          <li>UI: header + cards exibem foto; fallback para iniciais.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Principais endpoints</h2>
+    <ul>
+      <li>Auth/Usuários: <span class="kbd">POST /api/users/register</span>, <span class="kbd">POST /api/users/login</span>, <span class="kbd">POST /api/auth/google</span>, <span class="kbd">GET /api/users/me</span>, <span class="kbd">PATCH /api/users/me/photo</span>.</li>
+      <li>Professores: <span class="kbd">POST /api/professors/register</span>, <span class="kbd">POST /api/professors/login</span>, <span class="kbd">GET /api/professors/public/:id</span>.</li>
+      <li>Ofertas: <span class="kbd">GET /api/offers/public</span>, <span class="kbd">POST /api/offers</span>, <span class="kbd">PUT|PATCH /api/offers/:id</span>, <span class="kbd">DELETE /api/offers/:id</span>, compatível com <span class="kbd">/api/teacher-classes/*</span>.</li>
+      <li>Bookings/Agenda: <span class="kbd">POST /api/bookings</span>, <span class="kbd">GET /api/bookings</span> ou <span class="kbd">/api/bookings/me</span>, <span class="kbd">PATCH /api/bookings/:id/cancel</span>, alias <span class="kbd">/api/calendar</span>; legado <span class="kbd">/api/schedules</span>.</li>
+      <li>IA: <span class="kbd">POST /api/ai/suggest</span>.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Configuração / Ambiente</h2>
+    <ul>
+      <li><span class="kbd">JWT_SECRET</span> — assinatura JWT.</li>
+      <li><span class="kbd">FIREBASE_SERVICE_ACCOUNT</span> — JSON ou base64.</li>
+      <li><span class="kbd">FIREBASE_STORAGE_BUCKET</span> — bucket de fotos.</li>
+      <li><span class="kbd">GOOGLE_CLIENT_ID</span> — login Google.</li>
+      <li><span class="kbd">OPENAI_API_KEY</span> (opcional), <span class="kbd">PORT</span>, <span class="kbd">FRONTEND_ORIGINS</span>, <span class="kbd">TRUST_PROXY</span>.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Impedimentos e riscos</h2>
+    <ul>
+      <li><strong>Google Login em produção:</strong> precisa publicar/validar consent screen e URIs autorizadas; sem isso o fluxo pode falhar fora do dev.</li>
+      <li><strong>Permissões do Firebase Storage:</strong> se <span class="kbd">makePublic()</span> for bloqueado, usamos signed URL (1 ano); validar política de acesso/expiração.</li>
+      <li><strong>Limpeza de imagens antigas:</strong> substituição de avatar não remove arquivos antigos (custo de Storage).</li>
+      <li><strong>Testes automatizados:</strong> falta cobertura para upload e para fluxo Google; risco de regressões.</li>
+      <li><strong>Recuperação de senha:</strong> ainda não implementada.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Próximos passos sugeridos</h2>
+    <ul>
+      <li>Publicar e validar Google OAuth (consent screen, domains, redirect URIs) e criar testes E2E do fluxo.</li>
+      <li>Rotina de limpeza de fotos antigas no bucket ao substituir avatar.</li>
+      <li>Testes automatizados para upload (400/401/413) e conflitos de agenda.</li>
+      <li>Implementar recuperação de senha e auditoria de login (401/403).</li>
+      <li>Observabilidade: métricas de tamanho/erros de upload.</li>
+      <li><strong>Edição de informações da aula</strong>: permitir ao professor editar campos da oferta com melhor UX e validação.</li>
+      <li><strong>Chat professor–aluno</strong>: canal de mensagens para alinhamento pré-aula, com histórico vinculado à oferta/booking.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Testes e builds</h2>
+    <ul>
+      <li><span class="kbd">npm run build</span> (backend) — tipagem OK.</li>
+      <li><span class="kbd">npm run build</span> (web) — bundling OK.</li>
+      <li>Testes manuais recomendados: upload válido, tipo inválido, >2MB, persistência da foto após reload, foto nos cards, conflito de booking 409.</li>
+    </ul>
+  </section>
+</body>
+</html>

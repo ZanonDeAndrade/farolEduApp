@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { MapPin, Search, Sparkles, Wifi } from "lucide-react";
 import "./SearchPage.css";
+import Avatar from "../common/Avatar";
 import {
   fetchPublicTeacherClasses,
   type PublicTeacherClassQuery,
@@ -157,6 +158,7 @@ const SearchPage: React.FC = () => {
                   : "Valor a combinar";
               const city =
                 item.teacher?.profile?.city || item.teacher?.profile?.region || "Local não informado";
+              const teacherPhoto = item.teacher?.photoUrl ?? item.teacher?.profile?.profilePhoto ?? null;
 
               return (
                 <div key={item.id} className="search-card">
@@ -167,6 +169,15 @@ const SearchPage: React.FC = () => {
                     </div>
                     <span className="search-card-modality">{item.modality}</span>
                   </div>
+                  {item.teacher?.name ? (
+                    <div className="search-card-teacher">
+                      <Avatar name={item.teacher.name} photoUrl={teacherPhoto} size={46} />
+                      <div className="search-card-teacher-meta">
+                        <p className="search-card-teacher-name">{item.teacher.name}</p>
+                        <p className="search-card-teacher-city">{city}</p>
+                      </div>
+                    </div>
+                  ) : null}
                   {item.description ? <p className="search-card-desc">{item.description}</p> : null}
                   <div className="search-card-meta">
                     <span>

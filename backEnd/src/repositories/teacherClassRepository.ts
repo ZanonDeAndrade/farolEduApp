@@ -33,6 +33,6 @@ export interface ITeacherClassRepository {
   deleteTeacherClassByTeacher(teacherId: number, classId: number): Promise<boolean | null>;
   getTeacherClassesByTeacher(teacherId: number): Promise<TeacherClass[]>;
   getPublicTeacherClasses(filters: PublicTeacherClassFilters): Promise<Array<TeacherClass & {
-    teacher?: { id: number; name: string; email: string; teacherProfile?: any | null } | null;
+    teacher?: { id: number; name: string; email: string; photoUrl?: string | null; teacherProfile?: any | null } | null;
   }>>;
 }

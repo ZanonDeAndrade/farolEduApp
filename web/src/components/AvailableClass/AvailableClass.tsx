@@ -29,6 +29,7 @@ const mapToCard = (item: PublicTeacherClassResponse): TeacherClassCard => {
     price,
     teacherName: item.teacher?.name ?? null,
     teacherEmail: item.teacher?.email ?? null,
+    teacherPhotoUrl: item.teacher?.photoUrl ?? item.teacher?.profile?.profilePhoto ?? null,
     city: item.teacher?.profile?.city ?? item.teacher?.profile?.region ?? null,
     teacherId: item.teacher?.id ?? null,
   };

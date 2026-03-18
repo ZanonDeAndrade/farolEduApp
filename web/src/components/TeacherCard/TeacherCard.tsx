@@ -1,5 +1,6 @@
-import React from 'react';
-import './TeacherCard.css';
+import React from "react";
+import Avatar from "../common/Avatar";
+import "./TeacherCard.css";
 
 export type TeacherClassCard = {
   id: number;
@@ -11,6 +12,7 @@ export type TeacherClassCard = {
   price?: number | null;
   teacherName?: string | null;
   teacherEmail?: string | null;
+  teacherPhotoUrl?: string | null;
   city?: string | null;
 };
 
@@ -20,39 +22,48 @@ type TeacherCardProps = {
 };
 
 const TeacherCard: React.FC<TeacherCardProps> = ({ data, onView }) => {
-  const initial = (data.subject || data.title || 'A').trim().charAt(0).toUpperCase();
-  const modalityNormalized = (data.modality || '').toLowerCase();
+  const modalityNormalized = (data.modality || "").toLowerCase();
   const modalityLabel =
-    modalityNormalized === 'online'
-      ? 'Aulas online'
-      : modalityNormalized === 'home'
-      ? 'Na casa do professor'
-      : modalityNormalized === 'travel'
-      ? 'Professor vai até você'
-      : modalityNormalized === 'hybrid' || modalityNormalized === 'ambos'
-      ? 'Modelo híbrido'
-      : 'Aulas presenciais';
+    modalityNormalized === "online"
+      ? "Aulas online"
+      : modalityNormalized === "home"
+      ? "Na casa do professor"
+      : modalityNormalized === "travel"
+      ? "Professor vai até você"
+      : modalityNormalized === "hybrid" || modalityNormalized === "ambos"
+      ? "Modelo híbrido"
+      : "Aulas presenciais";
 
   const priceLabel =
     data.price !== null && data.price !== undefined
       ? `R$ ${Number(data.price).toFixed(2)}`
-      : 'Valor a combinar';
+      : "Valor a combinar";
 
   return (
     <div className="teacher-card">
       <div className="card-header">
-        <div className="teacher-avatar">{initial}</div>
+        <Avatar
+          name={data.teacherName || data.title || "Professor"}
+          photoUrl={data.teacherPhotoUrl}
+          size={64}
+          className="teacher-card__avatar"
+        />
         <div className="subject-info">
-          <h3 className="subject">{data.subject || data.title}</h3>
-          <span className="level">{modalityLabel}</span>
+          <h3 className="subject">{data.title}</h3>
+          {data.subject ? <span className="level">{data.subject}</span> : null}
+          <div className="teacher-card__teacher">
+            {data.teacherName ? <span className="teacher-card__teacher-name">{data.teacherName}</span> : null}
+            <span className="teacher-card__teacher-modality">{modalityLabel}</span>
+          </div>
           {data.description ? <span className="description">{data.description}</span> : null}
         </div>
+        <span className="modality-pill">{data.modality}</span>
       </div>
 
       <div className="card-body">
         <div className="card-meta">
           {data.teacherName ? (
-            <div className="meta-item">
+            <div className="meta-item meta-teacher">
               <span className="meta-label">Professor</span>
               <span className="meta-value">{data.teacherName}</span>
             </div>

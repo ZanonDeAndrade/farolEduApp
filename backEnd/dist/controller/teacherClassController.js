@@ -159,6 +159,7 @@ const listPublicTeacherClassesHandler = async (req, res) => {
                 id: item.teacher?.id ?? null,
                 name: item.teacher?.name ?? null,
                 email: item.teacher?.email ?? null,
+                photoUrl: item.teacher?.photoUrl ?? null,
                 profile: item.teacher?.teacherProfile
                     ? {
                         city: item.teacher.teacherProfile.city,

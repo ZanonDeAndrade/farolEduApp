@@ -17,6 +17,7 @@ export interface User {
   email: string;
   password: string;
   role: string;
+  photoUrl?: string | null;
   authProvider: string;
   authProviderId: string | null;
   providers?: string[];
