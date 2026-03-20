@@ -30,6 +30,7 @@ vi.mock("../src/infra/firebase", () => {
 
 import { app } from "../src/server";
 import { createBooking } from "../src/modules/bookingModel";
+import { BookingServiceError } from "../src/services/bookingService";
 
 const signToken = (role: string) => jwt.sign({ id: 123, role }, "secret_key");
 
@@ -41,7 +42,7 @@ describe("Bookings API", () => {
   it("retorna 409 quando existir conflito para o professor", async () => {
     const createBookingMock = createBooking as unknown as vi.Mock;
     createBookingMock.mockRejectedValueOnce(
-      Object.assign(new Error("Conflito"), { code: "BOOKING_CONFLICT_TEACHER" }),
+      new BookingServiceError("Conflito de agenda", "BOOKING_CONFLICT", 409),
     );
 
     const token = signToken("student");
@@ -50,11 +51,12 @@ describe("Bookings API", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({
         offerId: 1,
-        startTime: new Date().toISOString(),
+        date: "2026-03-23",
+        startTime: "14:00",
       });
 
     expect(response.status).toBe(409);
-    expect(response.body.code).toBe("BOOKING_CONFLICT_TEACHER");
+    expect(response.body.code).toBe("BOOKING_CONFLICT");
   });
 
   it("bloqueia professor de criar booking (403)", async () => {
@@ -64,7 +66,8 @@ describe("Bookings API", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({
         offerId: 1,
-        startTime: new Date().toISOString(),
+        date: "2026-03-23",
+        startTime: "14:00",
       });
 
     expect(response.status).toBe(403);

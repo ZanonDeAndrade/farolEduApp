@@ -1,4 +1,5 @@
 import api from "./api";
+import type { Booking } from "./bookings";
 
 export interface TeacherClassPayload {
   title: string;
@@ -29,28 +30,7 @@ export interface TeacherClassResponse {
   updatedAt: string;
 }
 
-export interface TeacherScheduleResponse {
-  id: number;
-  studentId: number;
-  teacherId: number;
-  startTime: string;
-  endTime: string;
-  status: string;
-  notes?: string | null;
-  respondedAt?: string | null;
-  createdAt: string;
-  student?: {
-    id: number;
-    name: string;
-    email: string;
-  };
-  offer?: {
-    id: number;
-    title: string;
-    durationMinutes: number;
-    modality: string;
-  } | null;
-}
+export type TeacherScheduleResponse = Booking;
 
 export async function createTeacherClass(payload: TeacherClassPayload) {
   const { data } = await api.post<TeacherClassResponse>("/api/offers", payload);

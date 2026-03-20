@@ -5,6 +5,12 @@ import './StudentHome.css';
 import { fetchMyBookings, type Booking } from '../../services/bookings';
 import { fetchPublicTeacherClasses, type PublicTeacherClassResponse } from '../../services/teacherClasses';
 import type { SearchFilters } from '../../types/search';
+import {
+  formatBookingDateShort,
+  formatBookingTimeRange,
+  getBookingStartSortValue,
+  normalizeStatusLabel,
+} from '../../utils/dateTime';
 import Avatar from '../common/Avatar';
 
 type StudentHomeProps = {
@@ -71,12 +77,14 @@ const StudentHome: React.FC<StudentHomeProps> = ({ profileRole }) => {
       ]);
 
       if (bookingsResult.status === 'fulfilled') {
+        const nowMs = now.getTime();
+        const in30DaysMs = in30Days.getTime();
         const upcoming = (bookingsResult.value ?? [])
           .filter(item => {
-            const start = new Date(item.startTime).getTime();
-            return start >= now.getTime() && start <= in30Days.getTime();
+            const start = getBookingStartSortValue(item);
+            return start >= nowMs && start <= in30DaysMs;
           })
-          .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+          .sort((a, b) => getBookingStartSortValue(a) - getBookingStartSortValue(b));
         setBookings(upcoming);
       } else {
         console.error('Erro ao carregar bookings:', bookingsResult.reason);
@@ -280,15 +288,13 @@ const StudentHome: React.FC<StudentHomeProps> = ({ profileRole }) => {
               <div key={item.id} className="student-booking-card">
                 <div className="student-booking-head">
                   <span className={`student-badge status-${(item.status || 'pending').toLowerCase()}`}>
-                    {item.status || 'PENDING'}
+                    {normalizeStatusLabel(item.status)}
                   </span>
-                  <strong>{formatDate(item.startTime)}</strong>
+                  <strong>{formatBookingDateShort(item.date)}</strong>
                 </div>
                 <div className="student-booking-row">
                   <Clock size={16} />
-                  <span>
-                    {formatTime(item.startTime)} - {formatTime(item.endTime)}
-                  </span>
+                  <span>{formatBookingTimeRange(item.startTime, item.endTime)}</span>
                 </div>
                 <div className="student-booking-row">
                   <CalendarRange size={16} />
@@ -337,11 +343,5 @@ const StudentHome: React.FC<StudentHomeProps> = ({ profileRole }) => {
     </div>
   );
 };
-
-const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' });
-
-const formatTime = (iso: string) =>
-  new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
 export default StudentHome;

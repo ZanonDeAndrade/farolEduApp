@@ -9,7 +9,7 @@
 
 .schedule-card {
   width: 100%;
-  max-width: 520px;
+  max-width: 720px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 16px;
@@ -93,6 +93,85 @@
   border: 1px solid #bbf7d0;
 }
 
+.schedule-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.schedule-summary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.92rem;
+}
+
+.schedule-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.schedule-slots-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.schedule-slots-head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #0f172a;
+}
+
+.schedule-slots-head span {
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.schedule-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.75rem;
+}
+
+.schedule-slot {
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  border: 1px solid #dbe4f0;
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.schedule-slot:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+}
+
+.schedule-slot.is-selected {
+  border-color: #6a40b4;
+  background: linear-gradient(135deg, #6a40b4, #8a5fd9);
+  color: #ffffff;
+  box-shadow: 0 14px 26px rgba(106, 64, 180, 0.24);
+}
+
+.schedule-slots-empty {
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+}
+
 .schedule-button {
   width: 100%;
   justify-content: center;
@@ -102,4 +181,14 @@
   display: inline-flex;
   gap: 8px;
   align-items: center;
+}
+
+@media (max-width: 640px) {
+  .schedule-card {
+    padding: 16px;
+  }
+
+  .schedule-slots-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

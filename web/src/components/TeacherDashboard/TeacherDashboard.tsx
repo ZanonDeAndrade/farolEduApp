@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  CalendarDays,
-  Clock,
-  MapPin,
-  NotebookPen,
+  BookOpenText,
+  CalendarRange,
+  CheckCircle2,
+  Clock3,
+  Layers3,
   PlusCircle,
-  Users,
+  Settings2,
 } from "lucide-react";
 import "./TeacherDashboard.css";
 import {
@@ -14,11 +15,30 @@ import {
   fetchTeacherClasses,
   fetchTeacherSchedules,
   updateTeacherClass,
-  TeacherClassResponse,
-  TeacherScheduleResponse,
+  type TeacherClassResponse,
+  type TeacherScheduleResponse,
 } from "../../services/teacherClasses";
+import {
+  createAvailability,
+  deleteAvailability,
+  fetchMyAvailability,
+  type Availability,
+  type AvailabilityPayload,
+} from "../../services/availability";
 import { acceptAppointment, rejectAppointment } from "../../services/appointments";
 import { getStoredProfile } from "../../utils/profile";
+import {
+  formatBookingDateShort,
+  formatBookingTimeRange,
+  getBookingStartSortValue,
+  normalizeStatusLabel,
+} from "../../utils/dateTime";
+import AvailabilityManager from "../AvailabilityManager/AvailabilityManager";
+import { availabilitySignature, WEEK_DAYS } from "../AvailabilityManager/types";
+import AvailabilityModal from "../TeacherCalendar/AvailabilityModal";
+import BookingDetailsModal from "../TeacherCalendar/BookingDetailsModal";
+import TeacherCalendarView from "../TeacherCalendar/TeacherCalendarView";
+import type { TeacherCalendarToggles } from "../TeacherCalendar/calendarAdapters";
 
 interface FormState {
   title: string;
@@ -30,58 +50,114 @@ interface FormState {
   location: string;
 }
 
-const monthsPT = [
-  "Janeiro",
-  "Fevereiro",
-  "Março",
-  "Abril",
-  "Maio",
-  "Junho",
-  "Julho",
-  "Agosto",
-  "Setembro",
-  "Outubro",
-  "Novembro",
-  "Dezembro",
-];
+const DEFAULT_FORM: FormState = {
+  title: "",
+  subject: "",
+  description: "",
+  modality: "ONLINE",
+  durationMinutes: 60,
+  price: "",
+  location: "",
+};
 
-const weekdaysPT = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+const DEFAULT_TOGGLES: TeacherCalendarToggles = {
+  showAvailability: true,
+  showPending: true,
+  showConfirmed: true,
+};
 
-const toDateKey = (date: Date) => date.toISOString().split("T")[0];
+const diffAvailability = (current: Availability[], next: AvailabilityPayload[]) => {
+  const matchedIndexes = new Set<number>();
+  const toCreate: AvailabilityPayload[] = [];
+
+  next.forEach(item => {
+    const signature = availabilitySignature(item);
+    const currentIndex = current.findIndex(
+      (candidate, index) => !matchedIndexes.has(index) && availabilitySignature(candidate) === signature,
+    );
+
+    if (currentIndex >= 0) {
+      matchedIndexes.add(currentIndex);
+      return;
+    }
+
+    toCreate.push(item);
+  });
+
+  const toDelete = current.filter((_, index) => !matchedIndexes.has(index));
+  return { toCreate, toDelete };
+};
+
+const sortClasses = (items: TeacherClassResponse[]) =>
+  items
+    .slice()
+    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt));
+
+const sortSchedules = (items: TeacherScheduleResponse[]) =>
+  items.slice().sort((left, right) => getBookingStartSortValue(left) - getBookingStartSortValue(right));
+
+const isFutureBooking = (item: TeacherScheduleResponse) => getBookingStartSortValue(item) >= Date.now();
 
 const TeacherDashboard = () => {
   const navigate = useNavigate();
-  const [isInitializing, setIsInitializing] = useState(true);
-  const [teacherClasses, setTeacherClasses] = useState<TeacherClassResponse[]>([]);
-  const [schedules, setSchedules] = useState<TeacherScheduleResponse[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [classesLoading, setClassesLoading] = useState(false);
-  const [scheduleLoading, setScheduleLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const calendarSectionRef = useRef<HTMLElement | null>(null);
+
   const [teacherName, setTeacherName] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  const [teacherClasses, setTeacherClasses] = useState<TeacherClassResponse[]>([]);
+  const [teacherAvailability, setTeacherAvailability] = useState<Availability[]>([]);
+  const [schedules, setSchedules] = useState<TeacherScheduleResponse[]>([]);
+
+  const [classesLoading, setClassesLoading] = useState(false);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+
+  const [form, setForm] = useState<FormState>(DEFAULT_FORM);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
 
-  const todayKey = toDateKey(new Date());
-  const [selectedDate, setSelectedDate] = useState(todayKey);
-  const [calendarMonth, setCalendarMonth] = useState(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
-  });
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const [form, setForm] = useState<FormState>({
-    title: "",
-    subject: "",
-    description: "",
-    modality: "ONLINE",
-    durationMinutes: 60,
-    price: "",
-    location: "",
-  });
+  const [calendarToggles, setCalendarToggles] = useState<TeacherCalendarToggles>(DEFAULT_TOGGLES);
+
+  const [isAvailabilityManagerOpen, setIsAvailabilityManagerOpen] = useState(false);
+  const [availabilitySaving, setAvailabilitySaving] = useState(false);
+  const [availabilityErrorMessage, setAvailabilityErrorMessage] = useState<string | null>(null);
+  const [availabilitySuccessMessage, setAvailabilitySuccessMessage] = useState<string | null>(null);
+
+  const [quickAvailabilityDraft, setQuickAvailabilityDraft] = useState<AvailabilityPayload | null>(null);
+  const [selectedAvailability, setSelectedAvailability] = useState<Availability | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<TeacherScheduleResponse | null>(null);
+  const [calendarMutationError, setCalendarMutationError] = useState<string | null>(null);
+
+  const refreshDashboardData = useCallback(async () => {
+    setClassesLoading(true);
+    setAvailabilityLoading(true);
+    setScheduleLoading(true);
+
+    try {
+      const [classResp, availabilityResp, scheduleResp] = await Promise.all([
+        fetchTeacherClasses(),
+        fetchMyAvailability(),
+        fetchTeacherSchedules(),
+      ]);
+      setTeacherClasses(sortClasses(classResp));
+      setTeacherAvailability(availabilityResp);
+      setSchedules(sortSchedules(scheduleResp));
+    } finally {
+      setClassesLoading(false);
+      setAvailabilityLoading(false);
+      setScheduleLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     const profile = getStoredProfile();
+
     if (!token || !profile) {
       navigate("/login");
       return;
@@ -91,104 +167,182 @@ const TeacherDashboard = () => {
       navigate("/");
       return;
     }
+
     setTeacherName(profile.name || profile.fullName || null);
 
-    const load = async () => {
-      try {
-        setClassesLoading(true);
-        setScheduleLoading(true);
-        const [classResp, scheduleResp] = await Promise.all([
-          fetchTeacherClasses(),
-          fetchTeacherSchedules(),
-        ]);
-        setTeacherClasses(classResp);
-        setSchedules(scheduleResp);
-        if (scheduleResp.length) {
-          const firstUpcoming = scheduleResp
-            .map((item) => ({ item, date: new Date(item.startTime) }))
-            .filter(({ date }) => !Number.isNaN(date.getTime()))
-            .sort((a, b) => a.date.getTime() - b.date.getTime())[0];
-          if (firstUpcoming) {
-            setSelectedDate(toDateKey(firstUpcoming.date));
-            setCalendarMonth(
-              new Date(
-                firstUpcoming.date.getFullYear(),
-                firstUpcoming.date.getMonth(),
-                1
-              )
-            );
-          }
-        }
-      } catch (error) {
+    refreshDashboardData()
+      .catch(error => {
         console.error("Erro ao carregar dados do professor:", error);
-        setErrorMessage("Não foi possível carregar suas aulas. Tente novamente.");
-      } finally {
-        setClassesLoading(false);
-        setScheduleLoading(false);
-        setIsInitializing(false);
-      }
-    };
+        setErrorMessage("Nao foi possivel carregar o painel do professor.");
+      })
+      .finally(() => setIsInitializing(false));
+  }, [navigate, refreshDashboardData]);
 
-    load();
-  }, [navigate]);
+  useEffect(() => {
+    const section = searchParams.get("section");
+    if (section === "availability") {
+      setIsAvailabilityManagerOpen(true);
+      return;
+    }
 
-  const eventsByDay = useMemo(() => {
-    const map: Record<string, TeacherScheduleResponse[]> = {};
-    schedules.forEach((schedule) => {
-      const date = new Date(schedule.startTime);
-      if (Number.isNaN(date.getTime())) return;
-      const key = toDateKey(date);
-      if (!map[key]) {
-        map[key] = [];
-      }
-      map[key].push(schedule);
+    if (section === "agenda") {
+      requestAnimationFrame(() => {
+        calendarSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  }, [searchParams]);
+
+  const clearSectionQuery = useCallback(() => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("section");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  const openAvailabilityManager = useCallback(() => {
+    setQuickAvailabilityDraft(null);
+    setSelectedAvailability(null);
+    setCalendarMutationError(null);
+    setAvailabilityErrorMessage(null);
+    setAvailabilitySuccessMessage(null);
+    setIsAvailabilityManagerOpen(true);
+
+    const next = new URLSearchParams(searchParams);
+    next.set("section", "availability");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  const closeAvailabilityManager = useCallback(() => {
+    setIsAvailabilityManagerOpen(false);
+    clearSectionQuery();
+  }, [clearSectionQuery]);
+
+  const openAgenda = useCallback(() => {
+    const next = new URLSearchParams(searchParams);
+    next.set("section", "agenda");
+    setSearchParams(next, { replace: true });
+    requestAnimationFrame(() => {
+      calendarSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
-    return map;
-  }, [schedules]);
+  }, [searchParams, setSearchParams]);
 
-  const calendarDays = useMemo(() => {
-    const year = calendarMonth.getFullYear();
-    const month = calendarMonth.getMonth();
-    const firstDayOfMonth = new Date(year, month, 1);
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const groupedAvailability = useMemo(
+    () =>
+      WEEK_DAYS.map(day => ({
+        ...day,
+        items: teacherAvailability
+          .filter(item => item.dayOfWeek === day.value)
+          .slice()
+          .sort((left, right) => left.startTime.localeCompare(right.startTime)),
+      })).filter(group => group.items.length > 0),
+    [teacherAvailability],
+  );
 
-    const startWeekday = (firstDayOfMonth.getDay() + 6) % 7; // segunda-feira como primeiro dia
-    const days: Array<{ day: number | null; date?: Date }> = [];
+  const pendingBookings = useMemo(
+    () =>
+      schedules.filter(
+        item =>
+          ["PENDING", "AGUARDANDO_PROFESSOR"].includes((item.status ?? "").toUpperCase()) && isFutureBooking(item),
+      ),
+    [schedules],
+  );
 
-    for (let i = 0; i < startWeekday; i++) {
-      days.push({ day: null });
+  const nextBooking = useMemo(
+    () =>
+      schedules.find(
+        item =>
+          !["CANCELLED", "REJECTED", "RECUSADO"].includes((item.status ?? "").toUpperCase()) && isFutureBooking(item),
+      ) ?? null,
+    [schedules],
+  );
+
+  const handleSaveAvailability = async (nextItems: AvailabilityPayload[]) => {
+    setAvailabilitySaving(true);
+    setAvailabilityErrorMessage(null);
+    setAvailabilitySuccessMessage(null);
+
+    try {
+      const { toCreate, toDelete } = diffAvailability(teacherAvailability, nextItems);
+
+      for (const item of toDelete) {
+        await deleteAvailability(item.id);
+      }
+
+      for (const item of toCreate) {
+        await createAvailability(item);
+      }
+
+      const refreshed = await fetchMyAvailability();
+      setTeacherAvailability(refreshed);
+      setAvailabilitySuccessMessage("Disponibilidade atualizada com sucesso.");
+      setIsAvailabilityManagerOpen(false);
+      clearSectionQuery();
+    } catch (error) {
+      console.error("Erro ao salvar disponibilidade:", error);
+      setAvailabilityErrorMessage("Nao foi possivel salvar a disponibilidade.");
+      throw error;
+    } finally {
+      setAvailabilitySaving(false);
     }
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month, day);
-      days.push({ day, date });
-    }
-    return days;
-  }, [calendarMonth]);
-
-  const selectedDateEvents = eventsByDay[selectedDate] ?? [];
-
-  const updateScheduleInState = (updated: TeacherScheduleResponse) => {
-    setSchedules(prev =>
-      prev.map(item => (item.id === updated.id ? updated : item)),
-    );
   };
 
-  const handleDecision = async (id: number, action: "accept" | "reject") => {
-    setActionLoadingId(id);
+  const handleCreateQuickAvailability = async (payload: AvailabilityPayload) => {
+    setAvailabilitySaving(true);
+    setCalendarMutationError(null);
+
     try {
-      const next =
-        action === "accept" ? await acceptAppointment(id) : await rejectAppointment(id);
-      updateScheduleInState(next);
+      await createAvailability(payload);
+      const refreshed = await fetchMyAvailability();
+      setTeacherAvailability(refreshed);
+      setQuickAvailabilityDraft(null);
+      setAvailabilitySuccessMessage("Bloco de disponibilidade criado.");
     } catch (error) {
-      console.error(`Erro ao ${action === "accept" ? "aceitar" : "recusar"} agendamento:`, error);
-      setErrorMessage("Não foi possível atualizar o status. Tente novamente.");
+      console.error("Erro ao criar disponibilidade:", error);
+      setCalendarMutationError("Nao foi possivel salvar este bloco. Verifique conflitos no mesmo dia.");
+    } finally {
+      setAvailabilitySaving(false);
+    }
+  };
+
+  const handleDeleteAvailability = async (item: Availability) => {
+    const shouldDelete = window.confirm("Remover este bloco de disponibilidade da agenda semanal?");
+    if (!shouldDelete) return;
+
+    setAvailabilitySaving(true);
+    setCalendarMutationError(null);
+    try {
+      await deleteAvailability(item.id);
+      const refreshed = await fetchMyAvailability();
+      setTeacherAvailability(refreshed);
+      setSelectedAvailability(null);
+      setAvailabilitySuccessMessage("Bloco removido com sucesso.");
+    } catch (error) {
+      console.error("Erro ao remover disponibilidade:", error);
+      setCalendarMutationError("Nao foi possivel remover este bloco.");
+    } finally {
+      setAvailabilitySaving(false);
+    }
+  };
+
+  const handleDecision = async (bookingId: number, action: "accept" | "reject") => {
+    setActionLoadingId(bookingId);
+    setErrorMessage(null);
+
+    try {
+      const updated =
+        action === "accept" ? await acceptAppointment(bookingId) : await rejectAppointment(bookingId);
+
+      setSchedules(prev => sortSchedules(prev.map(item => (item.id === updated.id ? updated : item))));
+      setSelectedBooking(prev => (prev?.id === updated.id ? updated : prev));
+    } catch (error) {
+      console.error("Erro ao atualizar agendamento:", error);
+      setErrorMessage("Nao foi possivel atualizar o status do agendamento.");
     } finally {
       setActionLoadingId(null);
     }
   };
 
   const handleFormChange = <K extends keyof FormState>(key: K, value: FormState[K]) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm(prev => ({ ...prev, [key]: value }));
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -198,29 +352,29 @@ const TeacherDashboard = () => {
 
     const trimmedTitle = form.title.trim();
     if (!trimmedTitle) {
-      setErrorMessage("Informe um título para a aula.");
+      setErrorMessage("Informe um titulo para a aula.");
       return;
     }
 
     const duration = Number(form.durationMinutes);
     if (!Number.isFinite(duration) || duration <= 0) {
-      setErrorMessage("Informe uma duração válida em minutos.");
+      setErrorMessage("Informe uma duracao valida em minutos.");
       return;
     }
 
     let priceCents: number | undefined;
     if (form.price.trim()) {
-      const parsed = Number(form.price.replace(",", "."));
-      if (!Number.isFinite(parsed) || parsed < 0) {
-        setErrorMessage("Valor informado é inválido.");
+      const parsedPrice = Number(form.price.replace(",", "."));
+      if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
+        setErrorMessage("Valor informado e invalido.");
         return;
       }
-      priceCents = Math.round(parsed * 100);
+      priceCents = Math.round(parsedPrice * 100);
     }
 
     setIsSubmitting(true);
     try {
-      const payload = {
+      const created = await createTeacherClass({
         title: trimmedTitle,
         subject: form.subject.trim() || undefined,
         description: form.description.trim() || undefined,
@@ -229,29 +383,14 @@ const TeacherDashboard = () => {
         priceCents,
         location: form.location.trim() || undefined,
         active: true,
-      };
-
-      const created = await createTeacherClass(payload);
-      setTeacherClasses((prev) => {
-        const merged = [...prev, created];
-        return merged.sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
       });
-      setSuccessMessage("Aula cadastrada com sucesso!");
-      setForm((prev) => ({
-        title: "",
-        subject: "",
-        description: "",
-        modality: prev.modality,
-        durationMinutes: 60,
-        price: "",
-        location: "",
-      }));
+
+      setTeacherClasses(prev => sortClasses([...prev, created]));
+      setForm(DEFAULT_FORM);
+      setSuccessMessage("Aula cadastrada com sucesso.");
     } catch (error) {
       console.error("Erro ao cadastrar aula:", error);
-      setErrorMessage("Não foi possível cadastrar a aula. Tente novamente.");
+      setErrorMessage("Nao foi possivel cadastrar a aula.");
     } finally {
       setIsSubmitting(false);
     }
@@ -260,388 +399,370 @@ const TeacherDashboard = () => {
   const handleToggleActive = async (klass: TeacherClassResponse) => {
     try {
       const updated = await updateTeacherClass(klass.id, { active: !(klass.active ?? true) });
-      setTeacherClasses((prev) =>
-        prev
-          .map((item) => (item.id === updated.id ? updated : item))
-          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      );
+      setTeacherClasses(prev => sortClasses(prev.map(item => (item.id === updated.id ? updated : item))));
     } catch (error) {
-      console.error("Erro ao atualizar aula:", error);
-      setErrorMessage("Não foi possível alterar o status da oferta.");
+      console.error("Erro ao atualizar oferta:", error);
+      setErrorMessage("Nao foi possivel atualizar o status da oferta.");
     }
-  };
-
-  const handlePrevMonth = () => {
-    setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
-  };
-
-  const handleNextMonth = () => {
-    setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
-  };
-
-  const formatDateHeading = (dateKey: string) => {
-    const date = new Date(`${dateKey}T00:00:00`);
-    if (Number.isNaN(date.getTime())) return "Selecione uma data";
-    return date.toLocaleDateString("pt-BR", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-    });
   };
 
   if (isInitializing) {
     return (
-      <div className="teacher-dashboard-loading">
-        <div className="teacher-dashboard-spinner" />
+      <div className="teacher-dashboard teacher-dashboard--loading">
+        <div className="teacher-dashboard__spinner" />
         <p>Carregando painel do professor...</p>
       </div>
     );
   }
 
   return (
-    <div className="teacher-dashboard-container">
-      <div className="teacher-dashboard-header">
+    <div className="teacher-dashboard">
+      <header className="teacher-dashboard__hero">
         <div>
-          <h1>
-            {teacherName ? (
-              <span className="teacher-dashboard-teacher-name">{teacherName}</span>
-            ) : (
-              "Suas aulas, organizadas"
-            )}
-          </h1>
-          <p>Cadastre novas aulas e acompanhe a agenda de encontros já agendados.</p>
+          <p className="teacher-dashboard__eyebrow">Painel do professor</p>
+          <h1>{teacherName ? `Agenda de ${teacherName.split(" ")[0]}` : "Painel de agenda"}</h1>
+          <p className="teacher-dashboard__subtitle">
+            Gerencie disponibilidade semanal, acompanhe bookings reais e mantenha suas ofertas atualizadas.
+          </p>
         </div>
-      </div>
 
-      <div className="teacher-dashboard-grid">
-        <section className="teacher-dashboard-section">
-          <header className="teacher-dashboard-section-header">
-            <div className="teacher-dashboard-section-title">
-              <PlusCircle className="teacher-dashboard-section-icon" />
-              <h2>Cadastrar aulas</h2>
+        <div className="teacher-dashboard__hero-actions">
+          <button type="button" className="btn btn-primary" onClick={openAvailabilityManager}>
+            <Settings2 size={16} />
+            Alterar disponibilidade
+          </button>
+          <button type="button" className="btn btn-secondary" onClick={openAgenda}>
+            <CalendarRange size={16} />
+            Ver agenda
+          </button>
+        </div>
+      </header>
+
+      {errorMessage ? <div className="teacher-dashboard__alert is-error">{errorMessage}</div> : null}
+      {successMessage ? <div className="teacher-dashboard__alert is-success">{successMessage}</div> : null}
+      {availabilitySuccessMessage ? <div className="teacher-dashboard__alert is-success">{availabilitySuccessMessage}</div> : null}
+
+      <section className="teacher-dashboard__stats">
+        <article className="teacher-dashboard__stat-card">
+          <span className="teacher-dashboard__stat-icon">
+            <BookOpenText size={18} />
+          </span>
+          <strong>{teacherClasses.filter(item => item.active ?? true).length}</strong>
+          <span>Ofertas ativas</span>
+        </article>
+        <article className="teacher-dashboard__stat-card">
+          <span className="teacher-dashboard__stat-icon">
+            <Layers3 size={18} />
+          </span>
+          <strong>{teacherAvailability.length}</strong>
+          <span>Blocos semanais</span>
+        </article>
+        <article className="teacher-dashboard__stat-card">
+          <span className="teacher-dashboard__stat-icon">
+            <Clock3 size={18} />
+          </span>
+          <strong>{pendingBookings.length}</strong>
+          <span>Pendentes</span>
+        </article>
+        <article className="teacher-dashboard__stat-card">
+          <span className="teacher-dashboard__stat-icon">
+            <CheckCircle2 size={18} />
+          </span>
+          <strong>{nextBooking ? formatBookingDateShort(nextBooking.date) : "--"}</strong>
+          <span>Proxima aula</span>
+        </article>
+      </section>
+
+      <div className="teacher-dashboard__layout">
+        <section className="teacher-dashboard__panel teacher-dashboard__panel--calendar" ref={calendarSectionRef}>
+          <div className="teacher-dashboard__panel-head">
+            <div>
+              <p className="teacher-dashboard__panel-eyebrow">Calendario profissional</p>
+              <h2>Agenda semanal</h2>
             </div>
-            <span>Registre novos encontros e veja tudo que já foi preparado.</span>
-          </header>
+            <div className="teacher-dashboard__toggle-row" aria-label="Filtros do calendario">
+              <button
+                type="button"
+                className={`teacher-dashboard__toggle ${calendarToggles.showAvailability ? "is-active" : ""}`}
+                onClick={() => setCalendarToggles(prev => ({ ...prev, showAvailability: !prev.showAvailability }))}
+              >
+                Disponibilidades
+              </button>
+              <button
+                type="button"
+                className={`teacher-dashboard__toggle ${calendarToggles.showPending ? "is-active" : ""}`}
+                onClick={() => setCalendarToggles(prev => ({ ...prev, showPending: !prev.showPending }))}
+              >
+                Pendentes
+              </button>
+              <button
+                type="button"
+                className={`teacher-dashboard__toggle ${calendarToggles.showConfirmed ? "is-active" : ""}`}
+                onClick={() => setCalendarToggles(prev => ({ ...prev, showConfirmed: !prev.showConfirmed }))}
+              >
+                Confirmados
+              </button>
+            </div>
+          </div>
 
-          <form className="teacher-dashboard-form" onSubmit={handleSubmit}>
-            <div className="teacher-dashboard-form-grid">
-              <label className="teacher-dashboard-field">
-                <span>Título da aula</span>
-                <input
-                  type="text"
-                  value={form.title}
-                  onChange={(event) => handleFormChange("title", event.target.value)}
-                  placeholder="Ex: Reforço de matemática para ENEM"
-                />
+          <TeacherCalendarView
+            availability={teacherAvailability}
+            bookings={schedules}
+            toggles={calendarToggles}
+            isLoading={availabilityLoading || scheduleLoading}
+            onCreateAvailability={selection =>
+              setQuickAvailabilityDraft({
+                dayOfWeek: selection.dayOfWeek,
+                startTime: selection.startTime,
+                endTime: selection.endTime,
+                slotDuration: 60,
+              })
+            }
+            onAvailabilityClick={item => {
+              setQuickAvailabilityDraft(null);
+              setSelectedAvailability(item);
+              setCalendarMutationError(null);
+            }}
+            onBookingClick={item => {
+              setSelectedBooking(item);
+            }}
+          />
+        </section>
+
+        <section className="teacher-dashboard__panel">
+          <div className="teacher-dashboard__panel-head">
+            <div>
+              <p className="teacher-dashboard__panel-eyebrow">Resumo semanal</p>
+              <h2>Disponibilidade</h2>
+            </div>
+            <button type="button" className="teacher-dashboard__link-button" onClick={openAvailabilityManager}>
+              Abrir editor
+            </button>
+          </div>
+
+          {groupedAvailability.length === 0 ? (
+            <div className="teacher-dashboard__empty">
+              Nenhuma disponibilidade cadastrada ainda. Selecione um horario no calendario para comecar.
+            </div>
+          ) : (
+            <div className="teacher-dashboard__availability-list">
+              {groupedAvailability.map(group => (
+                <article key={group.value} className="teacher-dashboard__availability-card">
+                  <header>
+                    <strong>{group.label}</strong>
+                    <span>{group.items.length} bloco(s)</span>
+                  </header>
+                  <ul>
+                    {group.items.map(item => (
+                      <li key={item.id}>
+                        <span>{formatBookingTimeRange(item.startTime, item.endTime)}</span>
+                        <small>{item.slotDuration} min</small>
+                      </li>
+                    ))}
+                  </ul>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="teacher-dashboard__panel">
+          <div className="teacher-dashboard__panel-head">
+            <div>
+              <p className="teacher-dashboard__panel-eyebrow">Fila de aprovacao</p>
+              <h2>Bookings pendentes</h2>
+            </div>
+          </div>
+
+          {scheduleLoading ? (
+            <div className="teacher-dashboard__empty">Carregando agendamentos...</div>
+          ) : pendingBookings.length === 0 ? (
+            <div className="teacher-dashboard__empty">Nenhum agendamento pendente no momento.</div>
+          ) : (
+            <div className="teacher-dashboard__booking-list">
+              {pendingBookings.map(item => (
+                <article key={item.id} className="teacher-dashboard__booking-card">
+                  <div className="teacher-dashboard__booking-head">
+                    <strong>{item.offer?.title ?? "Aula agendada"}</strong>
+                    <span>{normalizeStatusLabel(item.status)}</span>
+                  </div>
+                  <p>{item.student?.name ?? "Aluno nao identificado"}</p>
+                  <small>
+                    {formatBookingDateShort(item.date)} • {formatBookingTimeRange(item.startTime, item.endTime)}
+                  </small>
+                  <div className="teacher-dashboard__booking-actions">
+                    <button
+                      type="button"
+                      className="teacher-dashboard__ghost-button"
+                      onClick={() => setSelectedBooking(item)}
+                    >
+                      Detalhes
+                    </button>
+                    <button
+                      type="button"
+                      className="teacher-dashboard__ghost-button is-danger"
+                      onClick={() => handleDecision(item.id, "reject")}
+                      disabled={actionLoadingId === item.id}
+                    >
+                      Recusar
+                    </button>
+                    <button
+                      type="button"
+                      className="teacher-dashboard__primary-button"
+                      onClick={() => handleDecision(item.id, "accept")}
+                      disabled={actionLoadingId === item.id}
+                    >
+                      {actionLoadingId === item.id ? "Salvando..." : "Confirmar"}
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="teacher-dashboard__panel teacher-dashboard__panel--wide">
+          <div className="teacher-dashboard__panel-head">
+            <div>
+              <p className="teacher-dashboard__panel-eyebrow">Nova oferta</p>
+              <h2>Cadastrar aula</h2>
+            </div>
+          </div>
+
+          <form className="teacher-dashboard__form" onSubmit={handleSubmit}>
+            <div className="teacher-dashboard__form-grid">
+              <label>
+                <span>Titulo</span>
+                <input value={form.title} onChange={event => handleFormChange("title", event.target.value)} />
               </label>
-
-              <label className="teacher-dashboard-field">
-                <span>Disciplina / tema</span>
-                <input
-                  type="text"
-                  value={form.subject}
-                  onChange={(event) => handleFormChange("subject", event.target.value)}
-                  placeholder="Matemática, Física, Idiomas..."
-                />
+              <label>
+                <span>Materia</span>
+                <input value={form.subject} onChange={event => handleFormChange("subject", event.target.value)} />
               </label>
-
-              <label className="teacher-dashboard-field">
+              <label>
                 <span>Modalidade</span>
-                <select
-                  value={form.modality}
-                  onChange={(event) => handleFormChange("modality", event.target.value)}
-                >
+                <select value={form.modality} onChange={event => handleFormChange("modality", event.target.value)}>
                   <option value="ONLINE">Online</option>
                   <option value="PRESENCIAL">Presencial</option>
-                  <option value="AMBOS">Híbrido / ambos</option>
+                  <option value="AMBOS">Ambos</option>
                 </select>
               </label>
-
-              <label className="teacher-dashboard-field">
-                <span>Duração (min)</span>
+              <label>
+                <span>Duracao (min)</span>
                 <input
                   type="number"
                   min={15}
-                  max={600}
+                  step={15}
                   value={form.durationMinutes}
-                  onChange={(event) =>
-                    handleFormChange("durationMinutes", Number(event.target.value))
-                  }
+                  onChange={event => handleFormChange("durationMinutes", Number(event.target.value))}
                 />
               </label>
-
-              <label className="teacher-dashboard-field">
-                <span>Valor (opcional)</span>
-                <input
-                  type="text"
-                  value={form.price}
-                  onChange={(event) => handleFormChange("price", event.target.value)}
-                  placeholder="Ex: 80.00"
-                />
+              <label>
+                <span>Preco</span>
+                <input value={form.price} onChange={event => handleFormChange("price", event.target.value)} />
               </label>
-
-              <label className="teacher-dashboard-field">
-                <span>Local (opcional)</span>
-                <input
-                  type="text"
-                  value={form.location}
-                  onChange={(event) => handleFormChange("location", event.target.value)}
-                  placeholder="Cidade, região ou link de sala online"
-                />
+              <label>
+                <span>Local</span>
+                <input value={form.location} onChange={event => handleFormChange("location", event.target.value)} />
               </label>
             </div>
 
-            <label className="teacher-dashboard-field">
-              <span>Descrição (opcional)</span>
+            <label>
+              <span>Descricao</span>
               <textarea
                 rows={4}
                 value={form.description}
-                onChange={(event) => handleFormChange("description", event.target.value)}
-                placeholder="Inclua detalhes sobre o conteúdo, materiais ou pré-requisitos."
+                onChange={event => handleFormChange("description", event.target.value)}
               />
             </label>
 
-            {errorMessage && (
-              <div className="teacher-dashboard-alert teacher-dashboard-alert-error">
-                {errorMessage}
-              </div>
-            )}
-            {successMessage && (
-              <div className="teacher-dashboard-alert teacher-dashboard-alert-success">
-                {successMessage}
-              </div>
-            )}
-
-            <button type="submit" className="teacher-dashboard-submit" disabled={isSubmitting}>
-              {isSubmitting ? "Salvando..." : "Salvar aula"}
+            <button type="submit" className="teacher-dashboard__primary-button" disabled={isSubmitting}>
+              <PlusCircle size={16} />
+              {isSubmitting ? "Salvando..." : "Cadastrar aula"}
             </button>
           </form>
-
-          <div className="teacher-dashboard-list">
-            <h3>Suas aulas cadastradas</h3>
-            {classesLoading ? (
-              <p>Carregando aulas...</p>
-            ) : teacherClasses.length ? (
-              <ul>
-                {teacherClasses.map((item) => {
-                  const createdDate = new Date(item.createdAt);
-                  const createdLabel = createdDate.toLocaleDateString("pt-BR", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  });
-                  const priceValue =
-                    item.priceCents !== null && item.priceCents !== undefined
-                      ? item.priceCents / 100
-                      : item.price !== null && item.price !== undefined
-                      ? Number(item.price)
-                      : null;
-                  const priceLabel =
-                    priceValue !== null && priceValue !== undefined
-                      ? `R$ ${priceValue.toFixed(2)}`
-                      : "Valor não informado";
-                  const modalityLabel =
-                    item.modality === "PRESENCIAL"
-                      ? "Presencial"
-                      : item.modality === "AMBOS"
-                      ? "Híbrido"
-                      : "Online";
-                  return (
-                    <li key={item.id} className="teacher-dashboard-class-card">
-                      <div className="teacher-dashboard-class-main">
-                        <h4>{item.title}</h4>
-                        <div className="teacher-dashboard-chip-row">
-                          {item.subject && (
-                            <span className="teacher-dashboard-chip">{item.subject}</span>
-                          )}
-                          <span
-                            className={`teacher-dashboard-chip ${item.active === false ? "is-inactive" : ""}`}
-                          >
-                            {item.active === false ? "Pausada" : "Ativa"}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="teacher-dashboard-class-meta">
-                        <span>
-                          <CalendarDays size={16} />
-                          Criada em {createdLabel}
-                        </span>
-                        <span>
-                          <Clock size={16} />
-                          {item.durationMinutes} min
-                        </span>
-                        <span>
-                          <MapPin size={16} />
-                          {modalityLabel}
-                        </span>
-                        <span>
-                          <NotebookPen size={16} />
-                          {priceLabel}
-                        </span>
-                        {item.location ? <span>{item.location}</span> : null}
-                      </div>
-                      {item.description && (
-                        <p className="teacher-dashboard-class-description">{item.description}</p>
-                      )}
-                      <button
-                        type="button"
-                        className="teacher-dashboard-toggle"
-                        onClick={() => handleToggleActive(item)}
-                      >
-                        {item.active === false ? "Reativar oferta" : "Pausar oferta"}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p>Nenhuma aula cadastrada ainda. Cadastre uma nova aula para começar.</p>
-            )}
-          </div>
         </section>
 
-        <section className="teacher-dashboard-section">
-          <header className="teacher-dashboard-section-header">
-            <div className="teacher-dashboard-section-title">
-              <CalendarDays className="teacher-dashboard-section-icon" />
-              <h2>Agenda de aulas</h2>
+        <section className="teacher-dashboard__panel teacher-dashboard__panel--wide">
+          <div className="teacher-dashboard__panel-head">
+            <div>
+              <p className="teacher-dashboard__panel-eyebrow">Suas ofertas</p>
+              <h2>Aulas cadastradas</h2>
             </div>
-            <span>Visualize rapidamente os dias com encontros marcados.</span>
-          </header>
+          </div>
 
-          <div className="teacher-dashboard-calendar-card">
-            <div className="teacher-dashboard-calendar-header">
-              <button type="button" onClick={handlePrevMonth} aria-label="Mês anterior">
-                ◀
-              </button>
-              <h3>
-                {monthsPT[calendarMonth.getMonth()]} {calendarMonth.getFullYear()}
-              </h3>
-              <button type="button" onClick={handleNextMonth} aria-label="Próximo mês">
-                ▶
-              </button>
-            </div>
-
-            <div className="teacher-dashboard-calendar-grid">
-              {weekdaysPT.map((weekday) => (
-                <div key={weekday} className="teacher-dashboard-calendar-weekday">
-                  {weekday}
-                </div>
-              ))}
-              {calendarDays.map(({ day, date }, index) => {
-                if (!day || !date) {
-                  return <div key={`empty-${index}`} className="teacher-dashboard-calendar-day empty" />;
-                }
-
-                const key = toDateKey(date);
-                const hasEvents = Boolean(eventsByDay[key]?.length);
-                const isSelected = selectedDate === key;
-                const isToday = key === todayKey;
-
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    className={[
-                      "teacher-dashboard-calendar-day",
-                      hasEvents ? "has-events" : "",
-                      isSelected ? "is-selected" : "",
-                      isToday ? "is-today" : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")
-                    }
-                    onClick={() => {
-                      setSelectedDate(key);
-                    }}
-                  >
-                    <span>{day}</span>
-                    {hasEvents && <span className="teacher-dashboard-calendar-indicator" />}
+          {classesLoading ? (
+            <div className="teacher-dashboard__empty">Carregando aulas...</div>
+          ) : teacherClasses.length === 0 ? (
+            <div className="teacher-dashboard__empty">Cadastre sua primeira aula para comecar a receber bookings.</div>
+          ) : (
+            <div className="teacher-dashboard__class-grid">
+              {teacherClasses.map(item => (
+                <article key={item.id} className="teacher-dashboard__class-card">
+                  <div className="teacher-dashboard__class-head">
+                    <div>
+                      <strong>{item.title}</strong>
+                      <span>{item.subject || "Materia livre"}</span>
+                    </div>
+                    <span className={`teacher-dashboard__status-tag ${(item.active ?? true) ? "is-active" : "is-inactive"}`}>
+                      {(item.active ?? true) ? "Ativa" : "Inativa"}
+                    </span>
+                  </div>
+                  <p>{item.description || "Sem descricao adicional."}</p>
+                  <div className="teacher-dashboard__class-meta">
+                    <span>{item.modality}</span>
+                    <span>{item.durationMinutes} min</span>
+                    <span>
+                      {item.priceCents !== null && item.priceCents !== undefined
+                        ? `R$ ${(item.priceCents / 100).toFixed(2)}`
+                        : "Valor a combinar"}
+                    </span>
+                  </div>
+                  <button type="button" className="teacher-dashboard__ghost-button" onClick={() => handleToggleActive(item)}>
+                    {(item.active ?? true) ? "Desativar" : "Reativar"}
                   </button>
-                );
-              })}
+                </article>
+              ))}
             </div>
-          </div>
-
-          <div className="teacher-dashboard-calendar-details">
-            <header>
-              <h3>{formatDateHeading(selectedDate)}</h3>
-              <span>
-                <Users size={16} />
-                {selectedDateEvents.length
-                  ? `${selectedDateEvents.length} aula(s) agendada(s)`
-                  : "Nenhuma aula agendada"}
-              </span>
-            </header>
-
-            {scheduleLoading ? (
-              <p>Carregando agenda...</p>
-            ) : selectedDateEvents.length ? (
-              <ul>
-                {selectedDateEvents.map((event) => {
-                  const eventDate = new Date(event.startTime);
-                  const time = eventDate.toLocaleTimeString("pt-BR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  });
-                  const endTime = new Date(event.endTime);
-                  const timeEnd = Number.isNaN(endTime.getTime())
-                    ? null
-                    : endTime.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-                  const statusUpper = (event.status || "").toUpperCase();
-                  const isPending = statusUpper === "PENDING" || statusUpper === "AGUARDANDO_PROFESSOR";
-                  return (
-                    <li key={event.id} className="teacher-dashboard-calendar-item">
-                      <div>
-                        <strong>
-                          {time}
-                          {timeEnd ? ` - ${timeEnd}` : ""}
-                        </strong>
-                        <p>
-                          {event.student?.name
-                            ? `Com ${event.student.name}`
-                            : "Aula agendada"}
-                        </p>
-                        {event.offer?.title ? <p>{event.offer.title}</p> : null}
-                      </div>
-                      <div className="teacher-dashboard-calendar-tags">
-                        {event.student?.email && <span>{event.student.email}</span>}
-                        <span
-                          className={`teacher-dashboard-chip ${event.status === "CANCELLED" ? "is-inactive" : ""}`}
-                        >
-                          {event.status || "PENDING"}
-                        </span>
-                        {isPending ? (
-                          <div className="teacher-dashboard-actions">
-                            <button
-                              type="button"
-                              className="teacher-dashboard-btn accept"
-                              disabled={actionLoadingId === event.id}
-                              onClick={() => handleDecision(event.id, "accept")}
-                            >
-                              {actionLoadingId === event.id ? "Salvando..." : "Aceitar"}
-                            </button>
-                            <button
-                              type="button"
-                              className="teacher-dashboard-btn reject"
-                              disabled={actionLoadingId === event.id}
-                              onClick={() => handleDecision(event.id, "reject")}
-                            >
-                              {actionLoadingId === event.id ? "Salvando..." : "Recusar"}
-                            </button>
-                          </div>
-                        ) : null}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p>Nenhuma aula agendada para esta data.</p>
-            )}
-          </div>
+          )}
         </section>
       </div>
+
+      <AvailabilityManager
+        isOpen={isAvailabilityManagerOpen}
+        isLoading={availabilityLoading}
+        isSaving={availabilitySaving}
+        availability={teacherAvailability}
+        errorMessage={availabilityErrorMessage}
+        onClose={closeAvailabilityManager}
+        onSave={handleSaveAvailability}
+      />
+
+      <AvailabilityModal
+        isOpen={Boolean(quickAvailabilityDraft || selectedAvailability)}
+        availability={selectedAvailability}
+        initialValue={quickAvailabilityDraft}
+        isSaving={availabilitySaving}
+        errorMessage={calendarMutationError}
+        onClose={() => {
+          setQuickAvailabilityDraft(null);
+          setSelectedAvailability(null);
+          setCalendarMutationError(null);
+        }}
+        onOpenManager={openAvailabilityManager}
+        onSubmit={handleCreateQuickAvailability}
+        onDelete={handleDeleteAvailability}
+      />
+
+      <BookingDetailsModal
+        isOpen={Boolean(selectedBooking)}
+        booking={selectedBooking}
+        isSubmitting={actionLoadingId === selectedBooking?.id}
+        errorMessage={errorMessage}
+        onClose={() => setSelectedBooking(null)}
+        onAccept={bookingId => handleDecision(bookingId, "accept")}
+        onReject={bookingId => handleDecision(bookingId, "reject")}
+      />
     </div>
   );
 };

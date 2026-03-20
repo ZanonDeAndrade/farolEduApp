@@ -48,13 +48,15 @@ export type ScheduleRecord = {
   offerId: number | null;
   studentId: number;
   teacherId: number;
-  startTime: Date;
-  endTime: Date;
+  date: string;
+  startTime: string;
+  endTime: string;
+  startAtUtc: Date;
+  endAtUtc: Date;
   status: string;
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;
-  legacyDate?: Date | null;
 };
 
 type DbState = {

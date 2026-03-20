@@ -91,7 +91,8 @@ const Navbar: React.FC = () => {
   const isAuthenticated = Boolean(displayName);
   const isTeacher = (profile?.role ?? '').toLowerCase() === 'teacher';
   const isStudent = (profile?.role ?? '').toLowerCase() === 'student';
-  const profileMenuActionLabel = isTeacher ? 'Abrir painel' : 'Ver agenda completa';
+  const profileMenuPrimaryActionLabel = isTeacher ? 'Alterar disponibilidade' : 'Ver agenda completa';
+  const profileMenuSecondaryActionLabel = isTeacher ? 'Ver agenda' : undefined;
 
   useEffect(() => {
     const isRoot = location.pathname === '/';
@@ -126,7 +127,20 @@ const Navbar: React.FC = () => {
   const handleProfileMenuPrimaryAction = useCallback(() => {
     setIsMenuOpen(false);
     if (isTeacher) {
-      navigate('/dashboard', { replace: false });
+      navigate('/dashboard?section=availability', { replace: false });
+      return;
+    }
+    if (isStudent) {
+      navigate('/calendar', { replace: false });
+      return;
+    }
+    navigate(profileTarget, { replace: false });
+  }, [isStudent, isTeacher, navigate, profileTarget]);
+
+  const handleProfileMenuSecondaryAction = useCallback(() => {
+    setIsMenuOpen(false);
+    if (isTeacher) {
+      navigate('/dashboard?section=agenda', { replace: false });
       return;
     }
     if (isStudent) {
@@ -241,8 +255,10 @@ const Navbar: React.FC = () => {
                         profile={profile}
                         displayName={displayName}
                         onPhotoUploaded={handlePhotoUploaded}
-                        primaryActionLabel={profileMenuActionLabel}
+                        primaryActionLabel={profileMenuPrimaryActionLabel}
                         onPrimaryAction={handleProfileMenuPrimaryAction}
+                        secondaryActionLabel={profileMenuSecondaryActionLabel}
+                        onSecondaryAction={handleProfileMenuSecondaryAction}
                       />
                     ) : null}
                     <button
@@ -286,8 +302,10 @@ const Navbar: React.FC = () => {
                     profile={profile}
                     displayName={displayName}
                     onPhotoUploaded={handlePhotoUploaded}
-                    primaryActionLabel={profileMenuActionLabel}
+                    primaryActionLabel={profileMenuPrimaryActionLabel}
                     onPrimaryAction={handleProfileMenuPrimaryAction}
+                    secondaryActionLabel={profileMenuSecondaryActionLabel}
+                    onSecondaryAction={handleProfileMenuSecondaryAction}
                   />
                 ) : null}
                 <button type="button" className="navbar__profile-name" onClick={handleProfileClick}>

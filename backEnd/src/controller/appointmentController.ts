@@ -36,7 +36,7 @@ export const acceptAppointment = async (req: Request, res: Response) => {
   }
 
   try {
-    const result = await updateBookingStatusByTeacher(bookingId, Number(user.id), "ACEITO");
+    const result = await updateBookingStatusByTeacher(bookingId, Number(user.id), "CONFIRMED");
     if (result === "FORBIDDEN") return res.status(403).json(FORBIDDEN);
     if (result === "INVALID_STATUS") return res.status(400).json(INVALID_STATUS);
     if (!result) return res.status(404).json(NOT_FOUND);
@@ -57,7 +57,7 @@ export const rejectAppointment = async (req: Request, res: Response) => {
   }
 
   try {
-    const result = await updateBookingStatusByTeacher(bookingId, Number(user.id), "RECUSADO");
+    const result = await updateBookingStatusByTeacher(bookingId, Number(user.id), "REJECTED");
     if (result === "FORBIDDEN") return res.status(403).json(FORBIDDEN);
     if (result === "INVALID_STATUS") return res.status(400).json(INVALID_STATUS);
     if (!result) return res.status(404).json(NOT_FOUND);

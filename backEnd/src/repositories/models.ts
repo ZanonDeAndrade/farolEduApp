@@ -65,13 +65,25 @@ export interface Schedule {
   offerId: number | null;
   studentId: number;
   teacherId: number;
-  startTime: Date;
-  endTime: Date;
+  date: string;
+  startTime: string;
+  endTime: string;
+  startAtUtc: Date;
+  endAtUtc: Date;
   status: BookingStatus;
   notes: string | null;
   respondedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface TeacherAvailability {
+  id: string;
+  teacherId: number;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  slotDuration: number;
 }
 
 export type TeacherWithProfile = User & { teacherProfile: TeacherProfile | null };
