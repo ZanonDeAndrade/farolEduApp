@@ -1,8 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { CalendarRange, ChevronDown, Clock, LayoutDashboard } from "lucide-react";
+import { CalendarRange, ChevronDown, Clock, LayoutDashboard, Settings2 } from "lucide-react";
 import Avatar from "../common/Avatar";
 import AvatarUploader from "../auth/AvatarUploader";
 import { fetchMyBookings, type Booking } from "../../services/bookings";
+import {
+  formatBookingDateShort,
+  formatBookingTimeRange,
+  getBookingStartSortValue,
+  normalizeStatusLabel,
+} from "../../utils/dateTime";
 import type { StoredProfile } from "../../utils/profile";
 import "./ProfileMenu.css";
 
@@ -12,36 +18,11 @@ type ProfileMenuProps = {
   onPhotoUploaded(url: string): void;
   primaryActionLabel: string;
   onPrimaryAction(): void;
+  secondaryActionLabel?: string;
+  onSecondaryAction?(): void;
 };
 
 const MAX_BOOKINGS_IN_MENU = 4;
-
-const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString("pt-BR", {
-    weekday: "short",
-    day: "2-digit",
-    month: "short",
-  });
-
-const formatTimeRange = (start: string, end: string) => {
-  const startLabel = new Date(start).toLocaleTimeString("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  const endLabel = new Date(end).toLocaleTimeString("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  return `${startLabel} - ${endLabel}`;
-};
-
-const normalizeStatus = (status?: string | null) => {
-  const key = (status ?? "PENDING").toUpperCase();
-  if (key === "ACEITO" || key === "ACCEPTED") return "Confirmada";
-  if (key === "RECUSADO" || key === "REJECTED") return "Recusada";
-  if (key === "CANCELLED") return "Cancelada";
-  return "Pendente";
-};
 
 const ProfileMenu: React.FC<ProfileMenuProps> = ({
   profile,
@@ -49,6 +30,8 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
   onPhotoUploaded,
   primaryActionLabel,
   onPrimaryAction,
+  secondaryActionLabel,
+  onSecondaryAction,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -95,7 +78,7 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
       .then(data => {
         const sorted = (data ?? [])
           .slice()
-          .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+          .sort((a, b) => getBookingStartSortValue(a) - getBookingStartSortValue(b))
           .slice(0, MAX_BOOKINGS_IN_MENU);
         setBookings(sorted);
       })
@@ -114,7 +97,8 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
   }, [isTeacher, role]);
 
   const emailLabel = profile.email?.trim() || roleLabel;
-  const PrimaryActionIcon = isTeacher ? LayoutDashboard : CalendarRange;
+  const PrimaryActionIcon = isTeacher ? Settings2 : CalendarRange;
+  const SecondaryActionIcon = LayoutDashboard;
 
   return (
     <div className="profile-menu" ref={rootRef}>
@@ -178,18 +162,18 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
                           <p>{counterpartLabel}</p>
                         </div>
                         <span className={`profile-menu__badge status-${(item.status ?? "pending").toLowerCase()}`}>
-                          {normalizeStatus(item.status)}
+                          {normalizeStatusLabel(item.status)}
                         </span>
                       </div>
 
                       <div className="profile-menu__item-meta">
                         <span>
                           <CalendarRange size={14} />
-                          {formatDate(item.startTime)}
+                          {formatBookingDateShort(item.date)}
                         </span>
                         <span>
                           <Clock size={14} />
-                          {formatTimeRange(item.startTime, item.endTime)}
+                          {formatBookingTimeRange(item.startTime, item.endTime)}
                         </span>
                       </div>
                     </li>
@@ -201,17 +185,33 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
 
           <div className="profile-menu__actions">
             <AvatarUploader label="Trocar foto do perfil" onUploaded={onPhotoUploaded} />
-            <button
-              type="button"
-              className="profile-menu__primary-action"
-              onClick={() => {
-                setIsOpen(false);
-                onPrimaryAction();
-              }}
-            >
-              <PrimaryActionIcon size={16} />
-              {primaryActionLabel}
-            </button>
+            <div className={`profile-menu__action-grid ${secondaryActionLabel ? "has-secondary" : ""}`}>
+              <button
+                type="button"
+                className="profile-menu__primary-action"
+                onClick={() => {
+                  setIsOpen(false);
+                  onPrimaryAction();
+                }}
+              >
+                <PrimaryActionIcon size={16} />
+                {primaryActionLabel}
+              </button>
+
+              {secondaryActionLabel && onSecondaryAction ? (
+                <button
+                  type="button"
+                  className="profile-menu__secondary-action"
+                  onClick={() => {
+                    setIsOpen(false);
+                    onSecondaryAction();
+                  }}
+                >
+                  <SecondaryActionIcon size={16} />
+                  {secondaryActionLabel}
+                </button>
+              ) : null}
+            </div>
           </div>
         </div>
       ) : null}

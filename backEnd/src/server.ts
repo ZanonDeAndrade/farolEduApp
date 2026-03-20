@@ -11,6 +11,7 @@ import bookingRoutes from "./routes/bookingRoutes";
 import calendarRoutes from "./routes/calendarRoutes";
 import authRoutes from "./routes/authRoutes";
 import appointmentRoutes from "./routes/appointmentRoutes";
+import availabilityRoutes from "./routes/availabilityRoutes";
 import { legacyMigrateSchedule } from "./modules/bookingModel";
 import { FRONTEND_ORIGINS, TRUST_PROXY } from "./config/env";
 
@@ -70,6 +71,7 @@ app.use("/api/teacher-classes", teacherClassRoutes);
 app.use("/api/offers", offerRoutes);
 app.use("/api/calendar", calendarRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api", availabilityRoutes);
 
 // 6) Handler global de erro (último middleware)
 app.use((err: any, req: Request, res: Response, _next: NextFunction) => {

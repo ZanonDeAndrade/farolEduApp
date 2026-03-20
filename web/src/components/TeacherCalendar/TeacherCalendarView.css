@@ -1,0 +1,174 @@
+.teacher-calendar {
+  display: grid;
+  gap: 1rem;
+}
+
+.teacher-calendar__surface {
+  position: relative;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  border: 1px solid rgba(106, 64, 180, 0.14);
+  background:
+    radial-gradient(circle at top right, rgba(247, 232, 163, 0.28), transparent 34%),
+    linear-gradient(180deg, rgba(246, 248, 255, 0.98), rgba(255, 255, 255, 1));
+  box-shadow: 0 28px 52px rgba(31, 37, 71, 0.08);
+}
+
+.teacher-calendar__surface .fc {
+  --fc-border-color: rgba(106, 64, 180, 0.12);
+  --fc-now-indicator-color: #e1585b;
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: rgba(246, 248, 255, 0.6);
+  --fc-list-event-hover-bg-color: rgba(106, 64, 180, 0.08);
+  padding: 1rem;
+}
+
+.teacher-calendar__surface .fc .fc-toolbar {
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.teacher-calendar__surface .fc .fc-toolbar-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.teacher-calendar__surface .fc .fc-button {
+  border: none;
+  background: rgba(106, 64, 180, 0.1);
+  color: var(--primary-blue);
+  box-shadow: none;
+  text-transform: none;
+}
+
+.teacher-calendar__surface .fc .fc-button:hover,
+.teacher-calendar__surface .fc .fc-button:focus {
+  background: rgba(106, 64, 180, 0.16);
+}
+
+.teacher-calendar__surface .fc .fc-button-primary:not(:disabled).fc-button-active,
+.teacher-calendar__surface .fc .fc-button-primary:not(:disabled):active {
+  background: var(--primary-blue);
+  color: var(--white);
+}
+
+.teacher-calendar__surface .fc .fc-timegrid-slot-label-cushion,
+.teacher-calendar__surface .fc .fc-col-header-cell-cushion {
+  color: var(--gray-600);
+  font-weight: 600;
+}
+
+.teacher-calendar__surface .fc .fc-day-today {
+  background: rgba(247, 232, 163, 0.18);
+}
+
+.teacher-calendar__surface .fc-event {
+  border: none;
+  border-radius: 0.9rem;
+  padding: 0;
+}
+
+.teacher-calendar__surface .fc-event.is-availability {
+  background: linear-gradient(135deg, rgba(106, 64, 180, 0.2), rgba(131, 87, 217, 0.18));
+  color: var(--gray-900);
+}
+
+.teacher-calendar__surface .fc-bg-event.is-availability-background {
+  background: linear-gradient(135deg, rgba(106, 64, 180, 0.16), rgba(131, 87, 217, 0.14));
+  opacity: 1;
+}
+
+.teacher-calendar__surface .fc-event.is-pending {
+  background: linear-gradient(135deg, #f7e8a3, #f2d56b);
+  color: #6c4b05;
+}
+
+.teacher-calendar__surface .fc-event.is-confirmed {
+  background: linear-gradient(135deg, #6a40b4, #8357d9);
+  color: var(--white);
+}
+
+.teacher-calendar__event-card {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  min-height: 100%;
+  padding: 0.65rem 0.75rem;
+}
+
+.teacher-calendar__event-card strong {
+  font-size: 0.82rem;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.teacher-calendar__event-card span {
+  font-size: 0.72rem;
+  opacity: 0.9;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.teacher-calendar__event-card.is-compact {
+  gap: 0.1rem;
+  padding: 0.4rem 0.5rem;
+}
+
+.teacher-calendar__overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--gray-800);
+  font-weight: 600;
+  backdrop-filter: blur(4px);
+}
+
+.teacher-calendar__empty {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.9rem 1rem;
+  border-radius: 999px;
+  background: rgba(106, 64, 180, 0.08);
+  color: var(--primary-blue);
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .teacher-calendar__surface .fc {
+    padding: 0.75rem;
+  }
+
+  .teacher-calendar__surface .fc .fc-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .teacher-calendar__surface {
+    border-radius: 1rem;
+  }
+
+  .teacher-calendar__surface .fc {
+    padding: 0.5rem;
+  }
+
+  .teacher-calendar__event-card {
+    padding: 0.5rem;
+  }
+
+  .teacher-calendar__event-card strong {
+    font-size: 0.7rem;
+  }
+
+  .teacher-calendar__event-card span {
+    font-size: 0.62rem;
+  }
+}

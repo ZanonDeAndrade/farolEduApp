@@ -2,8 +2,34 @@ import { Request, Response } from "express";
 import { ZodError } from "zod";
 import { createBooking } from "../modules/bookingModel";
 import { getSchedulesByUser } from "../modules/scheduleModel";
-import { bookingInputSchema, legacyScheduleInputSchema } from "../utils/validators";
 import { getTeacherClassesByTeacher } from "../modules/teacherClassModel";
+import { BookingServiceError } from "../services/bookingService";
+import { getLocalDateTimeParts } from "../utils/dateTime";
+import { legacyScheduleInputSchema } from "../utils/validators";
+
+const resolveLegacySlot = (payload: { startTime?: string; date?: string; slotTime?: string }) => {
+  if (payload.date && payload.slotTime) {
+    return {
+      date: payload.date,
+      startTime: payload.slotTime,
+    };
+  }
+
+  if (!payload.startTime) {
+    throw new BookingServiceError("Horario invalido", "INVALID_SLOT", 400);
+  }
+
+  const legacyDate = new Date(payload.startTime);
+  if (Number.isNaN(legacyDate.getTime())) {
+    throw new BookingServiceError("Horario invalido", "INVALID_SLOT", 400);
+  }
+
+  const parts = getLocalDateTimeParts(legacyDate);
+  return {
+    date: parts.date,
+    startTime: parts.time,
+  };
+};
 
 export const createScheduleHandler = async (req: Request, res: Response) => {
   try {
@@ -13,19 +39,12 @@ export const createScheduleHandler = async (req: Request, res: Response) => {
     }
 
     const parsed = legacyScheduleInputSchema.parse(req.body ?? {});
-    const startIso = parsed.startTime ?? parsed.date ?? "";
-    if (!startIso) {
-      return res.status(400).json({ message: "Data inválida" });
-    }
-    const startTime = new Date(startIso);
-    if (Number.isNaN(startTime.getTime())) {
-      return res.status(400).json({ message: "Data inválida" });
-    }
+    const slot = resolveLegacySlot(parsed);
 
     let offerId = parsed.offerId;
     if (!offerId) {
       const classes = await getTeacherClassesByTeacher(parsed.teacherId);
-      const fallback = classes.find(cls => cls.active);
+      const fallback = classes.find(item => item.active);
       if (!fallback) {
         return res.status(404).json({ message: "Nenhuma oferta encontrada para este professor" });
       }
@@ -35,18 +54,20 @@ export const createScheduleHandler = async (req: Request, res: Response) => {
     const booking = await createBooking({
       studentId: Number(authUser.id),
       offerId,
-      startTime,
+      date: slot.date,
+      startTime: slot.startTime,
       notes: parsed.notes ?? null,
     });
 
     return res.status(201).json(booking);
-  } catch (error: any) {
+  } catch (error) {
     if (error instanceof ZodError) {
-      return res.status(400).json({ message: error.issues[0]?.message ?? "Dados inválidos" });
+      return res.status(400).json({ message: error.issues[0]?.message ?? "Dados invalidos" });
     }
-    if (error?.code === "BOOKING_CONFLICT_TEACHER" || error?.code === "BOOKING_CONFLICT_STUDENT") {
-      return res.status(409).json({ message: "Conflito de agenda", code: error.code });
+    if (error instanceof BookingServiceError) {
+      return res.status(error.statusCode).json({ message: error.message, code: error.code });
     }
+
     console.error("Erro ao criar agendamento:", error);
     return res.status(500).json({ message: "Erro interno ao agendar" });
   }

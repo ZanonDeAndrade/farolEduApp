@@ -36,7 +36,7 @@ const acceptAppointment = async (req, res) => {
         return res.status(400).json({ message: "ID inválido" });
     }
     try {
-        const result = await (0, bookingModel_1.updateBookingStatusByTeacher)(bookingId, Number(user.id), "ACEITO");
+        const result = await (0, bookingModel_1.updateBookingStatusByTeacher)(bookingId, Number(user.id), "CONFIRMED");
         if (result === "FORBIDDEN")
             return res.status(403).json(FORBIDDEN);
         if (result === "INVALID_STATUS")
@@ -60,7 +60,7 @@ const rejectAppointment = async (req, res) => {
         return res.status(400).json({ message: "ID inválido" });
     }
     try {
-        const result = await (0, bookingModel_1.updateBookingStatusByTeacher)(bookingId, Number(user.id), "RECUSADO");
+        const result = await (0, bookingModel_1.updateBookingStatusByTeacher)(bookingId, Number(user.id), "REJECTED");
         if (result === "FORBIDDEN")
             return res.status(403).json(FORBIDDEN);
         if (result === "INVALID_STATUS")

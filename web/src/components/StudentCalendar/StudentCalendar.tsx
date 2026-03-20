@@ -2,6 +2,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import "./StudentCalendar.css";
 import { fetchMyBookings, type Booking } from "../../services/bookings";
 import { CalendarRange, Clock, Sparkles } from "lucide-react";
+import {
+  formatBookingDateLong,
+  formatBookingTimeRange,
+  getBookingStartSortValue,
+  normalizeStatusLabel,
+} from "../../utils/dateTime";
 
 const StudentCalendar: React.FC = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -19,9 +25,7 @@ const StudentCalendar: React.FC = () => {
 
     fetchMyBookings({ from, to })
       .then((data) => {
-        setBookings(
-          (data ?? []).slice().sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
-        );
+        setBookings((data ?? []).slice().sort((a, b) => getBookingStartSortValue(a) - getBookingStartSortValue(b)));
       })
       .catch((err) => {
         console.error("Erro ao carregar agenda:", err);
@@ -33,7 +37,7 @@ const StudentCalendar: React.FC = () => {
   const groups = useMemo(() => {
     const map = new Map<string, Booking[]>();
     bookings.forEach((booking) => {
-      const key = new Date(booking.startTime).toISOString().split("T")[0];
+      const key = booking.date;
       if (!map.has(key)) map.set(key, []);
       map.get(key)?.push(booking);
     });
@@ -64,11 +68,7 @@ const StudentCalendar: React.FC = () => {
       ) : (
         <div className="student-calendar-list">
           {groups.map(([dateKey, list]) => {
-            const formatted = new Date(`${dateKey}T00:00:00`).toLocaleDateString("pt-BR", {
-              weekday: "long",
-              day: "2-digit",
-              month: "long",
-            });
+            const formatted = formatBookingDateLong(dateKey);
             return (
               <div key={dateKey} className="student-calendar-day">
                 <div className="student-calendar-day-head">{formatted}</div>
@@ -77,11 +77,7 @@ const StudentCalendar: React.FC = () => {
                     <li key={item.id}>
                       <div className="student-calendar-row">
                         <Clock size={16} />
-                        <span>
-                          {new Date(item.startTime).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                          {" - "}
-                          {new Date(item.endTime).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                        </span>
+                        <span>{formatBookingTimeRange(item.startTime, item.endTime)}</span>
                       </div>
                       <div className="student-calendar-row">
                         <CalendarRange size={16} />
@@ -89,7 +85,7 @@ const StudentCalendar: React.FC = () => {
                       </div>
                       {item.teacher ? <p className="student-calendar-teacher">Prof. {item.teacher.name}</p> : null}
                       <span className={`student-calendar-status status-${(item.status || "pending").toLowerCase()}`}>
-                        {item.status || "PENDING"}
+                        {normalizeStatusLabel(item.status)}
                       </span>
                     </li>
                   ))}

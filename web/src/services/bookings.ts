@@ -1,17 +1,28 @@
 import api from "./api";
 
-export type BookingStatus = "PENDING" | "CONFIRMED" | "CANCELLED";
+export type BookingStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "CANCELLED"
+  | "REJECTED"
+  | "ACEITO"
+  | "RECUSADO"
+  | "AGUARDANDO_PROFESSOR";
 
 export interface Booking {
   id: number;
   offerId?: number | null;
   studentId: number;
   teacherId: number;
+  date: string;
   startTime: string;
   endTime: string;
+  startAtUtc: string;
+  endAtUtc: string;
   status: BookingStatus;
   notes?: string | null;
   createdAt: string;
+  respondedAt?: string | null;
   updatedAt?: string;
   teacher?: {
     id: number;
@@ -34,6 +45,7 @@ export interface Booking {
 
 export interface CreateBookingPayload {
   offerId: number;
+  date: string;
   startTime: string;
   notes?: string;
 }

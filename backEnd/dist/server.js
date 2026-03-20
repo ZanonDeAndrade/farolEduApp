@@ -17,6 +17,7 @@ const bookingRoutes_1 = __importDefault(require("./routes/bookingRoutes"));
 const calendarRoutes_1 = __importDefault(require("./routes/calendarRoutes"));
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const appointmentRoutes_1 = __importDefault(require("./routes/appointmentRoutes"));
+const availabilityRoutes_1 = __importDefault(require("./routes/availabilityRoutes"));
 const bookingModel_1 = require("./modules/bookingModel");
 const env_1 = require("./config/env");
 exports.app = (0, express_1.default)();
@@ -66,6 +67,7 @@ exports.app.use("/api/teacher-classes", teacherClassRoutes_1.default);
 exports.app.use("/api/offers", offerRoutes_1.default);
 exports.app.use("/api/calendar", calendarRoutes_1.default);
 exports.app.use("/api/ai", aiRoutes_1.default);
+exports.app.use("/api", availabilityRoutes_1.default);
 // 6) Handler global de erro (último middleware)
 exports.app.use((err, req, res, _next) => {
     if (err?.type === "entity.too.large") {
